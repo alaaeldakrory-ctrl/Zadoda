@@ -3,6 +3,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language } from './types';
+import { addMinutes, format, parse } from 'date-fns';
+import { timeToMinutes } from './utils';
 
 interface StoreState {
   persons: Person[];
@@ -25,15 +27,16 @@ interface StoreContextValue extends StoreState {
   deleteTemplate: (id: string) => void;
   toggleCompletion: (seriesId: string, date: string) => void;
   updateOccurrence: (seriesId: string, date: string, updates: Partial<CalendarEventOccurrenceOverride>) => void;
+  moveEvent: (seriesId: string, date: string, newStartTime: string, newPersonId: string) => void;
 }
 
 const StoreContext = createContext<StoreContextValue | null>(null);
 
 const DEFAULT_PERSONS: Person[] = [
-  { id: '1', name: 'Lyla', color: '#fb7185' }, // Soft Rose
-  { id: '2', name: 'Malika', color: '#2dd4bf' }, // Soft Teal
-  { id: '3', name: 'Mohamed', color: '#fbbf24' }, // Warm Amber
-  { id: '4', name: 'Wesam', color: '#818cf8' }, // Soft Indigo
+  { id: '1', name: 'Lyla', color: '#fb7185' },
+  { id: '2', name: 'Malika', color: '#2dd4bf' },
+  { id: '3', name: 'Mohamed', color: '#fbbf24' },
+  { id: '4', name: 'Wesam', color: '#818cf8' },
 ];
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -42,7 +45,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   language: 'en',
 };
 
-const CURRENT_VERSION = 4; // Incremented for color migration
+const CURRENT_VERSION = 5;
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<StoreState>({
@@ -61,13 +64,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        
-        // Migration logic: Force names and new colors if version is old
         if (!parsed.version || parsed.version < CURRENT_VERSION) {
           parsed.persons = DEFAULT_PERSONS;
           parsed.version = CURRENT_VERSION;
         }
-        
         setState(parsed);
       } catch (e) {
         console.error('Failed to load storage', e);
@@ -167,6 +167,37 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
+  const moveEvent = (seriesId: string, date: string, newStartTime: string, newPersonId: string) => {
+    setState(prev => {
+      const targetSeries = prev.series.find(s => s.id === seriesId);
+      if (!targetSeries) return prev;
+
+      const currentStart = parse(targetSeries.startTime, 'HH:mm', new Date());
+      const currentEnd = parse(targetSeries.endTime, 'HH:mm', new Date());
+      const durationMins = (currentEnd.getTime() - currentStart.getTime()) / (1000 * 60);
+
+      const newStart = parse(newStartTime, 'HH:mm', new Date());
+      const newEnd = addMinutes(newStart, durationMins);
+      const newEndTime = format(newEnd, 'HH:mm');
+
+      // Logic for collision resolution: shift events in the same column
+      const sameColumnSeries = prev.series.filter(s => s.id !== seriesId && s.personId === newPersonId && s.startDate === date);
+      
+      // Simple resolution: if we land on another, push the other one further down
+      // For MVP, we just update the specific event's time and person
+      // Advanced collision handling would involve recursively shifting all subsequent items
+      
+      const updatedSeries = prev.series.map(s => {
+        if (s.id === seriesId) {
+          return { ...s, startTime: newStartTime, endTime: newEndTime, personId: newPersonId, startDate: date };
+        }
+        return s;
+      });
+
+      return { ...prev, series: updatedSeries };
+    });
+  };
+
   if (!hydrated) return null;
 
   return React.createElement(
@@ -184,7 +215,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateTemplate,
         deleteTemplate,
         toggleCompletion,
-        updateOccurrence
+        updateOccurrence,
+        moveEvent
       }
     },
     React.createElement(

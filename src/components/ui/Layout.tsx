@@ -66,12 +66,11 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           </Button>
         </div>
         
-        {/* Subtle decorative bottom element */}
         <div className="absolute bottom-20 -left-10 w-32 h-32 bg-primary/5 rounded-full blur-3xl -z-10" />
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 bg-background/50 relative">
+      <main className="flex-1 flex flex-col min-w-0 bg-background/50 relative overflow-hidden">
         <header className="h-20 border-b-2 flex items-center justify-between px-8 lg:hidden bg-card/80 backdrop-blur-md sticky top-0 z-30">
            <div className="flex items-center gap-3">
              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-black shadow-lg">F</div>
@@ -87,7 +86,8 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           </Button>
         </header>
 
-        <div className="flex-1 p-4 lg:p-10 overflow-hidden relative">
+        {/* This container allows for scrolling if the page needs it, but Calendar will fill h-full and handle its own if needed */}
+        <div className="flex-1 p-4 lg:p-10 overflow-y-auto relative h-full">
           {children}
         </div>
 
