@@ -1,3 +1,4 @@
+
 "use client"
 
 import React from 'react';
@@ -112,7 +113,11 @@ export default function SettingsPage() {
                           alt={p.name} 
                           width={80} 
                           height={80} 
-                          className={cn("object-cover", p.name === 'Mohamed' && "scale-110 -translate-y-2")}
+                          className={cn(
+                            "object-cover", 
+                            p.name === 'Mohamed' && "scale-110 -translate-y-2",
+                            p.name === 'Wesam' && "scale-110 -translate-y-2"
+                          )}
                           data-ai-hint="person headshot"
                         />
                       </div>

@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -208,7 +209,11 @@ export const CalendarView: React.FC = () => {
                           alt={p.name} 
                           width={24} 
                           height={24} 
-                          className={cn("object-cover", p.name === 'Mohamed' && "scale-110 -translate-y-1")}
+                          className={cn(
+                            "object-cover", 
+                            p.name === 'Mohamed' && "scale-110 -translate-y-1",
+                            p.name === 'Wesam' && "scale-110 -translate-y-1"
+                          )}
                           data-ai-hint="person headshot"
                         />
                       </div>
@@ -276,7 +281,11 @@ export const CalendarView: React.FC = () => {
                                     alt={p.name} 
                                     width={40} 
                                     height={40} 
-                                    className={cn("object-cover", p.name === 'Mohamed' && "scale-110 -translate-y-1")}
+                                    className={cn(
+                                      "object-cover", 
+                                      p.name === 'Mohamed' && "scale-110 -translate-y-1",
+                                      p.name === 'Wesam' && "scale-110 -translate-y-1"
+                                    )}
                                     data-ai-hint="person headshot"
                                   />
                                 </div>

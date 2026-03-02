@@ -1,3 +1,4 @@
+
 "use client"
 
 import React from 'react';
@@ -31,14 +32,14 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       <aside className="w-80 border-r flex flex-col hidden lg:flex bg-white relative z-20">
         <div className="p-8 flex flex-col items-center text-center">
           <Link href="/" className="flex flex-col items-center gap-6 group">
-            <div className="w-36 h-36 rounded-full overflow-hidden shadow-2xl shadow-primary/30 border-4 border-primary/20 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-primary/40 group-hover:border-primary/40">
+            <div className="w-44 h-44 rounded-full overflow-hidden shadow-2xl shadow-primary/30 border-4 border-primary/20 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-primary/40 group-hover:border-primary/40">
               {logoImage ? (
                 <Image 
                   src={logoImage} 
                   alt="Zadoda Logo" 
-                  width={144} 
-                  height={144} 
-                  className="object-cover scale-110 -translate-y-2"
+                  width={176} 
+                  height={176} 
+                  className="object-cover scale-125 -translate-y-4"
                   priority
                 />
               ) : (
@@ -87,7 +88,11 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                       alt={person.name} 
                       width={40} 
                       height={40} 
-                      className={cn("object-cover", person.name === 'Mohamed' && "scale-110 -translate-y-1")}
+                      className={cn(
+                        "object-cover", 
+                        person.name === 'Mohamed' && "scale-110 -translate-y-1",
+                        person.name === 'Wesam' && "scale-110 -translate-y-1"
+                      )}
                       data-ai-hint="person headshot"
                       priority
                     />
