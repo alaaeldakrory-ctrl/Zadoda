@@ -30,10 +30,10 @@ interface StoreContextValue extends StoreState {
 const StoreContext = createContext<StoreContextValue | null>(null);
 
 const DEFAULT_PERSONS: Person[] = [
-  { id: '1', name: 'Lyla', color: '#FF6B6B' }, // Fun vibrant red/pink
-  { id: '2', name: 'Malika', color: '#4ECDC4' }, // Fun turquoise
-  { id: '3', name: 'Mohamed', color: '#FFD93D' }, // Sunny yellow
-  { id: '4', name: 'Wesam', color: '#9575CD' }, // Playful purple
+  { id: '1', name: 'Lyla', color: '#fb7185' }, // Soft Rose
+  { id: '2', name: 'Malika', color: '#2dd4bf' }, // Soft Teal
+  { id: '3', name: 'Mohamed', color: '#fbbf24' }, // Warm Amber
+  { id: '4', name: 'Wesam', color: '#818cf8' }, // Soft Indigo
 ];
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -42,7 +42,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   language: 'en',
 };
 
-const CURRENT_VERSION = 3; // Updated to trigger color migration
+const CURRENT_VERSION = 4; // Incremented for color migration
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<StoreState>({
@@ -62,7 +62,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try {
         const parsed = JSON.parse(saved);
         
-        // Migration logic: Force names and fun colors if version is old
+        // Migration logic: Force names and new colors if version is old
         if (!parsed.version || parsed.version < CURRENT_VERSION) {
           parsed.persons = DEFAULT_PERSONS;
           parsed.version = CURRENT_VERSION;
