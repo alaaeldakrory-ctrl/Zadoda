@@ -47,6 +47,7 @@ interface StoreContextValue {
 const StoreContext = createContext<StoreContextValue | null>(null);
 
 const DEFAULT_SETTINGS: AppSettings = {
+  id: 'global',
   dayStartTime: '05:00',
   dayEndTime: '22:00',
   language: 'en',
@@ -109,16 +110,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const isLoading = isUserLoading || settingsLoading || (personsLoading && !personsData) || memosLoading;
 
   const setLanguage = (language: Language) => {
-    setDocumentNonBlocking(settingsRef, { ...settings, language }, { merge: true });
+    setDocumentNonBlocking(settingsRef, { ...settings, language, id: 'global' }, { merge: true });
   };
 
   const updateSettings = (updates: Partial<AppSettings>) => {
-    setDocumentNonBlocking(settingsRef, { ...settings, ...updates }, { merge: true });
+    setDocumentNonBlocking(settingsRef, { ...settings, ...updates, id: 'global' }, { merge: true });
   };
 
   const updatePerson = (id: string, updates: Partial<Person>) => {
     const personRef = doc(db, 'people', id);
-    setDocumentNonBlocking(personRef, updates, { merge: true });
+    setDocumentNonBlocking(personRef, { ...updates, id }, { merge: true });
   };
 
   const addSeries = (s: CalendarEventSeries) => {

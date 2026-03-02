@@ -64,6 +64,7 @@ export interface FixedEventTemplate {
 }
 
 export interface AppSettings {
+  id: string;
   dayStartTime: string; // HH:mm
   dayEndTime: string;   // HH:mm
   language: Language;
