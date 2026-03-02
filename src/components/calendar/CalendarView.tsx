@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState } from 'react';
@@ -146,7 +147,7 @@ export const CalendarView: React.FC = () => {
           <div className="w-24 sticky left-0 z-20 bg-background/80 backdrop-blur-md border-r-2 shadow-sm">
             <div className="h-14 border-b-2" /> {/* Corner spacer */}
             {timeSlots.map(slot => (
-              <div key={slot} className="h-12 text-sm font-black text-muted-foreground flex items-center justify-center border-b border-dashed last:border-0 px-2 text-center uppercase">
+              <div key={slot} className="h-16 text-sm font-black text-muted-foreground flex items-center justify-center border-b border-dashed last:border-0 px-2 text-center uppercase">
                 {formatTime(slot)}
               </div>
             ))}
@@ -180,7 +181,7 @@ export const CalendarView: React.FC = () => {
                           {timeSlots.map(slot => (
                             <div 
                               key={slot} 
-                              className="h-12 border-b border-dashed last:border-0 cursor-crosshair hover:bg-primary/5 transition-colors" 
+                              className="h-16 border-b border-dashed last:border-0 cursor-crosshair hover:bg-primary/5 transition-colors" 
                               onClick={() => handleGridClick(day, p.id, slot)}
                             />
                           ))}

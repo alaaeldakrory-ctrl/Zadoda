@@ -1,3 +1,4 @@
+
 "use client"
 
 import React from 'react';
@@ -14,19 +15,22 @@ interface EventBlockProps {
 
 export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, color, onClick }) => {
   const { toggleCompletion } = useStore();
-  const { top, height } = getGridPosition(occurrence.startTime, occurrence.endTime, dayStart, 48);
+  const { top, height } = getGridPosition(occurrence.startTime, occurrence.endTime, dayStart, 64);
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleCompletion(occurrence.series.id, occurrence.date);
   };
 
+  const isShortEvent = height <= 64;
+
   return (
     <div
       onClick={onClick}
       className={cn(
-        "absolute left-1 right-1 rounded-2xl border-2 p-3 text-xs shadow-md cursor-pointer transition-all overflow-hidden group/event hover:scale-[1.02] active:scale-95 z-10",
-        occurrence.completed ? "opacity-40 grayscale" : "opacity-100"
+        "absolute left-1 right-1 rounded-2xl border-2 text-xs shadow-md cursor-pointer transition-all overflow-hidden group/event hover:scale-[1.02] active:scale-95 z-10",
+        occurrence.completed ? "opacity-40 grayscale" : "opacity-100",
+        isShortEvent ? "p-2" : "p-3"
       )}
       style={{
         top: `${top}px`,
@@ -38,10 +42,14 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
     >
       <div className="flex items-start justify-between gap-2 h-full">
         <div className="flex-1 min-w-0 overflow-hidden flex flex-col justify-center">
-          <p className={cn("font-black text-base leading-tight truncate", occurrence.completed && "line-through opacity-70")}>
+          <p className={cn(
+            "font-black leading-tight truncate", 
+            occurrence.completed && "line-through opacity-70",
+            isShortEvent ? "text-sm" : "text-base"
+          )}>
             {occurrence.title}
           </p>
-          <p className="text-xs font-black opacity-80 mt-1 uppercase tracking-tight">
+          <p className="text-[10px] font-black opacity-80 mt-1 uppercase tracking-tight">
             {formatTime(occurrence.startTime)} - {formatTime(occurrence.endTime)}
           </p>
         </div>
@@ -53,9 +61,15 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
           )}
         >
           {occurrence.completed ? (
-            <CheckCircle2 className="w-8 h-8 text-primary animate-pop shadow-md rounded-full bg-white" />
+            <CheckCircle2 className={cn("text-primary animate-pop shadow-md rounded-full bg-white", isShortEvent ? "w-6 h-6" : "w-8 h-8")} />
           ) : (
-            <div className="w-8 h-8 rounded-full border-4 border-current opacity-30 group-hover/event:opacity-100 transition-all shadow-inner" style={{ color: color }} />
+            <div 
+              className={cn(
+                "rounded-full border-4 border-current opacity-30 group-hover/event:opacity-100 transition-all shadow-inner", 
+                isShortEvent ? "w-6 h-6 border-[3px]" : "w-8 h-8"
+              )} 
+              style={{ color: color }} 
+            />
           )}
         </button>
       </div>
