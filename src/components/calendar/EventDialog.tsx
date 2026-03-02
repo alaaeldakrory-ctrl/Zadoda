@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -91,22 +92,26 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
       return;
     }
 
+    // Explicitly construct the data object to avoid 'undefined' values being sent to Firestore
+    const dataToSave: any = {
+      title: formData.title || '',
+      personId: formData.personId || '1',
+      startTime: formData.startTime || '09:00',
+      endTime: formData.endTime || '10:00',
+      startDate: formData.startDate || format(initialDate, 'yyyy-MM-dd'),
+      recurrence: formData.recurrence || { frequency: 'NONE', interval: 1 },
+      exceptions: formData.exceptions || [],
+    };
+
+    // Only include optional fields if they have a non-undefined value
+    if (formData.notes !== undefined) dataToSave.notes = formData.notes;
+    if (formData.templateId !== undefined) dataToSave.templateId = formData.templateId;
+
     if (eventToEdit?.seriesId) {
-      updateSeries(eventToEdit.seriesId, formData);
+      updateSeries(eventToEdit.seriesId, dataToSave);
     } else {
-      const newSeries: CalendarEventSeries = {
-        id: crypto.randomUUID(),
-        title: formData.title || '',
-        personId: formData.personId || '1',
-        startTime: formData.startTime || '09:00',
-        endTime: formData.endTime || '10:00',
-        startDate: formData.startDate || format(initialDate, 'yyyy-MM-dd'),
-        notes: formData.notes,
-        templateId: formData.templateId,
-        recurrence: formData.recurrence || { frequency: 'NONE', interval: 1 },
-        exceptions: [],
-      };
-      addSeries(newSeries);
+      dataToSave.id = crypto.randomUUID();
+      addSeries(dataToSave as CalendarEventSeries);
     }
     onOpenChange(false);
   };
