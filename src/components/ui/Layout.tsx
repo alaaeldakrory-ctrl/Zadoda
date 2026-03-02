@@ -5,13 +5,15 @@ import React from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import { Calendar, Layers, Settings, Globe, StickyNote, Plus } from 'lucide-react';
+import { Calendar, Layers, Settings, Globe, StickyNote, Plus, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { settings, setLanguage } = useStore();
+  const { settings, setLanguage, persons } = useStore();
   const t = getTranslation(settings.language);
   const pathname = usePathname();
 
@@ -22,9 +24,14 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
     { label: t.settings, icon: Settings, href: '/settings' },
   ];
 
+  const getAvatarUrl = (personId: string) => {
+    const avatar = PlaceHolderImages.find(img => img.id === `avatar-${personId.toLowerCase().replace(/\d+$/, '')}`);
+    return avatar?.imageUrl || `https://picsum.photos/seed/${personId}/100/100`;
+  };
+
   return (
     <div className="flex h-screen bg-background overflow-hidden selection:bg-primary selection:text-primary-foreground">
-      {/* Sidebar - Matching Taskly Left Rail */}
+      {/* Sidebar */}
       <aside className="w-80 border-r flex flex-col hidden lg:flex bg-white relative z-20">
         <div className="p-10">
           <Link href="/" className="text-4xl font-black text-foreground flex items-center gap-3">
@@ -35,7 +42,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           </Link>
         </div>
 
-        <nav className="flex-1 px-6 space-y-1.5 mt-4">
+        <nav className="flex-1 px-6 space-y-1.5 mt-4 overflow-y-auto">
           <div className="px-4 mb-4">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">Menu</p>
           </div>
@@ -54,6 +61,32 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
               {item.label}
             </Link>
           ))}
+
+          <div className="px-4 mt-10 mb-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60 flex items-center gap-2">
+              <Users className="w-3 h-3" />
+              Family
+            </p>
+          </div>
+          <div className="px-4 space-y-3">
+            {persons.map(person => (
+              <div key={person.id} className="flex items-center gap-3 group">
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 transition-transform group-hover:scale-110" style={{ borderColor: person.color }}>
+                    <Image 
+                      src={getAvatarUrl(person.name)} 
+                      alt={person.name} 
+                      width={40} 
+                      height={40} 
+                      className="object-cover"
+                      data-ai-hint="person headshot"
+                    />
+                  </div>
+                </div>
+                <span className="font-bold text-sm text-muted-foreground group-hover:text-foreground transition-colors">{person.name}</span>
+              </div>
+            ))}
+          </div>
         </nav>
 
         <div className="p-8 border-t bg-muted/5">
@@ -70,8 +103,6 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 bg-[#F9F9F9] relative overflow-hidden">
-        {/* Header removed to maximize space for the calendar */}
-        
         <div className="flex-1 p-4 lg:p-8 overflow-y-auto relative h-full">
           {children}
         </div>

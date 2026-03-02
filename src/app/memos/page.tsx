@@ -7,7 +7,7 @@ import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { Memo, CalendarEventSeries } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Pencil, Calendar, CheckSquare, Square } from 'lucide-react';
+import { Plus, Trash2, Pencil, Calendar, CheckSquare, Square, Inbox } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function MemosPage() {
   const { settings, persons, memos, addMemo, updateMemo, deleteMemo, toggleMemoCompletion, addSeries } = useStore();
@@ -77,14 +79,19 @@ export default function MemosPage() {
     router.push('/');
   };
 
+  const getAvatarUrl = (personName: string) => {
+    const avatar = PlaceHolderImages.find(img => img.id === `avatar-${personName.toLowerCase().replace(/\d+$/, '')}`);
+    return avatar?.imageUrl || `https://picsum.photos/seed/${personName}/100/100`;
+  };
+
   return (
     <AppLayout>
-      <div className="max-w-[1600px] mx-auto space-y-6">
+      <div className="max-w-[1600px] mx-auto space-y-8">
         <div className="flex items-center justify-between">
           <h1 className="text-4xl font-black tracking-tight">{t.memos}</h1>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 min-h-[60vh]">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 min-h-[60vh]">
           {persons.map(person => {
             const personMemos = memos
               .filter(m => m.personId === person.id)
@@ -94,38 +101,60 @@ export default function MemosPage() {
               });
 
             return (
-              <div key={person.id} className="flex flex-col space-y-3">
+              <div key={person.id} className="flex flex-col space-y-4">
                 <div 
-                  className="p-3 rounded-2xl flex items-center justify-between shadow-sm border-2"
-                  style={{ backgroundColor: `${person.color}10`, borderColor: `${person.color}30` }}
+                  className="p-4 rounded-[2rem] flex items-center justify-between shadow-sm border-2 bg-white"
+                  style={{ borderColor: `${person.color}20` }}
                 >
-                  <h2 className="text-lg font-black uppercase tracking-widest" style={{ color: person.color }}>
-                    {person.name}
-                  </h2>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full overflow-hidden border-2 shadow-sm" style={{ borderColor: person.color }}>
+                      <Image 
+                        src={getAvatarUrl(person.name)} 
+                        alt={person.name} 
+                        width={40} 
+                        height={40} 
+                        className="object-cover"
+                        data-ai-hint="person headshot"
+                      />
+                    </div>
+                    <h2 className="text-base font-black uppercase tracking-widest" style={{ color: person.color }}>
+                      {person.name}
+                    </h2>
+                  </div>
                   <Button 
                     size="icon" 
                     variant="ghost" 
-                    className="h-8 w-8 rounded-full hover:bg-white/50"
+                    className="h-10 w-10 rounded-full hover:bg-muted"
                     onClick={() => handleCreateMemo(person.id)}
                   >
-                    <Plus className="w-5 h-5" style={{ color: person.color }} />
+                    <Plus className="w-6 h-6" style={{ color: person.color }} />
                   </Button>
                 </div>
 
                 <div className="flex-1 space-y-2">
                   {personMemos.length === 0 ? (
-                    <div className="h-24 rounded-2xl border-2 border-dashed flex items-center justify-center text-muted-foreground font-bold opacity-30 italic text-sm">
-                      {t.none}
+                    <div className="h-48 rounded-[2rem] border-2 border-dashed flex flex-col items-center justify-center p-6 text-center space-y-3 opacity-30 grayscale">
+                      <div className="w-20 h-20 rounded-full overflow-hidden">
+                        <Image 
+                          src={PlaceHolderImages.find(img => img.id === 'empty-tasks')?.imageUrl || 'https://picsum.photos/seed/rest/400/400'} 
+                          alt="No tasks" 
+                          width={80} 
+                          height={80}
+                          className="object-cover"
+                          data-ai-hint="relaxing person"
+                        />
+                      </div>
+                      <p className="text-xs font-bold uppercase tracking-widest">{t.none}</p>
                     </div>
                   ) : (
                     personMemos.map(memo => (
                       <div 
                         key={memo.id} 
                         className={cn(
-                          "p-3 rounded-2xl border-2 transition-all group relative overflow-hidden bg-card",
+                          "p-3 rounded-2xl border-2 transition-all group relative overflow-hidden bg-white",
                           memo.completed ? "opacity-60 grayscale-[0.5]" : "shadow-sm hover:shadow-md"
                         )}
-                        style={{ borderColor: memo.completed ? 'transparent' : `${person.color}20` }}
+                        style={{ borderColor: memo.completed ? 'transparent' : `${person.color}15` }}
                       >
                         <div className="flex gap-2">
                           <button 
@@ -142,13 +171,13 @@ export default function MemosPage() {
                           
                           <div className="flex-1 min-w-0" onClick={() => handleEditMemo(memo)}>
                             <h3 className={cn(
-                              "font-black leading-tight text-base truncate",
+                              "font-black leading-tight text-sm truncate",
                               memo.completed && "line-through text-muted-foreground"
                             )}>
                               {memo.title}
                             </h3>
                             {memo.content && (
-                              <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5 font-medium">
+                              <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5 font-medium">
                                 {memo.content}
                               </p>
                             )}
@@ -160,7 +189,7 @@ export default function MemosPage() {
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              className="rounded-full h-7 w-7 text-primary hover:bg-primary/10"
+                              className="rounded-full h-8 w-8 text-primary hover:bg-primary/10"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleScheduleToCalendar(memo);
@@ -173,7 +202,7 @@ export default function MemosPage() {
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="rounded-full h-7 w-7 text-destructive hover:bg-destructive/10" 
+                            className="rounded-full h-8 w-8 text-destructive hover:bg-destructive/10" 
                             onClick={(e) => {
                               e.stopPropagation();
                               deleteMemo(memo.id);
@@ -184,7 +213,7 @@ export default function MemosPage() {
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="rounded-full h-7 w-7 hover:bg-muted" 
+                            className="rounded-full h-8 w-8 hover:bg-muted" 
                             onClick={(e) => {
                               e.stopPropagation();
                               handleEditMemo(memo);

@@ -1,3 +1,4 @@
+
 "use client"
 
 import React from 'react';
@@ -8,28 +9,43 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Globe, Calendar, Users, Clock, Palette } from 'lucide-react';
+import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function SettingsPage() {
   const { settings, updateSettings, persons, updatePerson } = useStore();
   const t = getTranslation(settings.language);
 
+  const getAvatarUrl = (personName: string) => {
+    const avatar = PlaceHolderImages.find(img => img.id === `avatar-${personName.toLowerCase().replace(/\d+$/, '')}`);
+    return avatar?.imageUrl || `https://picsum.photos/seed/${personName}/100/100`;
+  };
+
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto space-y-8 pb-10">
-        <h1 className="text-4xl font-black tracking-tight">{t.settings}</h1>
+      <div className="max-w-4xl mx-auto space-y-10 pb-20">
+        <h1 className="text-5xl font-black tracking-tight">{t.settings}</h1>
 
-        <div className="grid gap-8">
-          <Card className="rounded-3xl border-2 shadow-sm overflow-hidden">
-            <CardHeader className="bg-muted/30">
-              <CardTitle className="text-2xl font-black">{t.language}</CardTitle>
-              <CardDescription>Choose your preferred interface language.</CardDescription>
+        <div className="grid gap-10">
+          <Card className="rounded-[3rem] border-2 shadow-xl overflow-hidden bg-white">
+            <CardHeader className="bg-muted/20 pb-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-primary/20 rounded-2xl">
+                  <Globe className="w-8 h-8 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-black">{t.language}</CardTitle>
+                  <CardDescription className="font-bold text-muted-foreground">Choose your preferred interface language.</CardDescription>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-8">
               <Select value={settings.language} onValueChange={(v: any) => updateSettings({ language: v })}>
-                <SelectTrigger className="h-12 rounded-xl border-2 font-bold">
+                <SelectTrigger className="h-14 rounded-2xl border-2 font-black text-lg px-6">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
+                <SelectContent className="rounded-2xl">
                   <SelectItem value="en">English</SelectItem>
                   <SelectItem value="ar">العربية</SelectItem>
                 </SelectContent>
@@ -37,70 +53,106 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-3xl border-2 shadow-sm overflow-hidden">
-            <CardHeader className="bg-muted/30">
-              <CardTitle className="text-2xl font-black">{t.calendar}</CardTitle>
-              <CardDescription>Configure day boundaries.</CardDescription>
+          <Card className="rounded-[3rem] border-2 shadow-xl overflow-hidden bg-white">
+            <CardHeader className="bg-muted/20 pb-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-primary/20 rounded-2xl">
+                  <Calendar className="w-8 h-8 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-black">{t.calendar}</CardTitle>
+                  <CardDescription className="font-bold text-muted-foreground">Configure day boundaries.</CardDescription>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="grid sm:grid-cols-2 gap-6 p-6">
+            <CardContent className="grid sm:grid-cols-2 gap-8 p-8">
               <div className="space-y-3">
-                <Label className="text-base font-bold">{t.dayStart}</Label>
+                <Label className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  {t.dayStart}
+                </Label>
                 <Input 
                   type="time" 
                   step="1800" 
                   value={settings.dayStartTime}
-                  className="h-12 rounded-xl border-2 font-bold"
+                  className="h-14 rounded-2xl border-2 font-black text-lg px-6"
                   onChange={(e) => updateSettings({ dayStartTime: e.target.value })}
                 />
               </div>
               <div className="space-y-3">
-                <Label className="text-base font-bold">{t.dayEnd}</Label>
+                <Label className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  {t.dayEnd}
+                </Label>
                 <Input 
                   type="time" 
                   step="1800"
                   value={settings.dayEndTime}
-                  className="h-12 rounded-xl border-2 font-bold"
+                  className="h-14 rounded-2xl border-2 font-black text-lg px-6"
                   onChange={(e) => updateSettings({ dayEndTime: e.target.value })}
                 />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="rounded-3xl border-2 shadow-sm overflow-hidden">
-            <CardHeader className="bg-muted/30">
-              <CardTitle className="text-2xl font-black">{t.allPeople}</CardTitle>
-              <CardDescription>Customize names and colors for each family member.</CardDescription>
+          <Card className="rounded-[3rem] border-2 shadow-xl overflow-hidden bg-white">
+            <CardHeader className="bg-muted/20 pb-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-primary/20 rounded-2xl">
+                  <Users className="w-8 h-8 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-black">{t.allPeople}</CardTitle>
+                  <CardDescription className="font-bold text-muted-foreground">Customize names and colors for each family member.</CardDescription>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="grid gap-10 p-6">
+            <CardContent className="grid gap-12 p-8">
               {persons.map(p => (
-                <div key={p.id} className="grid gap-6 border-b pb-10 last:border-0 last:pb-0">
-                  <div className="flex items-center gap-4">
-                    <div className="w-8 h-8 rounded-full shadow-md" style={{ backgroundColor: p.color }} />
+                <div key={p.id} className="grid gap-8 border-b border-dashed pb-12 last:border-0 last:pb-0">
+                  <div className="flex items-center gap-6">
+                    <div className="relative">
+                      <div className="w-20 h-20 rounded-[2rem] overflow-hidden border-4 shadow-xl" style={{ borderColor: p.color }}>
+                        <Image 
+                          src={getAvatarUrl(p.name)} 
+                          alt={p.name} 
+                          width={80} 
+                          height={80} 
+                          className="object-cover"
+                          data-ai-hint="person headshot"
+                        />
+                      </div>
+                    </div>
                     <div className="space-y-1">
-                      <h3 className="text-xl font-black">{p.name}</h3>
-                      <p className="text-sm text-muted-foreground font-medium uppercase tracking-widest">{p.id}</p>
+                      <h3 className="text-3xl font-black" style={{ color: p.color }}>{p.name}</h3>
+                      <p className="text-xs text-muted-foreground font-black uppercase tracking-[0.2em]">{p.id}</p>
                     </div>
                   </div>
 
-                  <div className="grid sm:grid-cols-2 gap-6">
+                  <div className="grid sm:grid-cols-2 gap-8">
                     <div className="space-y-3">
-                      <Label className="text-sm font-bold">{t.personName}</Label>
+                      <Label className="text-sm font-black uppercase tracking-widest text-muted-foreground">{t.personName}</Label>
                       <Input 
                         value={p.name}
-                        className="h-12 rounded-xl border-2 font-bold"
+                        className="h-14 rounded-2xl border-2 font-black text-lg px-6"
                         onChange={(e) => updatePerson(p.id, { name: e.target.value })}
                       />
                     </div>
                     <div className="space-y-3">
-                      <Label className="text-sm font-bold">{t.personColor}</Label>
-                      <div className="flex gap-3 items-center">
+                      <Label className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                        <Palette className="w-4 h-4" />
+                        {t.personColor}
+                      </Label>
+                      <div className="flex gap-4 items-center">
                         <Input 
                           type="color" 
                           value={p.color}
-                          className="w-20 h-12 p-1 rounded-xl border-2 cursor-pointer"
+                          className="w-20 h-14 p-1.5 rounded-2xl border-2 cursor-pointer bg-white"
                           onChange={(e) => updatePerson(p.id, { color: e.target.value })}
                         />
-                        <span className="text-sm font-mono font-black opacity-60 uppercase bg-muted px-3 py-1.5 rounded-lg">{p.color}</span>
+                        <span className="text-sm font-mono font-black opacity-60 uppercase bg-muted px-4 py-2 rounded-xl border-2">
+                          {p.color}
+                        </span>
                       </div>
                     </div>
                   </div>
