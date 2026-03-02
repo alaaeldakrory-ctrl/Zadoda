@@ -93,7 +93,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                       className={cn(
                         "object-cover", 
                         person.id === 'person3' && "scale-110 -translate-y-4",
-                        person.id === 'person4' && "scale-110 translate-y-1",
+                        person.id === 'person4' && "scale-105 translate-y-1",
                         person.id === 'person2' && "scale-110 -translate-y-2",
                         person.id === 'person1' && "scale-110 -translate-y-2"
                       )}

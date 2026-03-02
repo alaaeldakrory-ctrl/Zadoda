@@ -58,7 +58,7 @@ export default function SettingsPage() {
                   <CardDescription className="font-bold text-muted-foreground">Configure day boundaries.</CardDescription>
                 </div>
               </div>
-            </CardHeader>
+            </Header>
             <CardContent className="grid sm:grid-cols-2 gap-8 p-8">
               <div className="space-y-3">
                 <Label className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
@@ -115,7 +115,7 @@ export default function SettingsPage() {
                           className={cn(
                             "object-cover", 
                             p.id === 'person3' && "scale-110 -translate-y-4",
-                            p.id === 'person4' && "scale-110 translate-y-1",
+                            p.id === 'person4' && "scale-105 translate-y-1",
                             p.id === 'person2' && "scale-110 -translate-y-2",
                             p.id === 'person1' && "scale-110 -translate-y-2"
                           )}

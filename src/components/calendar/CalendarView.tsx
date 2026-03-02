@@ -211,7 +211,7 @@ export const CalendarView: React.FC = () => {
                           className={cn(
                             "object-cover", 
                             p.id === 'person3' && "scale-110 -translate-y-2",
-                            p.id === 'person4' && "scale-110 translate-y-1",
+                            p.id === 'person4' && "scale-105 translate-y-1",
                             p.id === 'person2' && "scale-110 -translate-y-1",
                             p.id === 'person1' && "scale-110 -translate-y-1"
                           )}
@@ -285,7 +285,7 @@ export const CalendarView: React.FC = () => {
                                     className={cn(
                                       "object-cover", 
                                       p.id === 'person3' && "scale-110 -translate-y-4",
-                                      p.id === 'person4' && "scale-110 translate-y-1",
+                                      p.id === 'person4' && "scale-105 translate-y-1",
                                       p.id === 'person2' && "scale-110 -translate-y-2",
                                       p.id === 'person1' && "scale-110 -translate-y-2"
                                     )}
