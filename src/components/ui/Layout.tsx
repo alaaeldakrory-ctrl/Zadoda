@@ -82,9 +82,8 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           </div>
           <div className="px-4 space-y-6">
             {persons.map(person => (
-              <Link 
+              <div 
                 key={person.id} 
-                href={`/?personId=${person.id}`}
                 className="flex items-center gap-4 group cursor-pointer"
               >
                 <div className="relative">
@@ -109,7 +108,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                 <span className="font-black text-base text-muted-foreground group-hover:text-foreground transition-colors">
                   {getPersonName(person, settings.language)}
                 </span>
-              </Link>
+              </div>
             ))}
           </div>
         </nav>

@@ -17,7 +17,6 @@ import { DndContext, DragOverlay, closestCorners, DragEndEvent, useDroppable } f
 import { TemplateDialog } from '@/components/templates/TemplateDialog';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
 interface GridSlotProps {
   id: string;
@@ -47,22 +46,7 @@ const CalendarContent: React.FC = () => {
   const t = getTranslation(settings.language);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
-  
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
-  
-  const selectedPersonId = searchParams.get('personId') || 'all';
-
-  const setSelectedPersonId = (id: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (id === 'all') {
-      params.delete('personId');
-    } else {
-      params.set('personId', id);
-    }
-    router.push(`${pathname}?${params.toString()}`);
-  };
+  const [selectedPersonId, setSelectedPersonId] = useState<string>('all');
 
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
