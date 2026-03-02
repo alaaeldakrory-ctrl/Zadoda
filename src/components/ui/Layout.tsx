@@ -80,13 +80,6 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
               >
                 {settings.language === 'en' ? 'العربية' : 'English'}
               </Button>
-              <div className="flex items-center gap-3 pl-4 border-l">
-                <div className="text-right hidden md:block">
-                  <p className="text-sm font-black leading-none">Family Account</p>
-                  <p className="text-[10px] font-bold text-primary uppercase mt-1">Active</p>
-                </div>
-                <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center font-black text-primary">FC</div>
-              </div>
            </div>
         </header>
 
