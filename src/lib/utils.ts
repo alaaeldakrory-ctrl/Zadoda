@@ -1,3 +1,4 @@
+
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format, addMinutes, parse, isSameDay, startOfWeek, addDays, getDay } from 'date-fns';
@@ -80,7 +81,8 @@ export function getOccurrencesForDate(series: CalendarEventSeries[], date: Date,
       endTime: override?.endTime || s.endTime,
       personId: override?.personId || s.personId,
       notes: override?.notes || s.notes,
-      completed: !!override?.completed
+      completed: !!override?.completed,
+      isImportant: override?.isImportant ?? s.isImportant
     };
   });
 }

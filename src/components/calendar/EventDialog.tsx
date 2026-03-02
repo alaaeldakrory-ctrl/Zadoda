@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect } from 'react';
@@ -12,7 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Sparkles } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Trash2, Sparkles, AlertCircle } from 'lucide-react';
 
 interface EventDialogProps {
   open: boolean;
@@ -35,6 +37,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
     notes: '',
     recurrence: { frequency: 'NONE', interval: 1 },
     exceptions: [],
+    isImportant: false,
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +66,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
           notes: '',
           recurrence: { frequency: 'NONE', interval: 1 },
           exceptions: [],
+          isImportant: false,
         });
       }
     }
@@ -103,6 +107,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
       startDate: formData.startDate || format(initialDate, 'yyyy-MM-dd'),
       recurrence: formData.recurrence || { frequency: 'NONE', interval: 1 },
       exceptions: formData.exceptions || [],
+      isImportant: !!formData.isImportant,
     };
 
     if (formData.notes !== undefined) dataToSave.notes = formData.notes;
@@ -168,6 +173,19 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
               className={cn("rounded-xl border-2 font-bold text-lg h-12", error ? "border-destructive" : "focus:border-primary")}
             />
             {error && <p className="text-[10px] text-destructive font-black uppercase tracking-wide">{error}</p>}
+          </div>
+
+          <div className="flex items-center space-x-2 bg-accent/5 p-3 rounded-xl border-2 border-dashed">
+            <Checkbox 
+              id="important" 
+              checked={formData.isImportant} 
+              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isImportant: !!checked }))}
+              className="rounded-md border-2"
+            />
+            <Label htmlFor="important" className="font-black text-xs cursor-pointer uppercase tracking-widest flex items-center gap-2">
+              <AlertCircle className="w-3.5 h-3.5 text-destructive" />
+              {t.important}
+            </Label>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

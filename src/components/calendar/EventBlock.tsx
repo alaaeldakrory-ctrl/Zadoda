@@ -1,9 +1,10 @@
+
 "use client"
 
 import React from 'react';
 import { useStore } from '@/lib/store';
 import { cn, getGridPosition, formatTime } from '@/lib/utils';
-import { CheckCircle2, GripVertical } from 'lucide-react';
+import { CheckCircle2, GripVertical, AlertCircle } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 
 interface EventBlockProps {
@@ -28,6 +29,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
   };
 
   const isCompleted = occurrence.completed;
+  const isImportant = occurrence.isImportant;
   
   // Dynamic styling based on event duration
   const isShort = height <= 64; // 30 minutes or less
@@ -37,13 +39,14 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
     height: `${height}px`,
     backgroundColor: isCompleted ? '#f0fdf4' : `${color}15`,
     borderColor: isCompleted ? '#22c55e' : color,
-    borderLeftWidth: '6px',
+    borderLeftWidth: isImportant ? '8px' : '6px',
+    boxShadow: isImportant && !isCompleted ? `0 0 15px ${color}30` : 'none',
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
   } : {
     height: `${height}px`,
     backgroundColor: `${color}15`,
     borderColor: color,
-    borderLeftWidth: '6px',
+    borderLeftWidth: isImportant ? '8px' : '6px',
   };
 
   return (
@@ -53,6 +56,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
       onClick={onClick}
       className={cn(
         "absolute left-1 right-1 rounded-xl border-2 shadow-sm cursor-pointer transition-all overflow-hidden group/event active:scale-95 z-10",
+        isImportant && !isCompleted && "border-opacity-100 ring-1 ring-primary/20",
         isCompleted ? "opacity-100" : "opacity-100",
         isShort ? "p-1.5" : "p-3",
         isDragging && "z-50 ring-4 ring-primary ring-offset-2 opacity-90",
@@ -60,7 +64,14 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
       )}
       style={style}
     >
-      <div className="flex items-center gap-2 h-full w-full">
+      <div className="flex items-center gap-2 h-full w-full relative">
+        {/* Important Icon */}
+        {isImportant && !isCompleted && (
+          <div className="absolute top-0 right-0 opacity-80 animate-pulse">
+            <AlertCircle className={cn("text-destructive", isShort ? "w-3 h-3" : "w-4 h-4")} />
+          </div>
+        )}
+
         {/* Drag Handle */}
         {!isCompleted && (
           <div 
@@ -75,6 +86,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
           <p className={cn(
             "font-black leading-tight truncate transition-all", 
             isCompleted ? "line-through text-green-700/60 italic" : "text-foreground",
+            isImportant && !isCompleted && "text-destructive font-black uppercase",
             isShort ? "text-sm" : "text-lg"
           )}>
             {occurrence.title}

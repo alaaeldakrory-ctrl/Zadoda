@@ -38,6 +38,7 @@ export interface CalendarEventSeries {
   startDate: string; // YYYY-MM-DD
   recurrence: RecurrenceRule;
   exceptions: string[]; // Dates (YYYY-MM-DD) that are excluded
+  isImportant?: boolean;
 }
 
 export interface CalendarEventOccurrenceOverride {
@@ -51,6 +52,7 @@ export interface CalendarEventOccurrenceOverride {
   notes?: string;
   completed: boolean;
   completedAt?: number;
+  isImportant?: boolean;
 }
 
 export interface FixedEventTemplate {
