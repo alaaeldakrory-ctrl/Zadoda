@@ -79,7 +79,7 @@ export default function MemosPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-[1600px] mx-auto space-y-8">
+      <div className="max-w-[1600px] mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-4xl font-black tracking-tight">{t.memos}</h1>
         </div>
@@ -94,27 +94,27 @@ export default function MemosPage() {
               });
 
             return (
-              <div key={person.id} className="flex flex-col space-y-4">
+              <div key={person.id} className="flex flex-col space-y-3">
                 <div 
-                  className="p-4 rounded-2xl flex items-center justify-between shadow-sm border-2"
+                  className="p-3 rounded-2xl flex items-center justify-between shadow-sm border-2"
                   style={{ backgroundColor: `${person.color}10`, borderColor: `${person.color}30` }}
                 >
-                  <h2 className="text-xl font-black uppercase tracking-widest" style={{ color: person.color }}>
+                  <h2 className="text-lg font-black uppercase tracking-widest" style={{ color: person.color }}>
                     {person.name}
                   </h2>
                   <Button 
                     size="icon" 
                     variant="ghost" 
-                    className="rounded-full hover:bg-white/50"
+                    className="h-8 w-8 rounded-full hover:bg-white/50"
                     onClick={() => handleCreateMemo(person.id)}
                   >
                     <Plus className="w-5 h-5" style={{ color: person.color }} />
                   </Button>
                 </div>
 
-                <div className="flex-1 space-y-3">
+                <div className="flex-1 space-y-2">
                   {personMemos.length === 0 ? (
-                    <div className="h-32 rounded-3xl border-2 border-dashed flex items-center justify-center text-muted-foreground font-bold opacity-30 italic">
+                    <div className="h-24 rounded-2xl border-2 border-dashed flex items-center justify-center text-muted-foreground font-bold opacity-30 italic text-sm">
                       {t.none}
                     </div>
                   ) : (
@@ -122,75 +122,75 @@ export default function MemosPage() {
                       <div 
                         key={memo.id} 
                         className={cn(
-                          "p-4 rounded-3xl border-2 transition-all group relative overflow-hidden bg-card",
-                          memo.completed ? "opacity-60 grayscale-[0.5]" : "shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                          "p-3 rounded-2xl border-2 transition-all group relative overflow-hidden bg-card",
+                          memo.completed ? "opacity-60 grayscale-[0.5]" : "shadow-sm hover:shadow-md"
                         )}
                         style={{ borderColor: memo.completed ? 'transparent' : `${person.color}20` }}
                       >
-                        <div className="flex gap-3">
+                        <div className="flex gap-2">
                           <button 
                             onClick={() => toggleMemoCompletion(memo.id)}
-                            className="shrink-0 mt-1"
+                            className="shrink-0 mt-0.5"
                             style={{ color: person.color }}
                           >
                             {memo.completed ? (
-                              <CheckSquare className="w-5 h-5" />
+                              <CheckSquare className="w-4 h-4" />
                             ) : (
-                              <Square className="w-5 h-5 opacity-40 hover:opacity-100 transition-opacity" />
+                              <Square className="w-4 h-4 opacity-40 hover:opacity-100 transition-opacity" />
                             )}
                           </button>
                           
                           <div className="flex-1 min-w-0" onClick={() => handleEditMemo(memo)}>
                             <h3 className={cn(
-                              "font-black leading-tight text-lg truncate",
+                              "font-black leading-tight text-base truncate",
                               memo.completed && "line-through text-muted-foreground"
                             )}>
                               {memo.title}
                             </h3>
                             {memo.content && (
-                              <p className="text-xs text-muted-foreground line-clamp-2 mt-1 font-medium">
+                              <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5 font-medium">
                                 {memo.content}
                               </p>
                             )}
                           </div>
                         </div>
 
-                        <div className="mt-4 flex gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="mt-2 flex gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                           {!memo.completed && (
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              className="rounded-full h-8 w-8 text-primary hover:bg-primary/10"
+                              className="rounded-full h-7 w-7 text-primary hover:bg-primary/10"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleScheduleToCalendar(memo);
                               }}
                               title={t.addEvent}
                             >
-                              <Calendar className="w-4 h-4" />
+                              <Calendar className="w-3.5 h-3.5" />
                             </Button>
                           )}
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="rounded-full h-8 w-8 text-destructive hover:bg-destructive/10" 
+                            className="rounded-full h-7 w-7 text-destructive hover:bg-destructive/10" 
                             onClick={(e) => {
                               e.stopPropagation();
                               deleteMemo(memo.id);
                             }}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="rounded-full h-8 w-8 hover:bg-muted" 
+                            className="rounded-full h-7 w-7 hover:bg-muted" 
                             onClick={(e) => {
                               e.stopPropagation();
                               handleEditMemo(memo);
                             }}
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Pencil className="w-3.5 h-3.5" />
                           </Button>
                         </div>
                       </div>
