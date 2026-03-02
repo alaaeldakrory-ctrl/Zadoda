@@ -38,6 +38,7 @@ interface StoreContextValue {
   addMemo: (m: Memo) => void;
   updateMemo: (id: string, updates: Partial<Memo>) => void;
   deleteMemo: (id: string) => void;
+  toggleMemoCompletion: (id: string) => void;
   toggleCompletion: (seriesId: string, date: string) => void;
   updateOccurrence: (seriesId: string, date: string, updates: Partial<CalendarEventOccurrenceOverride>) => void;
   moveEvent: (seriesId: string, date: string, newStartTime: string, newPersonId: string) => void;
@@ -157,7 +158,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateMemo = (id: string, updates: Partial<Memo>) => {
     const docRef = doc(db, 'memos', id);
-    // Remove ID if present in updates to avoid Firestore errors
     const { id: _, ...cleanUpdates } = updates as any;
     updateDocumentNonBlocking(docRef, cleanUpdates);
   };
@@ -165,6 +165,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const deleteMemo = (id: string) => {
     const docRef = doc(db, 'memos', id);
     deleteDocumentNonBlocking(docRef);
+  };
+
+  const toggleMemoCompletion = (id: string) => {
+    const memo = memos.find(m => m.id === id);
+    if (!memo) return;
+    const docRef = doc(db, 'memos', id);
+    updateDocumentNonBlocking(docRef, { completed: !memo.completed });
   };
 
   const toggleCompletion = (seriesId: string, date: string) => {
@@ -222,6 +229,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addMemo,
     updateMemo,
     deleteMemo,
+    toggleMemoCompletion,
     toggleCompletion,
     updateOccurrence,
     moveEvent

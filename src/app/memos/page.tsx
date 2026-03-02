@@ -5,18 +5,21 @@ import React, { useState } from 'react';
 import { AppLayout } from '@/components/ui/Layout';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
-import { Memo } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Memo, CalendarEventSeries } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Pencil } from 'lucide-react';
+import { Plus, Trash2, Pencil, Calendar, CheckSquare, Square } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { useRouter } from 'next/navigation';
 
 export default function MemosPage() {
-  const { settings, persons, memos, addMemo, updateMemo, deleteMemo } = useStore();
+  const { settings, persons, memos, addMemo, updateMemo, deleteMemo, toggleMemoCompletion, addSeries } = useStore();
   const t = getTranslation(settings.language);
+  const router = useRouter();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMemo, setEditingMemo] = useState<Partial<Memo> | null>(null);
@@ -36,27 +39,42 @@ export default function MemosPage() {
   };
 
   const handleSaveMemo = () => {
-    if (!editingMemo || !editingMemo.personId || !editingMemo.title?.trim() || !editingMemo.content?.trim()) {
+    if (!editingMemo || !editingMemo.personId || !editingMemo.title?.trim()) {
       return;
     }
 
     if (editingMemo.id) {
-      // Update existing memo
       const { id, ...updates } = editingMemo;
       updateMemo(id!, updates);
     } else {
-      // Create new memo
       const newMemo: Memo = {
         id: crypto.randomUUID(),
         personId: editingMemo.personId,
         title: editingMemo.title,
-        content: editingMemo.content,
+        content: editingMemo.content || '',
         createdAt: Date.now(),
+        completed: false,
       };
       addMemo(newMemo);
     }
     setIsDialogOpen(false);
     setEditingMemo(null);
+  };
+
+  const handleScheduleToCalendar = (memo: Memo) => {
+    const newSeries: CalendarEventSeries = {
+      id: crypto.randomUUID(),
+      personId: memo.personId,
+      title: memo.title,
+      notes: memo.content,
+      startTime: '09:00',
+      endTime: '10:00',
+      startDate: format(new Date(), 'yyyy-MM-dd'),
+      recurrence: { frequency: 'NONE', interval: 1 },
+      exceptions: [],
+    };
+    addSeries(newSeries);
+    router.push('/');
   };
 
   return (
@@ -70,7 +88,10 @@ export default function MemosPage() {
           {persons.map(person => {
             const personMemos = memos
               .filter(m => m.personId === person.id)
-              .sort((a, b) => b.createdAt - a.createdAt);
+              .sort((a, b) => {
+                if (a.completed !== b.completed) return a.completed ? 1 : -1;
+                return b.createdAt - a.createdAt;
+              });
 
             return (
               <div key={person.id} className="flex flex-col space-y-4">
@@ -91,39 +112,88 @@ export default function MemosPage() {
                   </Button>
                 </div>
 
-                <div className="flex-1 space-y-4">
+                <div className="flex-1 space-y-3">
                   {personMemos.length === 0 ? (
                     <div className="h-32 rounded-3xl border-2 border-dashed flex items-center justify-center text-muted-foreground font-bold opacity-30 italic">
                       {t.none}
                     </div>
                   ) : (
                     personMemos.map(memo => (
-                      <Card key={memo.id} className="rounded-3xl border-2 shadow-sm hover:shadow-md transition-all group overflow-hidden">
-                        <CardHeader className="pb-2 bg-muted/5">
-                          <CardTitle className="text-lg font-black truncate">{memo.title}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-2 text-sm font-medium text-muted-foreground whitespace-pre-wrap line-clamp-6">
-                          {memo.content}
-                        </CardContent>
-                        <CardFooter className="justify-end gap-2 pt-2 border-t bg-muted/5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div 
+                        key={memo.id} 
+                        className={cn(
+                          "p-4 rounded-3xl border-2 transition-all group relative overflow-hidden bg-card",
+                          memo.completed ? "opacity-60 grayscale-[0.5]" : "shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                        )}
+                        style={{ borderColor: memo.completed ? 'transparent' : `${person.color}20` }}
+                      >
+                        <div className="flex gap-3">
+                          <button 
+                            onClick={() => toggleMemoCompletion(memo.id)}
+                            className="shrink-0 mt-1"
+                            style={{ color: person.color }}
+                          >
+                            {memo.completed ? (
+                              <CheckSquare className="w-5 h-5" />
+                            ) : (
+                              <Square className="w-5 h-5 opacity-40 hover:opacity-100 transition-opacity" />
+                            )}
+                          </button>
+                          
+                          <div className="flex-1 min-w-0" onClick={() => handleEditMemo(memo)}>
+                            <h3 className={cn(
+                              "font-black leading-tight text-lg truncate",
+                              memo.completed && "line-through text-muted-foreground"
+                            )}>
+                              {memo.title}
+                            </h3>
+                            {memo.content && (
+                              <p className="text-xs text-muted-foreground line-clamp-2 mt-1 font-medium">
+                                {memo.content}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="mt-4 flex gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                          {!memo.completed && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="rounded-full h-8 w-8 text-primary hover:bg-primary/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleScheduleToCalendar(memo);
+                              }}
+                              title={t.addEvent}
+                            >
+                              <Calendar className="w-4 h-4" />
+                            </Button>
+                          )}
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="rounded-full h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" 
-                            onClick={() => deleteMemo(memo.id)}
+                            className="rounded-full h-8 w-8 text-destructive hover:bg-destructive/10" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteMemo(memo.id);
+                            }}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="rounded-full h-8 w-8 hover:bg-primary/10 hover:text-primary" 
-                            onClick={() => handleEditMemo(memo)}
+                            className="rounded-full h-8 w-8 hover:bg-muted" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditMemo(memo);
+                            }}
                           >
                             <Pencil className="w-4 h-4" />
                           </Button>
-                        </CardFooter>
-                      </Card>
+                        </div>
+                      </div>
                     ))
                   )}
                 </div>

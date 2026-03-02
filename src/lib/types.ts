@@ -13,6 +13,7 @@ export interface Memo {
   title: string;
   content: string;
   createdAt: number;
+  completed?: boolean;
 }
 
 export type RecurrenceFrequency = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY';
