@@ -28,8 +28,8 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
   };
 
   const isCompleted = occurrence.completed;
-  // A "short" event is 30 mins (64px). We still want to show time if possible.
-  const canShowTime = height >= 60; 
+  // A "short" event is 30 mins (64px). We show time if there's enough height.
+  const canShowTime = height >= 50; 
 
   const style = !isDragging ? {
     top: `${top}px`,
@@ -53,7 +53,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
       className={cn(
         "absolute left-1 right-1 rounded-2xl border-2 text-xs shadow-md cursor-pointer transition-all overflow-hidden group/event hover:shadow-lg active:scale-95 z-10",
         isCompleted ? "opacity-100 shadow-sm" : "opacity-100",
-        "p-3", // Consistent padding
+        "p-3",
         isDragging && "z-50 ring-4 ring-primary ring-offset-2",
         !isDragging && "hover:scale-[1.02]"
       )}
@@ -75,13 +75,13 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
           <p className={cn(
             "font-black leading-tight truncate transition-all", 
             isCompleted ? "line-through text-green-700 italic" : "text-foreground",
-            "text-lg" // Larger title font
+            "text-lg"
           )}>
             {occurrence.title}
           </p>
           {canShowTime && (
             <p className={cn(
-              "text-xs font-black uppercase tracking-tight mt-1 transition-opacity", // Larger time font
+              "text-xs font-black uppercase tracking-tight mt-1 transition-opacity",
               isCompleted ? "text-green-600/60" : "opacity-80"
             )}>
               {formatTime(occurrence.startTime)} - {formatTime(occurrence.endTime)}
