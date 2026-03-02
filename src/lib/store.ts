@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { createContext, useContext, useEffect } from 'react';
@@ -101,33 +100,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const seriesRef = useMemoFirebase(() => collection(db, 'calendarEventSeries'), [db]);
   const { data: seriesData, isLoading: seriesLoading } = useCollection<CalendarEventSeries>(seriesRef);
 
-  // Seed or update people
+  // Seed initial data if database is empty
   useEffect(() => {
     if (!personsLoading && personsData && db) {
-      const needsSeeding = personsData.length === 0;
-      
-      // We only seed the database if it's completely empty
-      if (needsSeeding) {
+      // Only seed if there are absolutely no people in the collection
+      if (personsData.length === 0) {
         INITIAL_PEOPLE.forEach(p => {
           const pRef = doc(db, 'people', p.id);
           setDocumentNonBlocking(pRef, p, { merge: true });
-        });
-      } else {
-        // Ensure Mohamed's specific photo is set if it's missing or generic
-        const mohamed = personsData.find(p => p.id === 'person3');
-        const mohamedAvatar = PlaceHolderImages.find(img => img.id === 'avatar-mohamed')?.imageUrl;
-        if (mohamed && (!mohamed.avatarUrl || mohamed.avatarUrl.includes('picsum'))) {
-          const pRef = doc(db, 'people', 'person3');
-          updateDocumentNonBlocking(pRef, { avatarUrl: mohamedAvatar, name: 'Mohamed' });
-        }
-        
-        // Ensure other names are correct if they were somehow reverted
-        personsData.forEach(p => {
-          const initial = INITIAL_PEOPLE.find(ip => ip.id === p.id);
-          if (initial && p.name.includes('Person')) {
-            const pRef = doc(db, 'people', p.id);
-            updateDocumentNonBlocking(pRef, { name: initial.name });
-          }
         });
       }
     }
