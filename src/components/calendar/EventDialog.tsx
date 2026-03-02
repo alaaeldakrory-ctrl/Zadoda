@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { CalendarEventSeries, RecurrenceFrequency } from '@/lib/types';
-import { generateTimeSlots, formatTime } from '@/lib/utils';
-import { format, addMinutes, parse, isSameDay } from 'date-fns';
+import { cn, generateTimeSlots, formatTime } from '@/lib/utils';
+import { format, addMinutes, parse } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,7 +67,6 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
           });
         }
       } else {
-        // Handle new event (possibly from grid click)
         const startTime = eventToEdit?.startTime || '09:00';
         const start = parse(startTime, 'HH:mm', new Date());
         const end = addMinutes(start, 60);
@@ -127,7 +126,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="title" className={cn("font-bold", error ? "text-destructive" : "")}>{t.title}</Label>
+            <Label htmlFor="title" className={cn("font-bold text-base", error ? "text-destructive" : "")}>{t.title}</Label>
             <Input
               id="title"
               value={formData.title}
@@ -136,9 +135,9 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
                 if (e.target.value) setError(null);
               }}
               placeholder={t.title}
-              className={cn("rounded-xl border-2 font-medium", error ? "border-destructive" : "focus:border-primary")}
+              className={cn("rounded-xl border-2 font-bold text-lg h-12", error ? "border-destructive" : "focus:border-primary")}
             />
-            {error && <p className="text-[10px] text-destructive font-bold uppercase tracking-wide">{error}</p>}
+            {error && <p className="text-[10px] text-destructive font-black uppercase tracking-wide">{error}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -148,7 +147,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
                 value={formData.personId}
                 onValueChange={v => setFormData(prev => ({ ...prev, personId: v }))}
               >
-                <SelectTrigger className="rounded-xl border-2">
+                <SelectTrigger className="rounded-xl border-2 font-bold">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
@@ -169,7 +168,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
                 type="date"
                 value={formData.startDate}
                 onChange={e => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                className="rounded-xl border-2 font-medium"
+                className="rounded-xl border-2 font-bold"
               />
             </div>
           </div>
@@ -181,7 +180,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
                 value={formData.startTime}
                 onValueChange={v => setFormData(prev => ({ ...prev, startTime: v }))}
               >
-                <SelectTrigger className="rounded-xl border-2">
+                <SelectTrigger className="rounded-xl border-2 font-bold">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
@@ -197,7 +196,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
                 value={formData.endTime}
                 onValueChange={v => setFormData(prev => ({ ...prev, endTime: v }))}
               >
-                <SelectTrigger className="rounded-xl border-2">
+                <SelectTrigger className="rounded-xl border-2 font-bold">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
@@ -220,7 +219,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
                 }))
               }
             >
-              <SelectTrigger className="rounded-xl border-2">
+              <SelectTrigger className="rounded-xl border-2 font-bold">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
@@ -238,7 +237,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
               id="notes"
               value={formData.notes || ''}
               onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              className="rounded-xl border-2 min-h-[100px]"
+              className="rounded-xl border-2 min-h-[80px] font-medium"
             />
           </div>
         </div>

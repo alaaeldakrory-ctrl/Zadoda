@@ -146,7 +146,7 @@ export const CalendarView: React.FC = () => {
           <div className="w-24 sticky left-0 z-20 bg-background/80 backdrop-blur-md border-r-2 shadow-sm">
             <div className="h-14 border-b-2" /> {/* Corner spacer */}
             {timeSlots.map(slot => (
-              <div key={slot} className="h-12 text-[12px] font-black text-muted-foreground flex items-center justify-center border-b border-dashed last:border-0 px-2 text-center uppercase">
+              <div key={slot} className="h-12 text-sm font-black text-muted-foreground flex items-center justify-center border-b border-dashed last:border-0 px-2 text-center uppercase">
                 {formatTime(slot)}
               </div>
             ))}
@@ -232,7 +232,7 @@ export const CalendarView: React.FC = () => {
                   onClick={() => handlePickTemplate(tpl.id)}
                 >
                   <CardContent className="p-4">
-                    <div className="font-black text-lg group-hover:text-primary transition-colors truncate">{tpl.name}</div>
+                    <div className="font-black text-xl group-hover:text-primary transition-colors truncate">{tpl.name}</div>
                     <div className="text-xs font-bold text-muted-foreground flex gap-2 mt-2 bg-muted/50 w-fit px-2 py-1 rounded-md">
                       <span>{tpl.defaultDurationMinutes} {t.mins}</span>
                       {tpl.defaultTime && <span className="opacity-50">•</span>}
