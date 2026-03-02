@@ -71,22 +71,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [user, isUserLoading, auth]);
 
-  const settingsRef = useMemoFirebase(() => doc(db, 'appSettings', 'global'), [db]);
+  // We only create references if we have an authenticated user to avoid permission errors
+  const settingsRef = useMemoFirebase(() => user ? doc(db, 'appSettings', 'global') : null, [db, user]);
   const { data: settingsData, isLoading: settingsLoading } = useDoc<AppSettings>(settingsRef);
 
-  const peopleRef = useMemoFirebase(() => collection(db, 'people'), [db]);
+  const peopleRef = useMemoFirebase(() => user ? collection(db, 'people') : null, [db, user]);
   const { data: personsData, isLoading: personsLoading } = useCollection<Person>(peopleRef);
 
-  const templatesRef = useMemoFirebase(() => collection(db, 'fixedEventTemplates'), [db]);
+  const templatesRef = useMemoFirebase(() => user ? collection(db, 'fixedEventTemplates') : null, [db, user]);
   const { data: templatesData, isLoading: templatesLoading } = useCollection<FixedEventTemplate>(templatesRef);
 
-  const seriesRef = useMemoFirebase(() => collection(db, 'calendarEventSeries'), [db]);
+  const seriesRef = useMemoFirebase(() => user ? collection(db, 'calendarEventSeries') : null, [db, user]);
   const { data: seriesData, isLoading: seriesLoading } = useCollection<CalendarEventSeries>(seriesRef);
 
-  const overridesRef = useMemoFirebase(() => query(collectionGroup(db, 'eventOccurrenceOverrides')), [db]);
+  const overridesRef = useMemoFirebase(() => user ? query(collectionGroup(db, 'eventOccurrenceOverrides')) : null, [db, user]);
   const { data: overridesData, isLoading: overridesLoading } = useCollection<CalendarEventOccurrenceOverride>(overridesRef);
 
-  const memosRef = useMemoFirebase(() => collection(db, 'memos'), [db]);
+  const memosRef = useMemoFirebase(() => user ? collection(db, 'memos') : null, [db, user]);
   const { data: memosData, isLoading: memosLoading } = useCollection<Memo>(memosRef);
 
   const [hasSeeded, setHasSeeded] = useState(false);
@@ -113,10 +114,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const isLoading = isUserLoading || settingsLoading || (personsLoading && !personsData) || memosLoading || overridesLoading;
 
   const setLanguage = (language: Language) => {
+    if (!settingsRef) return;
     setDocumentNonBlocking(settingsRef, { ...settings, language, id: 'global' }, { merge: true });
   };
 
   const updateSettings = (updates: Partial<AppSettings>) => {
+    if (!settingsRef) return;
     setDocumentNonBlocking(settingsRef, { ...settings, ...updates, id: 'global' }, { merge: true });
   };
 
