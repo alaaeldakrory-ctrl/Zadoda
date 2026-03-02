@@ -17,6 +17,7 @@ import { DndContext, DragOverlay, closestCorners, DragEndEvent, useDroppable } f
 import { TemplateDialog } from '@/components/templates/TemplateDialog';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 interface GridSlotProps {
   id: string;
@@ -47,17 +48,23 @@ const CalendarContent: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
   const [selectedPersonId, setSelectedPersonId] = useState<string>('all');
-
-  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
-  const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
-  const [isCreateTemplateOpen, setIsCreateTemplateOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<{ seriesId?: string; date: string; personId?: string; startTime?: string; templateId?: string } | null>(null);
-  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const personParam = searchParams.get('personId');
 
   useEffect(() => {
     setMounted(true);
     setCurrentDate(new Date());
   }, []);
+
+  useEffect(() => {
+    if (personParam && persons.some(p => p.id === personParam)) {
+      setSelectedPersonId(personParam);
+    } else {
+      setSelectedPersonId('all');
+    }
+  }, [personParam, persons]);
 
   if (!mounted) {
     return (
@@ -79,6 +86,15 @@ const CalendarContent: React.FC = () => {
     ? persons 
     : persons.filter(p => p.id === selectedPersonId);
 
+  const handlePersonChange = (personId: string) => {
+    setSelectedPersonId(personId);
+    if (personId === 'all') {
+      router.push('/');
+    } else {
+      router.push(`/?personId=${personId}`);
+    }
+  };
+
   const handleAddEvent = () => {
     setEditingEvent(null);
     setIsEventDialogOpen(true);
@@ -97,6 +113,12 @@ const CalendarContent: React.FC = () => {
     });
     setIsEventDialogOpen(true);
   };
+
+  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
+  const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
+  const [isCreateTemplateOpen, setIsCreateTemplateOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<{ seriesId?: string; date: string; personId?: string; startTime?: string; templateId?: string } | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
   const handlePickTemplate = (templateId: string) => {
     setEditingEvent({
@@ -193,7 +215,7 @@ const CalendarContent: React.FC = () => {
               </button>
             </div>
 
-            <Select value={selectedPersonId} onValueChange={setSelectedPersonId}>
+            <Select value={selectedPersonId} onValueChange={handlePersonChange}>
               <SelectTrigger className="w-64 rounded-full font-black border-none bg-muted h-14 px-8">
                 <SelectValue />
               </SelectTrigger>
@@ -213,7 +235,7 @@ const CalendarContent: React.FC = () => {
                             p.id === 'person3' && "scale-110 -translate-y-4",
                             p.id === 'person4' && "scale-105 translate-y-1",
                             p.id === 'person2' && "scale-150 translate-y-3",
-                            p.id === 'person1' && "scale-110 translate-y-1"
+                            p.id === 'person1' && "scale-110 translate-y-2"
                           )}
                           data-ai-hint="person headshot"
                         />
@@ -287,7 +309,7 @@ const CalendarContent: React.FC = () => {
                                       p.id === 'person3' && "scale-110 -translate-y-4",
                                       p.id === 'person4' && "scale-105 translate-y-1",
                                       p.id === 'person2' && "scale-150 translate-y-3",
-                                      p.id === 'person1' && "scale-110 translate-y-1"
+                                      p.id === 'person1' && "scale-110 translate-y-2"
                                     )}
                                     data-ai-hint="person headshot"
                                   />

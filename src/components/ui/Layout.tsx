@@ -6,7 +6,7 @@ import { getTranslation } from '@/lib/i18n';
 import { cn, getAvatarUrl, getPersonName } from '@/lib/utils';
 import { Calendar, Layers, Settings, Globe, StickyNote, Plus, Users } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -15,6 +15,8 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
   const { settings, setLanguage, persons } = useStore();
   const t = getTranslation(settings.language);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentPersonId = searchParams.get('personId');
 
   const navItems = [
     { label: t.calendar, icon: Calendar, href: '/' },
@@ -29,7 +31,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
     <div className="flex h-screen bg-background overflow-hidden selection:bg-primary selection:text-primary-foreground">
       {/* Sidebar */}
       <aside className="w-80 border-r flex flex-col hidden lg:flex bg-white relative z-20">
-        <div className="p-8 flex flex-col items-center text-center">
+        <div className="pt-4 pb-8 flex flex-col items-center text-center">
           <Link href="/" className="flex flex-col items-center gap-6 group">
             <div className="w-32 h-32 rounded-full overflow-hidden shadow-2xl shadow-primary/30 border-4 border-primary/20 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-primary/40 group-hover:border-primary/40">
               {logoImage ? (
@@ -82,9 +84,13 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           </div>
           <div className="px-4 space-y-6">
             {persons.map(person => (
-              <div 
+              <Link 
                 key={person.id} 
-                className="flex items-center gap-4 group cursor-pointer"
+                href={`/?personId=${person.id}`}
+                className={cn(
+                  "flex items-center gap-4 group cursor-pointer transition-all p-2 rounded-3xl",
+                  currentPersonId === person.id ? "bg-muted/50" : "hover:bg-muted/30"
+                )}
               >
                 <div className="relative">
                   <div className="w-20 h-20 rounded-full overflow-hidden border-4 transition-transform group-hover:scale-110 shadow-sm" style={{ borderColor: person.color }}>
@@ -98,17 +104,20 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                         person.id === 'person3' && "scale-110 -translate-y-4",
                         person.id === 'person4' && "scale-105 translate-y-1",
                         person.id === 'person2' && "scale-150 translate-y-3",
-                        person.id === 'person1' && "scale-110 translate-y-1"
+                        person.id === 'person1' && "scale-110 translate-y-2"
                       )}
                       data-ai-hint="person headshot"
                       priority
                     />
                   </div>
                 </div>
-                <span className="font-black text-base text-muted-foreground group-hover:text-foreground transition-colors">
+                <span className={cn(
+                  "font-black text-base transition-colors",
+                  currentPersonId === person.id ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
+                )}>
                   {getPersonName(person, settings.language)}
                 </span>
-              </div>
+              </Link>
             ))}
           </div>
         </nav>
