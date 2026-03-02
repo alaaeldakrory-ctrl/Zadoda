@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Sparkles } from 'lucide-react';
 
 interface EventDialogProps {
   open: boolean;
@@ -49,24 +49,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
           setFormData({ ...existing });
         }
       } else if (eventToEdit?.templateId) {
-        const tpl = templates.find(t => t.id === eventToEdit.templateId);
-        if (tpl) {
-          const startTime = tpl.defaultTime || '09:00';
-          const start = parse(startTime, 'HH:mm', new Date());
-          const end = addMinutes(start, tpl.defaultDurationMinutes || 60);
-          
-          setFormData({
-            title: tpl.name,
-            personId: tpl.defaultAssigneePersonId || persons[0]?.id || '1',
-            startTime: startTime,
-            endTime: format(end, 'HH:mm'),
-            startDate: eventToEdit?.date || format(initialDate, 'yyyy-MM-dd'),
-            notes: tpl.notes || '',
-            templateId: tpl.id,
-            recurrence: { frequency: 'NONE', interval: 1 },
-            exceptions: [],
-          });
-        }
+        applyTemplate(eventToEdit.templateId);
       } else {
         const startTime = eventToEdit?.startTime || '09:00';
         const start = parse(startTime, 'HH:mm', new Date());
@@ -86,13 +69,32 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
     }
   }, [open, eventToEdit, initialDate, series, persons, templates]);
 
+  const applyTemplate = (templateId: string) => {
+    const tpl = templates.find(t => t.id === templateId);
+    if (tpl) {
+      const startTime = tpl.defaultTime || formData.startTime || '09:00';
+      const start = parse(startTime, 'HH:mm', new Date());
+      const end = addMinutes(start, tpl.defaultDurationMinutes || 60);
+      
+      setFormData(prev => ({
+        ...prev,
+        title: tpl.name,
+        personId: tpl.defaultAssigneePersonId || prev.personId || persons[0]?.id || '1',
+        startTime: startTime,
+        endTime: format(end, 'HH:mm'),
+        startDate: prev.startDate || format(initialDate, 'yyyy-MM-dd'),
+        notes: tpl.notes || '',
+        templateId: tpl.id,
+      }));
+    }
+  };
+
   const handleSave = () => {
     if (!formData.title?.trim()) {
       setError(t.title + " is required");
       return;
     }
 
-    // Explicitly construct the data object to avoid 'undefined' values being sent to Firestore
     const dataToSave: any = {
       title: formData.title || '',
       personId: formData.personId || '1',
@@ -103,7 +105,6 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
       exceptions: formData.exceptions || [],
     };
 
-    // Only include optional fields if they have a non-undefined value
     if (formData.notes !== undefined) dataToSave.notes = formData.notes;
     if (formData.templateId !== undefined) dataToSave.templateId = formData.templateId;
 
@@ -125,13 +126,39 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] rounded-3xl">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[425px] rounded-3xl overflow-hidden border-2">
+        <DialogHeader className="pb-4 border-b">
           <DialogTitle className="text-2xl font-black">{eventToEdit?.seriesId ? t.edit : t.addEvent}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        
+        <div className="grid gap-4 py-6">
+          {/* Template Quick Select */}
+          {!eventToEdit?.seriesId && templates.length > 0 && (
+            <div className="grid gap-2 p-3 bg-primary/5 rounded-2xl border-2 border-primary/10">
+              <Label className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                <Sparkles className="w-3 h-3" />
+                {t.fromTemplate}
+              </Label>
+              <Select onValueChange={applyTemplate}>
+                <SelectTrigger className="h-10 rounded-xl border-2 bg-white font-bold text-sm">
+                  <SelectValue placeholder={t.searchTemplates} />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {templates.map(tpl => (
+                    <SelectItem key={tpl.id} value={tpl.id}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tpl.color || 'var(--primary)' }} />
+                        {tpl.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="grid gap-2">
-            <Label htmlFor="title" className={cn("font-bold text-base", error ? "text-destructive" : "")}>{t.title}</Label>
+            <Label htmlFor="title" className={cn("font-bold text-sm", error ? "text-destructive" : "")}>{t.title}</Label>
             <Input
               id="title"
               value={formData.title}
@@ -147,7 +174,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label className="font-bold">{t.person}</Label>
+              <Label className="font-bold text-sm">{t.person}</Label>
               <Select
                 value={formData.personId}
                 onValueChange={v => setFormData(prev => ({ ...prev, personId: v }))}
@@ -168,7 +195,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label className="font-bold">{t.date}</Label>
+              <Label className="font-bold text-sm">{t.date}</Label>
               <Input
                 type="date"
                 value={formData.startDate}
@@ -180,7 +207,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label className="font-bold">{t.startTime}</Label>
+              <Label className="font-bold text-sm">{t.startTime}</Label>
               <Select
                 value={formData.startTime}
                 onValueChange={v => setFormData(prev => ({ ...prev, startTime: v }))}
@@ -196,7 +223,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label className="font-bold">{t.endTime}</Label>
+              <Label className="font-bold text-sm">{t.endTime}</Label>
               <Select
                 value={formData.endTime}
                 onValueChange={v => setFormData(prev => ({ ...prev, endTime: v }))}
@@ -214,7 +241,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
           </div>
 
           <div className="grid gap-2">
-            <Label className="font-bold">{t.repeats}</Label>
+            <Label className="font-bold text-sm">{t.repeats}</Label>
             <Select
               value={formData.recurrence?.frequency}
               onValueChange={(v: RecurrenceFrequency) => 
@@ -237,7 +264,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="notes" className="font-bold">{t.notes}</Label>
+            <Label htmlFor="notes" className="font-bold text-sm">{t.notes}</Label>
             <Textarea
               id="notes"
               value={formData.notes || ''}
@@ -246,7 +273,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
             />
           </div>
         </div>
-        <DialogFooter className="flex items-center justify-between sm:justify-between w-full">
+        <DialogFooter className="flex items-center justify-between sm:justify-between w-full border-t pt-4">
           {eventToEdit?.seriesId ? (
             <Button variant="destructive" onClick={handleDelete} className="rounded-full font-bold">
               <Trash2 className="w-4 h-4 mr-2" />
@@ -254,8 +281,8 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
             </Button>
           ) : <div />}
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-full font-bold">{t.cancel}</Button>
-            <Button onClick={handleSave} className="rounded-full font-black px-8">{t.save}</Button>
+            <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-full font-bold">{t.cancel}</Button>
+            <Button onClick={handleSave} className="rounded-full font-black px-8 shadow-lg shadow-primary/20">{t.save}</Button>
           </div>
         </DialogFooter>
       </DialogContent>
