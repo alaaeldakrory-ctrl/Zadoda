@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect, Suspense } from 'react';
@@ -42,17 +43,24 @@ const GridSlot: React.FC<GridSlotProps> = ({ id, onSlotClick, children }) => {
 };
 
 const CalendarContent: React.FC = () => {
+  // 1. All Hook declarations must be at the very top
   const [mounted, setMounted] = useState(false);
   const { settings, persons, series, overrides, templates, moveEvent } = useStore();
-  const t = getTranslation(settings.language);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
   const [selectedPersonId, setSelectedPersonId] = useState<string>('all');
-  
+  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
+  const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
+  const [isCreateTemplateOpen, setIsCreateTemplateOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<{ seriesId?: string; date: string; personId?: string; startTime?: string; templateId?: string } | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const personParam = searchParams.get('personId');
+  const t = getTranslation(settings.language);
 
+  // 2. Effects
   useEffect(() => {
     setMounted(true);
     setCurrentDate(new Date());
@@ -66,6 +74,7 @@ const CalendarContent: React.FC = () => {
     }
   }, [personParam, persons]);
 
+  // 3. Early return for hydration safety
   if (!mounted) {
     return (
       <div className="flex flex-col h-full overflow-hidden bg-white rounded-[2rem] shadow-2xl shadow-black/5 ring-1 ring-black/5 animate-pulse">
@@ -78,6 +87,7 @@ const CalendarContent: React.FC = () => {
     );
   }
 
+  // 4. Component Logic
   const timeSlots = generateTimeSlots(settings.dayStartTime, settings.dayEndTime);
   const weekStart = startOfWeek(currentDate);
   const days = viewMode === 'day' ? [currentDate] : Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -113,12 +123,6 @@ const CalendarContent: React.FC = () => {
     });
     setIsEventDialogOpen(true);
   };
-
-  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
-  const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
-  const [isCreateTemplateOpen, setIsCreateTemplateOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<{ seriesId?: string; date: string; personId?: string; startTime?: string; templateId?: string } | null>(null);
-  const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
   const handlePickTemplate = (templateId: string) => {
     setEditingEvent({
@@ -233,9 +237,9 @@ const CalendarContent: React.FC = () => {
                           className={cn(
                             "object-cover", 
                             p.id === 'person3' && "scale-110 -translate-y-4",
-                            p.id === 'person4' && "scale-105 translate-y-1",
+                            p.id === 'person4' && "scale-105 translate-y-[-2px]",
                             p.id === 'person2' && "scale-150 translate-y-3",
-                            p.id === 'person1' && "scale-110 translate-y-2"
+                            p.id === 'person1' && "scale-110 translate-y-4"
                           )}
                           data-ai-hint="person headshot"
                         />
@@ -307,9 +311,9 @@ const CalendarContent: React.FC = () => {
                                     className={cn(
                                       "object-cover", 
                                       p.id === 'person3' && "scale-110 -translate-y-4",
-                                      p.id === 'person4' && "scale-105 translate-y-1",
+                                      p.id === 'person4' && "scale-105 translate-y-[-2px]",
                                       p.id === 'person2' && "scale-150 translate-y-3",
-                                      p.id === 'person1' && "scale-110 translate-y-2"
+                                      p.id === 'person1' && "scale-110 translate-y-4"
                                     )}
                                     data-ai-hint="person headshot"
                                   />
