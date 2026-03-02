@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState } from 'react';
@@ -30,8 +29,8 @@ const GridSlot: React.FC<GridSlotProps> = ({ id, onSlotClick, children }) => {
   return (
     <div 
       ref={setNodeRef}
-      className={`h-16 border-b border-dashed last:border-0 cursor-crosshair transition-colors relative ${
-        isOver ? 'bg-primary/20 ring-2 ring-primary ring-inset z-20' : 'hover:bg-primary/5'
+      className={`h-20 border-b border-muted transition-colors relative ${
+        isOver ? 'bg-primary/10 ring-2 ring-primary ring-inset z-20' : 'hover:bg-primary/5'
       }`}
       onClick={onSlotClick}
     >
@@ -113,7 +112,7 @@ export const CalendarView: React.FC = () => {
     : null;
 
   const DAY_HEADER_HEIGHT = 40;
-  const PERSON_HEADER_HEIGHT = selectedPersonId === 'all' ? 60 : 0;
+  const PERSON_HEADER_HEIGHT = selectedPersonId === 'all' ? 80 : 0;
   const TOTAL_HEADER_HEIGHT = DAY_HEADER_HEIGHT + PERSON_HEADER_HEIGHT;
 
   return (
@@ -122,22 +121,27 @@ export const CalendarView: React.FC = () => {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col h-full overflow-hidden bg-card rounded-3xl border-2 shadow-xl ring-1 ring-black/5">
+      <div className="flex flex-col h-full overflow-hidden bg-white rounded-[2rem] shadow-2xl shadow-black/5 ring-1 ring-black/5">
         {/* Header Controls */}
-        <div className="p-4 border-b-2 flex flex-wrap items-center justify-between gap-4 bg-muted/20 backdrop-blur-sm shrink-0">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" className="rounded-full hover:bg-primary hover:text-white" onClick={() => setCurrentDate(addDays(currentDate, -1))}>
-              <ChevronLeft className="w-5 h-5 rtl:rotate-180" />
-            </Button>
+        <div className="p-6 border-b flex flex-wrap items-center justify-between gap-4 shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1 bg-muted p-1 rounded-full">
+              <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:bg-white shadow-sm transition-all" onClick={() => setCurrentDate(addDays(currentDate, -1))}>
+                <ChevronLeft className="w-5 h-5 rtl:rotate-180" />
+              </Button>
+              <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 hover:bg-white shadow-sm transition-all" onClick={() => setCurrentDate(addDays(currentDate, 1))}>
+                <ChevronRight className="w-5 h-5 rtl:rotate-180" />
+              </Button>
+            </div>
             
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="min-w-48 font-black text-lg rounded-full flex gap-2 border-2 hover:border-primary transition-all">
-                  <CalendarIcon className="w-5 h-5 text-primary" />
-                  {format(currentDate, viewMode === 'day' ? 'MMMM d, yyyy' : 'MMMM yyyy')}
+                <Button variant="ghost" className="text-2xl font-black rounded-2xl flex gap-3 px-4 hover:bg-primary/10 transition-all">
+                  <CalendarIcon className="w-6 h-6 text-primary" />
+                  {format(currentDate, viewMode === 'day' ? 'MMMM d' : 'MMMM yyyy')}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 rounded-2xl overflow-hidden shadow-2xl" align="start">
+              <PopoverContent className="w-auto p-0 rounded-[2rem] overflow-hidden shadow-2xl border-none" align="start">
                 <Calendar
                   mode="single"
                   selected={currentDate}
@@ -146,38 +150,40 @@ export const CalendarView: React.FC = () => {
                 />
               </PopoverContent>
             </Popover>
-
-            <Button variant="outline" size="icon" className="rounded-full hover:bg-primary hover:text-white" onClick={() => setCurrentDate(addDays(currentDate, 1))}>
-              <ChevronRight className="w-5 h-5 rtl:rotate-180" />
-            </Button>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex bg-muted p-1 rounded-full border shadow-inner">
+          <div className="flex items-center gap-4">
+            <div className="flex bg-muted p-1 rounded-full">
               <button 
                 onClick={() => setViewMode('day')}
-                className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${viewMode === 'day' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground'}`}
+                className={cn(
+                  "px-6 py-2 rounded-full text-sm font-black transition-all",
+                  viewMode === 'day' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground'
+                )}
               >
                 {t.day}
               </button>
               <button 
                 onClick={() => setViewMode('week')}
-                className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${viewMode === 'week' ? 'bg-white shadow-sm text-primary' : 'text-muted-foreground'}`}
+                className={cn(
+                  "px-6 py-2 rounded-full text-sm font-black transition-all",
+                  viewMode === 'week' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground'
+                )}
               >
                 {t.week}
               </button>
             </div>
 
             <Select value={selectedPersonId} onValueChange={setSelectedPersonId}>
-              <SelectTrigger className="w-44 rounded-full font-bold border-2">
+              <SelectTrigger className="w-48 rounded-full font-black border-none bg-muted h-12 px-6">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="rounded-xl">
+              <SelectContent className="rounded-2xl border-none shadow-2xl">
                 <SelectItem value="all">{t.allPeople}</SelectItem>
                 {persons.map(p => (
                   <SelectItem key={p.id} value={p.id}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: p.color }} />
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full shadow-sm" style={{ backgroundColor: p.color }} />
                       {p.name}
                     </div>
                   </SelectItem>
@@ -185,30 +191,23 @@ export const CalendarView: React.FC = () => {
               </SelectContent>
             </Select>
 
-            <div className="flex gap-2">
-              <Button variant="secondary" className="rounded-full font-bold shadow-sm hover:shadow-md transition-all" onClick={() => setIsTemplatePickerOpen(true)}>
-                <Layers className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0 text-primary" />
-                {t.fromTemplate}
-              </Button>
-              <Button className="rounded-full font-black shadow-lg hover:shadow-primary/30 transition-all hover:scale-105 active:scale-95" onClick={handleAddEvent}>
-                <Plus className="w-5 h-5 mr-2 rtl:ml-2 rtl:mr-0" />
-                {t.addEvent}
-              </Button>
-            </div>
+            <Button className="rounded-full font-black shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 h-12 px-8" onClick={handleAddEvent}>
+              <Plus className="w-5 h-5 mr-2 rtl:ml-2 rtl:mr-0 stroke-[3px]" />
+              {t.addEvent}
+            </Button>
           </div>
         </div>
 
         {/* Grid Content */}
-        <div className="flex-1 overflow-auto relative bg-slate-50/50">
+        <div className="flex-1 overflow-auto relative bg-white">
           <div className="flex min-w-[800px] min-h-full">
             {/* Time Axis */}
-            <div className="w-24 sticky left-0 z-50 bg-background/80 backdrop-blur-md border-r-2 shadow-sm shrink-0">
+            <div className="w-28 sticky left-0 z-50 bg-white/80 backdrop-blur-md border-r shrink-0">
               <div 
-                className="border-b-2 bg-muted/10" 
                 style={{ height: `${TOTAL_HEADER_HEIGHT}px` }} 
               />
               {timeSlots.map(slot => (
-                <div key={slot} className="h-16 text-sm font-black text-muted-foreground flex items-center justify-center border-b border-dashed last:border-0 px-2 text-center uppercase">
+                <div key={slot} className="h-20 text-[11px] font-black text-muted-foreground flex items-center justify-center px-4 text-center uppercase tracking-widest">
                   {formatTime(slot)}
                 </div>
               ))}
@@ -217,9 +216,9 @@ export const CalendarView: React.FC = () => {
             {/* Days Columns */}
             <div className="flex-1 flex min-h-full">
               {days.map(day => (
-                <div key={day.toISOString()} className="flex-1 border-r-2 last:border-r-0 min-w-0 flex flex-col min-h-full">
+                <div key={day.toISOString()} className="flex-1 border-r last:border-r-0 min-w-0 flex flex-col min-h-full">
                   <div 
-                    className="border-b-2 bg-muted/40 flex items-center justify-center text-[10px] font-black sticky top-0 z-40 backdrop-blur-md uppercase tracking-[0.2em] text-muted-foreground shrink-0"
+                    className="flex items-center justify-center text-[10px] font-black sticky top-0 z-40 bg-white/50 backdrop-blur-sm uppercase tracking-[0.2em] text-muted-foreground shrink-0 border-b"
                     style={{ height: `${DAY_HEADER_HEIGHT}px` }}
                   >
                     {format(day, 'EEEE d')}
@@ -231,19 +230,21 @@ export const CalendarView: React.FC = () => {
                       const dayStr = format(day, 'yyyy-MM-dd');
                       
                       return (
-                        <div key={p.id} className="flex-1 border-r-2 last:border-r-0 relative bg-white/30 group min-h-full flex flex-col">
+                        <div key={p.id} className="flex-1 border-r last:border-r-0 relative group min-h-full flex flex-col">
                           {selectedPersonId === 'all' && (
                             <div 
-                              className="flex items-center justify-center gap-2 text-xl font-black border-b-2 sticky z-30 shadow-sm transition-colors uppercase tracking-widest shrink-0" 
+                              className="flex items-center justify-center text-sm font-black border-b sticky z-30 transition-colors uppercase tracking-widest shrink-0" 
                               style={{ 
                                 height: `${PERSON_HEADER_HEIGHT}px`,
                                 top: `${DAY_HEADER_HEIGHT}px`,
-                                backgroundColor: `${p.color}15`, 
+                                backgroundColor: `white`, 
                                 color: p.color, 
-                                borderColor: `${p.color}30` 
                               }}
                             >
-                              {p.name}
+                              <div className="flex flex-col items-center gap-1">
+                                <div className="w-2 h-2 rounded-full mb-1" style={{ backgroundColor: p.color }} />
+                                {p.name}
+                              </div>
                             </div>
                           )}
                           
@@ -282,7 +283,7 @@ export const CalendarView: React.FC = () => {
         {/* Drag Overlay */}
         <DragOverlay dropAnimation={null}>
           {activeDragOccurrence ? (
-            <div className="w-[180px] cursor-grabbing">
+            <div className="w-[240px] cursor-grabbing">
               <EventBlock
                 occurrence={activeDragOccurrence}
                 dayStart={settings.dayStartTime}
@@ -296,40 +297,37 @@ export const CalendarView: React.FC = () => {
 
         {/* Template Picker Dialog */}
         <Dialog open={isTemplatePickerOpen} onOpenChange={setIsTemplatePickerOpen}>
-          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-hidden flex flex-col rounded-3xl border-2">
-            <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b">
-              <DialogTitle className="text-2xl font-black flex items-center gap-2">
-                <Sparkles className="w-6 h-6 text-primary" />
-                {t.fromTemplate}
-              </DialogTitle>
-              <Button size="sm" onClick={() => setIsCreateTemplateOpen(true)} className="rounded-full">
-                <Plus className="w-4 h-4 mr-2" />
-                {t.createTemplate}
-              </Button>
+          <DialogContent className="sm:max-w-[500px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden">
+            <DialogHeader className="p-8 pb-4">
+              <div className="flex items-center justify-between">
+                <DialogTitle className="text-3xl font-black">Templates</DialogTitle>
+                <Button size="icon" variant="ghost" onClick={() => setIsCreateTemplateOpen(true)} className="rounded-full bg-muted">
+                  <Plus className="w-5 h-5 text-primary" />
+                </Button>
+              </div>
             </DialogHeader>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 overflow-y-auto">
+            <div className="grid grid-cols-1 gap-4 p-8 pt-0 max-h-[60vh] overflow-y-auto">
               {templates.length === 0 ? (
-                <div className="col-span-full text-center py-16 text-muted-foreground bg-muted/30 rounded-2xl border-2 border-dashed">
-                  <Layers className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                <div className="text-center py-16 text-muted-foreground bg-muted/30 rounded-3xl border-2 border-dashed">
                   {t.searchTemplates}
                 </div>
               ) : (
                 templates.map(tpl => (
-                  <Card 
+                  <button 
                     key={tpl.id} 
-                    className="cursor-pointer hover:border-primary hover:shadow-lg transition-all border-l-8 border-2 group"
-                    style={{ borderLeftColor: tpl.color || '#ddd' }}
+                    className="flex items-center justify-between p-6 rounded-3xl bg-muted/40 hover:bg-primary/10 transition-all text-left group"
                     onClick={() => handlePickTemplate(tpl.id)}
                   >
-                    <CardContent className="p-4">
-                      <div className="font-black text-xl group-hover:text-primary transition-colors truncate">{tpl.name}</div>
-                      <div className="text-xs font-bold text-muted-foreground flex gap-2 mt-2 bg-muted/50 w-fit px-2 py-1 rounded-md">
-                        <span>{tpl.defaultDurationMinutes} {t.mins}</span>
-                        {tpl.defaultTime && <span className="opacity-50">•</span>}
-                        {tpl.defaultTime && <span className="uppercase">{formatTime(tpl.defaultTime)}</span>}
+                    <div>
+                      <div className="font-black text-xl group-hover:text-primary transition-colors">{tpl.name}</div>
+                      <div className="text-sm font-bold text-muted-foreground mt-1">
+                        {tpl.defaultDurationMinutes} {t.mins}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-all">
+                      <Plus className="w-5 h-5 text-primary stroke-[3px]" />
+                    </div>
+                  </button>
                 ))
               )}
             </div>

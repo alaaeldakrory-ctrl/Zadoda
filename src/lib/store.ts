@@ -53,10 +53,10 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 const INITIAL_PEOPLE: Person[] = [
-  { id: 'person1', name: 'Lyla', color: '#6366f1' }, // Indigo
-  { id: 'person2', name: 'Malika', color: '#ec4899' }, // Pink
-  { id: 'person3', name: 'Mohamed', color: '#10b981' }, // Emerald
-  { id: 'person4', name: 'Wesam', color: '#f59e0b' }, // Amber
+  { id: 'person1', name: 'Lyla', color: '#F87171' }, // Soft Red
+  { id: 'person2', name: 'Malika', color: '#60A5FA' }, // Sky Blue
+  { id: 'person3', name: 'Mohamed', color: '#34D399' }, // Mint
+  { id: 'person4', name: 'Wesam', color: '#FBBF24' }, // Gold
 ];
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
