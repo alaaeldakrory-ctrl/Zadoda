@@ -49,10 +49,10 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 const INITIAL_PEOPLE: Person[] = [
-  { id: 'person1', name: 'Person 1', color: '#6366f1' },
-  { id: 'person2', name: 'Person 2', color: '#f59e0b' },
-  { id: 'person3', name: 'Person 3', color: '#10b981' },
-  { id: 'person4', name: 'Person 4', color: '#ec4899' },
+  { id: 'person1', name: 'Lyla', color: '#6366f1' },
+  { id: 'person2', name: 'Malika', color: '#f59e0b' },
+  { id: 'person3', name: 'Mohamed', color: '#10b981' },
+  { id: 'person4', name: 'Wesam', color: '#ec4899' },
 ];
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -91,7 +91,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [personsLoading, personsData, db]);
 
   const settings = settingsData || DEFAULT_SETTINGS;
-  const persons = personsData || [];
+  const persons = (personsData && personsData.length > 0) ? personsData : INITIAL_PEOPLE;
   const templates = templatesData || [];
   const series = seriesData || [];
   const overrides: CalendarEventOccurrenceOverride[] = []; // Simplified for now
