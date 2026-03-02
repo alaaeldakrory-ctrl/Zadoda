@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState } from 'react';
@@ -16,7 +15,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { DndContext, DragOverlay, closestCorners, DragEndEvent } from '@dnd-kit/core';
-import { restrictToFirstScrollableAncestor } from '@dnd-kit/modifiers';
 
 export const CalendarView: React.FC = () => {
   const { settings, persons, series, overrides, templates, moveEvent } = useStore();
@@ -74,9 +72,8 @@ export const CalendarView: React.FC = () => {
     setActiveDragId(null);
     const { active, over } = event;
     
-    if (over && active.id !== over.id) {
-      // Data passed through 'over' metadata or ID
-      // We expect over.id to be formatted as "day_person_time"
+    if (over) {
+      // Over ID is formatted as "date|personId|time"
       const [date, personId, time] = String(over.id).split('|');
       const seriesId = String(active.id);
       
@@ -95,7 +92,6 @@ export const CalendarView: React.FC = () => {
       collisionDetection={closestCorners} 
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      modifiers={[restrictToFirstScrollableAncestor]}
     >
       <div className="flex flex-col h-full overflow-hidden bg-card rounded-3xl border-2 shadow-xl ring-1 ring-black/5">
         {/* Header Controls */}

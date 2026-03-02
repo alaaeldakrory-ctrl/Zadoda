@@ -85,8 +85,16 @@ export function getOccurrencesForDate(series: CalendarEventSeries[], date: Date,
 }
 
 export function timeToMinutes(time: string) {
+  if (!time) return 0;
   const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
+  return (h || 0) * 60 + (m || 0);
+}
+
+export function minutesToTime(mins: number): string {
+  const cappedMins = Math.max(0, Math.min(mins, 1439)); // Cap between 00:00 and 23:59
+  const h = Math.floor(cappedMins / 60);
+  const m = cappedMins % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
 export function getGridPosition(startTime: string, endTime: string, dayStart: string, slotHeight: number = 40) {

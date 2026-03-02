@@ -1,10 +1,9 @@
-
 "use client"
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language } from './types';
 import { addMinutes, format, parse } from 'date-fns';
-import { timeToMinutes } from './utils';
+import { timeToMinutes, minutesToTime } from './utils';
 
 interface StoreState {
   persons: Person[];
@@ -45,7 +44,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   language: 'en',
 };
 
-const CURRENT_VERSION = 5;
+const CURRENT_VERSION = 6;
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<StoreState>({
@@ -64,6 +63,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        // Force migration for user-requested names if version is old
         if (!parsed.version || parsed.version < CURRENT_VERSION) {
           parsed.persons = DEFAULT_PERSONS;
           parsed.version = CURRENT_VERSION;
@@ -172,26 +172,50 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const targetSeries = prev.series.find(s => s.id === seriesId);
       if (!targetSeries) return prev;
 
-      const currentStart = parse(targetSeries.startTime, 'HH:mm', new Date());
-      const currentEnd = parse(targetSeries.endTime, 'HH:mm', new Date());
-      const durationMins = (currentEnd.getTime() - currentStart.getTime()) / (1000 * 60);
+      const durationMins = timeToMinutes(targetSeries.endTime) - timeToMinutes(targetSeries.startTime);
+      const newStartMins = timeToMinutes(newStartTime);
+      const newEndTime = minutesToTime(newStartMins + durationMins);
 
-      const newStart = parse(newStartTime, 'HH:mm', new Date());
-      const newEnd = addMinutes(newStart, durationMins);
-      const newEndTime = format(newEnd, 'HH:mm');
-
-      // Logic for collision resolution: shift events in the same column
-      const sameColumnSeries = prev.series.filter(s => s.id !== seriesId && s.personId === newPersonId && s.startDate === date);
-      
-      // Simple resolution: if we land on another, push the other one further down
-      // For MVP, we just update the specific event's time and person
-      // Advanced collision handling would involve recursively shifting all subsequent items
-      
-      const updatedSeries = prev.series.map(s => {
+      // 1. Update the target event
+      let updatedSeries = prev.series.map(s => {
         if (s.id === seriesId) {
           return { ...s, startTime: newStartTime, endTime: newEndTime, personId: newPersonId, startDate: date };
         }
         return s;
+      });
+
+      // 2. Perform collision resolution (shifting subsequent events)
+      // Sort events in the target column by start time
+      const columnEvents = updatedSeries
+        .filter(s => s.personId === newPersonId && s.startDate === date)
+        .sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (let i = 0; i < columnEvents.length - 1; i++) {
+          const first = columnEvents[i];
+          const second = columnEvents[i+1];
+          
+          const firstEndMins = timeToMinutes(first.endTime);
+          const secondStartMins = timeToMinutes(second.startTime);
+          
+          if (secondStartMins < firstEndMins) {
+            const secondDuration = timeToMinutes(second.endTime) - secondStartMins;
+            const shiftedStart = firstEndMins;
+            const shiftedEnd = shiftedStart + secondDuration;
+            
+            second.startTime = minutesToTime(shiftedStart);
+            second.endTime = minutesToTime(shiftedEnd);
+            changed = true;
+          }
+        }
+      }
+
+      // Sync the changed references back to updatedSeries
+      updatedSeries = updatedSeries.map(s => {
+        const found = columnEvents.find(c => c.id === s.id);
+        return found ? { ...found } : s;
       });
 
       return { ...prev, series: updatedSeries };
