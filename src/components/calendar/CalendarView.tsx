@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState } from 'react';
@@ -118,7 +119,7 @@ export const CalendarView: React.FC = () => {
     >
       <div className="flex flex-col h-full overflow-hidden bg-card rounded-3xl border-2 shadow-xl ring-1 ring-black/5">
         {/* Header Controls */}
-        <div className="p-4 border-b-2 flex flex-wrap items-center justify-between gap-4 bg-muted/20 backdrop-blur-sm">
+        <div className="p-4 border-b-2 flex flex-wrap items-center justify-between gap-4 bg-muted/20 backdrop-blur-sm shrink-0">
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" className="rounded-full hover:bg-primary hover:text-white" onClick={() => setCurrentDate(addDays(currentDate, -1))}>
               <ChevronLeft className="w-5 h-5 rtl:rotate-180" />
@@ -199,8 +200,9 @@ export const CalendarView: React.FC = () => {
         <div className="flex-1 overflow-auto relative bg-slate-50/50">
           <div className="flex min-w-[800px] min-h-full">
             {/* Time Axis */}
-            <div className="w-24 sticky left-0 z-30 bg-background/80 backdrop-blur-md border-r-2 shadow-sm shrink-0">
-              <div className="h-24 border-b-2" />
+            <div className="w-24 sticky left-0 z-50 bg-background/80 backdrop-blur-md border-r-2 shadow-sm shrink-0">
+              {/* Spacer matching Day Header (h-16) + Person Header (h-24) = h-40 */}
+              <div className={selectedPersonId === 'all' ? "h-40 border-b-2" : "h-16 border-b-2"} />
               {timeSlots.map(slot => (
                 <div key={slot} className="h-16 text-sm font-black text-muted-foreground flex items-center justify-center border-b border-dashed last:border-0 px-2 text-center uppercase">
                   {formatTime(slot)}
@@ -239,7 +241,7 @@ export const CalendarView: React.FC = () => {
                           )}
                           
                           {/* Grid Lines and Droppable Areas */}
-                          <div className="relative flex-1 min-h-[calc(100vh)]">
+                          <div className="relative flex-1">
                             {timeSlots.map(slot => (
                               <GridSlot 
                                 key={slot}
