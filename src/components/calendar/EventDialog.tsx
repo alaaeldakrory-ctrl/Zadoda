@@ -19,11 +19,11 @@ interface EventDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialDate: Date;
-  eventToEdit?: { seriesId?: string; date: string; personId?: string; startTime?: string } | null;
+  eventToEdit?: { seriesId?: string; date: string; personId?: string; startTime?: string; templateId?: string } | null;
 }
 
 export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, initialDate, eventToEdit }) => {
-  const { settings, persons, series, addSeries, updateSeries, deleteSeries } = useStore();
+  const { settings, persons, series, templates, addSeries, updateSeries, deleteSeries } = useStore();
   const t = getTranslation(settings.language);
   const timeSlots = generateTimeSlots(settings.dayStartTime, settings.dayEndTime);
 
@@ -48,6 +48,25 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
         if (existing) {
           setFormData({ ...existing });
         }
+      } else if (eventToEdit?.templateId) {
+        const tpl = templates.find(t => t.id === eventToEdit.templateId);
+        if (tpl) {
+          const startTime = tpl.defaultTime || '09:00';
+          const start = parse(startTime, 'HH:mm', new Date());
+          const end = addMinutes(start, tpl.defaultDurationMinutes || 60);
+          
+          setFormData({
+            title: tpl.name,
+            personId: tpl.defaultAssigneePersonId || persons[0]?.id || '1',
+            startTime: startTime,
+            endTime: format(end, 'HH:mm'),
+            startDate: eventToEdit?.date || format(initialDate, 'yyyy-MM-dd'),
+            notes: tpl.notes || '',
+            templateId: tpl.id,
+            recurrence: { frequency: 'NONE', interval: 1 },
+            exceptions: [],
+          });
+        }
       } else {
         // Handle new event (possibly from grid click)
         const startTime = eventToEdit?.startTime || '09:00';
@@ -66,7 +85,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
         });
       }
     }
-  }, [open, eventToEdit, initialDate, series, persons]);
+  }, [open, eventToEdit, initialDate, series, persons, templates]);
 
   const handleSave = () => {
     if (!formData.title?.trim()) {
@@ -85,6 +104,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
         endTime: formData.endTime || '10:00',
         startDate: formData.startDate || format(initialDate, 'yyyy-MM-dd'),
         notes: formData.notes,
+        templateId: formData.templateId,
         recurrence: formData.recurrence || { frequency: 'NONE', interval: 1 },
         exceptions: [],
       };
