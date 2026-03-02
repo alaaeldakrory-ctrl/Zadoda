@@ -58,7 +58,7 @@ const translations = {
     sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat'
   },
   ar: {
-    appTitle: 'زادودا',
+    appTitle: 'جدول زادودا',
     calendar: 'التقويم',
     fixedEvents: 'الأحداث الثابتة',
     settings: 'الإعدادات',

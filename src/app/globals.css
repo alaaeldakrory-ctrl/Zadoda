@@ -54,7 +54,8 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-body;
+    @apply bg-background text-foreground;
+    font-family: 'Outfit', 'Inter', sans-serif;
     background-image: 
       radial-gradient(at 0% 0%, hsla(45, 93%, 47%, 0.05) 0, transparent 50%),
       radial-gradient(at 100% 0%, hsla(45, 93%, 47%, 0.03) 0, transparent 50%);
