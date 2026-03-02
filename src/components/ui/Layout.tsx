@@ -29,25 +29,25 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
     <div className="flex h-screen bg-background overflow-hidden selection:bg-primary selection:text-primary-foreground">
       {/* Sidebar */}
       <aside className="w-80 border-r flex flex-col hidden lg:flex bg-white relative z-20">
-        <div className="p-10">
-          <Link href="/" className="text-4xl font-black text-foreground flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-lg shadow-primary/20 border-2 border-primary/10 flex-shrink-0">
+        <div className="p-8 flex flex-col items-center text-center">
+          <Link href="/" className="flex flex-col items-center gap-6 group">
+            <div className="w-36 h-36 rounded-full overflow-hidden shadow-2xl shadow-primary/30 border-4 border-primary/20 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-primary/40 group-hover:border-primary/40">
               {logoImage ? (
                 <Image 
                   src={logoImage} 
                   alt="Zadoda Logo" 
-                  width={48} 
-                  height={48} 
+                  width={144} 
+                  height={144} 
                   className="object-cover"
                   priority
                 />
               ) : (
                 <div className="w-full h-full bg-primary flex items-center justify-center">
-                  <Plus className="w-6 h-6 text-primary-foreground stroke-[3px]" />
+                  <Plus className="w-12 h-12 text-primary-foreground stroke-[3px]" />
                 </div>
               )}
             </div>
-            <span className="tracking-tight lowercase">zadoda</span>
+            <span className="text-4xl font-black tracking-tighter text-foreground lowercase">zadoda</span>
           </Link>
         </div>
 
