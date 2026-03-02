@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState } from 'react';
@@ -98,9 +97,11 @@ export const CalendarView: React.FC = () => {
     if (over) {
       // Over ID is formatted as "date|personId|time"
       const [date, personId, time] = String(over.id).split('|');
-      const seriesId = String(active.id);
+      // Active ID is formatted as "seriesId_date"
+      const seriesIdDate = String(active.id);
+      const seriesId = seriesIdDate.split('_')[0];
       
-      if (date && personId && time) {
+      if (date && personId && time && seriesId) {
         moveEvent(seriesId, date, time, personId);
       }
     }
@@ -243,12 +244,12 @@ export const CalendarView: React.FC = () => {
                           {/* Events */}
                           <div className="absolute inset-0 pointer-events-none">
                             {occurrences.map((occ, idx) => (
-                              <div key={occ.id + idx} className="pointer-events-auto">
+                              <div key={occ.id} className="pointer-events-auto">
                                 <EventBlock
                                   occurrence={occ}
                                   dayStart={settings.dayStartTime}
                                   color={p.color}
-                                  onClick={() => handleEditEvent(occ.id, occ.date)}
+                                  onClick={() => handleEditEvent(occ.seriesId, occ.date)}
                                 />
                               </div>
                             ))}

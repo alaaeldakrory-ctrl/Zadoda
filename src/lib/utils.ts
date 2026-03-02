@@ -70,7 +70,8 @@ export function getOccurrencesForDate(series: CalendarEventSeries[], date: Date,
   }).map(s => {
     const override = overrides.find(o => o.seriesId === s.id && o.date === dateStr);
     return {
-      id: s.id,
+      id: `${s.id}_${dateStr}`, // Unique ID for the specific occurrence
+      seriesId: s.id,
       series: s,
       date: dateStr,
       override,
