@@ -1,6 +1,7 @@
+
 "use client"
 
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language } from './types';
 import { timeToMinutes, minutesToTime } from './utils';
 import { 
@@ -11,12 +12,11 @@ import {
   useAuth,
   useMemoFirebase,
   setDocumentNonBlocking,
-  addDocumentNonBlocking,
   updateDocumentNonBlocking,
   deleteDocumentNonBlocking,
   initiateAnonymousSignIn
 } from '@/firebase';
-import { collection, doc, query, where, DocumentReference, CollectionReference } from 'firebase/firestore';
+import { collection, doc } from 'firebase/firestore';
 import { PlaceHolderImages } from './placeholder-images';
 
 interface StoreContextValue {
@@ -100,26 +100,30 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const seriesRef = useMemoFirebase(() => collection(db, 'calendarEventSeries'), [db]);
   const { data: seriesData, isLoading: seriesLoading } = useCollection<CalendarEventSeries>(seriesRef);
 
+  const [hasSeeded, setHasSeeded] = useState(false);
+
   // Seed initial data if database is empty
   useEffect(() => {
-    if (!personsLoading && personsData && db) {
-      // Only seed if there are absolutely no people in the collection
+    if (!personsLoading && personsData && db && !hasSeeded) {
       if (personsData.length === 0) {
         INITIAL_PEOPLE.forEach(p => {
           const pRef = doc(db, 'people', p.id);
           setDocumentNonBlocking(pRef, p, { merge: true });
         });
+        setHasSeeded(true);
       }
     }
-  }, [personsLoading, personsData, db]);
+  }, [personsLoading, personsData, db, hasSeeded]);
 
   const settings = settingsData || DEFAULT_SETTINGS;
+  
+  // Use DB data if available, otherwise fallback to defaults (avoiding "person 1" placeholders)
   const persons = (personsData && personsData.length > 0) ? personsData : INITIAL_PEOPLE;
   const templates = templatesData || [];
   const series = seriesData || [];
   const overrides: CalendarEventOccurrenceOverride[] = []; 
 
-  const isLoading = isUserLoading || settingsLoading || personsLoading || templatesLoading || seriesLoading;
+  const isLoading = isUserLoading || settingsLoading || (personsLoading && !personsData);
 
   const setLanguage = (language: Language) => {
     setDocumentNonBlocking(settingsRef, { ...settings, language }, { merge: true });
