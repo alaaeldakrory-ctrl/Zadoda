@@ -29,10 +29,10 @@ interface StoreContextValue extends StoreState {
 const StoreContext = createContext<StoreContextValue | null>(null);
 
 const DEFAULT_PERSONS: Person[] = [
-  { id: '1', name: 'Person 1', color: '#3b82f6' },
-  { id: '2', name: 'Person 2', color: '#10b981' },
-  { id: '3', name: 'Person 3', color: '#f59e0b' },
-  { id: '4', name: 'Person 4', color: '#ef4444' },
+  { id: '1', name: 'Lyla', color: '#3b82f6' },
+  { id: '2', name: 'Malika', color: '#10b981' },
+  { id: '3', name: 'Mohamed', color: '#f59e0b' },
+  { id: '4', name: 'Wesam', color: '#ef4444' },
 ];
 
 const DEFAULT_SETTINGS: AppSettings = {
