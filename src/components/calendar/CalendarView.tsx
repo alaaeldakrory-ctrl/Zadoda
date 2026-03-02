@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState } from 'react';
@@ -15,6 +16,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { DndContext, DragOverlay, closestCorners, DragEndEvent, useDroppable } from '@dnd-kit/core';
+import { TemplateDialog } from '@/components/templates/TemplateDialog';
 
 interface GridSlotProps {
   id: string;
@@ -47,6 +49,7 @@ export const CalendarView: React.FC = () => {
   
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
+  const [isCreateTemplateOpen, setIsCreateTemplateOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<{ seriesId?: string; date: string; personId?: string; startTime?: string; templateId?: string } | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
@@ -110,7 +113,7 @@ export const CalendarView: React.FC = () => {
     : null;
 
   const DAY_HEADER_HEIGHT = 40;
-  const PERSON_HEADER_HEIGHT = selectedPersonId === 'all' ? 72 : 0;
+  const PERSON_HEADER_HEIGHT = selectedPersonId === 'all' ? 60 : 0;
   const TOTAL_HEADER_HEIGHT = DAY_HEADER_HEIGHT + PERSON_HEADER_HEIGHT;
 
   return (
@@ -231,7 +234,7 @@ export const CalendarView: React.FC = () => {
                         <div key={p.id} className="flex-1 border-r-2 last:border-r-0 relative bg-white/30 group min-h-full flex flex-col">
                           {selectedPersonId === 'all' && (
                             <div 
-                              className="flex items-center justify-center gap-3 text-2xl font-black border-b-2 sticky z-30 shadow-sm transition-colors uppercase tracking-widest shrink-0" 
+                              className="flex items-center justify-center gap-2 text-xl font-black border-b-2 sticky z-30 shadow-sm transition-colors uppercase tracking-widest shrink-0" 
                               style={{ 
                                 height: `${PERSON_HEADER_HEIGHT}px`,
                                 top: `${DAY_HEADER_HEIGHT}px`,
@@ -294,11 +297,15 @@ export const CalendarView: React.FC = () => {
         {/* Template Picker Dialog */}
         <Dialog open={isTemplatePickerOpen} onOpenChange={setIsTemplatePickerOpen}>
           <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-hidden flex flex-col rounded-3xl border-2">
-            <DialogHeader>
+            <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b">
               <DialogTitle className="text-2xl font-black flex items-center gap-2">
                 <Sparkles className="w-6 h-6 text-primary" />
                 {t.fromTemplate}
               </DialogTitle>
+              <Button size="sm" onClick={() => setIsCreateTemplateOpen(true)} className="rounded-full">
+                <Plus className="w-4 h-4 mr-2" />
+                {t.createTemplate}
+              </Button>
             </DialogHeader>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 overflow-y-auto">
               {templates.length === 0 ? (
@@ -328,6 +335,11 @@ export const CalendarView: React.FC = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        <TemplateDialog 
+          open={isCreateTemplateOpen}
+          onOpenChange={setIsCreateTemplateOpen}
+        />
 
         <EventDialog
           open={isEventDialogOpen}
