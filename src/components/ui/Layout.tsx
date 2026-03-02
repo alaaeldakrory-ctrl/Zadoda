@@ -92,7 +92,8 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                         "object-cover", 
                         person.name === 'Mohamed' && "scale-110 -translate-y-2",
                         person.name === 'Wesam' && "scale-110 translate-y-1",
-                        person.name === 'Malika' && "scale-110 -translate-y-1"
+                        person.name === 'Malika' && "scale-110 -translate-y-1",
+                        person.name === 'Lyla' && "scale-110 -translate-y-1"
                       )}
                       data-ai-hint="person headshot"
                       priority
