@@ -1,3 +1,4 @@
+
 "use client"
 
 import React from 'react';
@@ -33,12 +34,12 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
   const isImportant = occurrence.isImportant;
   const isForAll = occurrence.personId === 'all';
   
-  const isShort = height <= 80; // 30 minutes or less at slotHeight 80
+  const isShort = height <= 80;
 
   const style = !isDragging ? {
     top: `${top}px`,
     height: `${height}px`,
-    backgroundColor: isCompleted ? '#f0fdf4' : isForAll ? `${color}10` : `${color}15`,
+    backgroundColor: isCompleted ? '#f0fdf4' : isForAll ? '#f8f9fa' : `${color}15`,
     borderColor: isCompleted ? '#22c55e' : color,
     borderLeftWidth: isImportant ? '8px' : '6px',
     boxShadow: isImportant && !isCompleted ? `0 0 15px ${color}30` : 'none',
@@ -56,14 +57,13 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
       {...attributes}
       onClick={onClick}
       className={cn(
-        "absolute rounded-xl border-2 shadow-sm cursor-pointer transition-all overflow-hidden group/event active:scale-95 z-10",
-        isFullWidth ? "left-2 right-2 backdrop-blur-sm" : "left-1 right-1",
+        "absolute rounded-xl border-2 shadow-sm cursor-pointer transition-all overflow-hidden group/event active:scale-[0.98] z-10",
+        isFullWidth ? "left-1 right-1 backdrop-blur-md" : "left-1 right-1",
         isImportant && !isCompleted && "border-opacity-100 ring-1 ring-primary/20",
-        isCompleted ? "opacity-100" : "opacity-100",
         isShort ? "p-1.5" : "p-3",
         isDragging && "z-50 ring-4 ring-primary ring-offset-2 opacity-90",
         !isDragging && "hover:shadow-md hover:translate-y-[-1px]",
-        isForAll && !isCompleted && "bg-gradient-to-r from-muted/50 to-transparent"
+        isForAll && !isCompleted && "bg-gradient-to-r from-muted/30 via-transparent to-muted/30"
       )}
       style={style}
     >
@@ -104,12 +104,13 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
           </p>
         </div>
 
-        <div className="shrink-0 flex items-center justify-center">
+        <div className="shrink-0 flex items-center justify-center relative z-20">
           <button
+            type="button"
             onPointerDown={(e) => e.stopPropagation()}
             onClick={handleToggle}
             className={cn(
-              "rounded-full transition-all transform group-hover/event:scale-110 active:scale-90 bg-white/50 relative z-20",
+              "rounded-full transition-all transform hover:scale-110 active:scale-90 bg-white/80 shadow-sm border",
               isShort ? "p-0.5" : "p-1"
             )}
           >
@@ -118,10 +119,10 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
             ) : (
               <div 
                 className={cn(
-                  "rounded-full border-2 border-current opacity-20 group-hover/event:opacity-100 transition-all",
+                  "rounded-full border-2 border-current opacity-30 hover:opacity-100 transition-all",
                   isShort ? "w-5 h-5" : "w-7 h-7"
                 )}
-                style={{ color: color }} 
+                style={{ color: isForAll ? '#454545' : color }} 
               />
             )}
           </button>
