@@ -1,0 +1,349 @@
+{
+  "entities": {
+    "Person": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Person",
+      "type": "object",
+      "description": "Represents one of the four core users in the FamiliaFlow application, with customizable display name and a distinct color theme.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Person entity. Fixed IDs (e.g., 'person1', 'person2', 'person3', 'person4') are used."
+        },
+        "name": {
+          "type": "string",
+          "description": "The display name for the person, configurable by the user."
+        },
+        "color": {
+          "type": "string",
+          "description": "A hexadecimal color code (e.g., '#RRGGBB') assigned to the person for visual distinction in the calendar."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "color"
+      ]
+    },
+    "FixedEventTemplate": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FixedEventTemplate",
+      "type": "object",
+      "description": "A reusable template for frequently scheduled events, allowing users to quickly add pre-defined events to the calendar.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the FixedEventTemplate entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the event template, displayed in the templates library."
+        },
+        "defaultDurationMinutes": {
+          "type": "number",
+          "description": "The default duration for an event created from this template, in minutes. Must be a multiple of 30."
+        },
+        "defaultTime": {
+          "type": "string",
+          "description": "An optional default time of day (HH:MM) for events created from this template.",
+          "format": "time"
+        },
+        "defaultAssigneePersonId": {
+          "type": "string",
+          "description": "Optional reference to the Person ID who is typically assigned this event. (Relationship: Person 1:N FixedEventTemplate)"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional detailed notes or description for events created from this template."
+        },
+        "categoryColor": {
+          "type": "string",
+          "description": "Optional hexadecimal color code for events created from this template, or an identifier for a visual category."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "defaultDurationMinutes"
+      ]
+    },
+    "CalendarEventSeries": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CalendarEventSeries",
+      "type": "object",
+      "description": "Represents a single event or a series of recurring events on the calendar, defining its core properties and recurrence rules.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the CalendarEventSeries entity."
+        },
+        "personId": {
+          "type": "string",
+          "description": "Reference to the Person ID to whom this event series is assigned. (Relationship: Person 1:N CalendarEventSeries)"
+        },
+        "title": {
+          "type": "string",
+          "description": "The main title or name of the event series."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional detailed notes or description for the event series."
+        },
+        "templateId": {
+          "type": "string",
+          "description": "Optional reference to the FixedEventTemplate ID from which this series was created. (Relationship: FixedEventTemplate 1:N CalendarEventSeries)"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "The standard start time of day (HH:MM) for occurrences within this series. Must be in 30-minute increments.",
+          "format": "time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "The standard end time of day (HH:MM) for occurrences within this series. Must be in 30-minute increments.",
+          "format": "time"
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The effective start date (YYYY-MM-DD) for the recurrence of this series.",
+          "format": "date"
+        },
+        "frequency": {
+          "type": "string",
+          "description": "The recurrence frequency of the event series. 'NONE' for single events.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "interval": {
+          "type": "number",
+          "description": "The interval for recurrence (e.g., 'every 2 days' means interval=2). Default is 1."
+        },
+        "byWeekday": {
+          "type": "array",
+          "description": "An array of 2-letter weekday codes (e.g., 'MO', 'TU') for WEEKLY recurrence. (Relationship: CalendarEventSeries N:N Weekday)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "byMonthDay": {
+          "type": "number",
+          "description": "The day of the month (1-31) for MONTHLY recurrence."
+        },
+        "untilDate": {
+          "type": "string",
+          "description": "The end date (YYYY-MM-DD) for a recurring series with an 'End on date' condition.",
+          "format": "date"
+        },
+        "count": {
+          "type": "number",
+          "description": "The number of occurrences for a recurring series with an 'End after X occurrences' condition."
+        },
+        "exceptions": {
+          "type": "array",
+          "description": "An array of specific dates (YYYY-MM-DD) on which occurrences of this series are explicitly excluded.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "personId",
+        "title",
+        "startTime",
+        "endTime",
+        "startDate",
+        "frequency"
+      ]
+    },
+    "EventOccurrenceOverride": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "EventOccurrenceOverride",
+      "type": "object",
+      "description": "Stores specific overrides or state changes (like completion) for individual occurrences of a CalendarEventSeries, diverging from the series' default properties.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the EventOccurrenceOverride entity."
+        },
+        "seriesId": {
+          "type": "string",
+          "description": "Reference to the CalendarEventSeries ID this override applies to. (Relationship: CalendarEventSeries 1:N EventOccurrenceOverride)"
+        },
+        "occurrenceDate": {
+          "type": "string",
+          "description": "The specific date (YYYY-MM-DD) of the occurrence to which this override applies.",
+          "format": "date"
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Boolean flag indicating if this specific event occurrence has been marked as completed."
+        },
+        "completedAt": {
+          "type": "string",
+          "description": "Optional timestamp (ISO 8601) when the occurrence was marked as completed.",
+          "format": "date-time"
+        },
+        "personIdOverride": {
+          "type": "string",
+          "description": "Optional override for the Person ID assigned to this specific occurrence, if different from the series default. (Relationship: Person 1:N EventOccurrenceOverride)"
+        },
+        "titleOverride": {
+          "type": "string",
+          "description": "Optional override for the title of this specific occurrence."
+        },
+        "notesOverride": {
+          "type": "string",
+          "description": "Optional override for the notes of this specific occurrence."
+        },
+        "startTimeOverride": {
+          "type": "string",
+          "description": "Optional override for the start time (HH:MM) of this specific occurrence. Must be in 30-minute increments.",
+          "format": "time"
+        },
+        "endTimeOverride": {
+          "type": "string",
+          "description": "Optional override for the end time (HH:MM) of this specific occurrence. Must be in 30-minute increments.",
+          "format": "time"
+        }
+      },
+      "required": [
+        "id",
+        "seriesId",
+        "occurrenceDate",
+        "completed"
+      ]
+    },
+    "AppSettings": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AppSettings",
+      "type": "object",
+      "description": "Stores application-wide configuration settings, including calendar display preferences and selected localization options.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AppSettings entity. This entity is typically a singleton (e.g., 'global-settings')."
+        },
+        "dayStartTime": {
+          "type": "string",
+          "description": "The configurable start time (HH:MM) for the calendar day view. Default is 05:00.",
+          "format": "time"
+        },
+        "dayEndTime": {
+          "type": "string",
+          "description": "The configurable end time (HH:MM) for the calendar day view. Default is 22:00.",
+          "format": "time"
+        },
+        "language": {
+          "type": "string",
+          "description": "The currently selected application language. 'en' for English, 'ar' for Arabic.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "dayStartTime",
+        "dayEndTime",
+        "language"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/appSettings/{settingsId}",
+        "definition": {
+          "entityName": "AppSettings",
+          "schema": {
+            "$ref": "#/backend/entities/AppSettings"
+          },
+          "description": "Stores application-wide configuration settings, such as calendar display preferences and language. This collection is intended to hold a single document (e.g., with `settingsId='global'`) representing the global settings for the FamiliaFlow application. Accessible by any authenticated user.",
+          "params": [
+            {
+              "name": "settingsId",
+              "description": "The unique ID for the AppSettings document, typically 'global' for a singleton."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/people/{personId}",
+        "definition": {
+          "entityName": "Person",
+          "schema": {
+            "$ref": "#/backend/entities/Person"
+          },
+          "description": "Defines one of the four core people in the FamiliaFlow application, with customizable display name and a distinct color theme. `personId` values are fixed (e.g., 'person1', 'person2', 'person3', 'person4'). Accessible by any authenticated user.",
+          "params": [
+            {
+              "name": "personId",
+              "description": "Unique identifier for one of the four fixed people (e.g., 'person1')."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/fixedEventTemplates/{templateId}",
+        "definition": {
+          "entityName": "FixedEventTemplate",
+          "schema": {
+            "$ref": "#/backend/entities/FixedEventTemplate"
+          },
+          "description": "A reusable library of templates for frequently scheduled events, allowing users to quickly add pre-defined events to the calendar. Includes `defaultAssigneePersonId` as a data field for linking to a Person. Accessible by any authenticated user.",
+          "params": [
+            {
+              "name": "templateId",
+              "description": "Unique identifier for a fixed event template."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/calendarEventSeries/{seriesId}",
+        "definition": {
+          "entityName": "CalendarEventSeries",
+          "schema": {
+            "$ref": "#/backend/entities/CalendarEventSeries"
+          },
+          "description": "Represents a single event or a series of recurring events on the calendar, defining its core properties and recurrence rules. Each series is assigned to a `personId` (for display/filtering, not authorization in this single-tenant context). Accessible by any authenticated user.",
+          "params": [
+            {
+              "name": "seriesId",
+              "description": "Unique identifier for a calendar event series."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/calendarEventSeries/{seriesId}/eventOccurrenceOverrides/{overrideId}",
+        "definition": {
+          "entityName": "EventOccurrenceOverride",
+          "schema": {
+            "$ref": "#/backend/entities/EventOccurrenceOverride"
+          },
+          "description": "Stores specific overrides or state changes (like completion) for individual occurrences of a `CalendarEventSeries`, diverging from the series' default properties. The `seriesId` in the path ensures a clear, hierarchical link to its parent event series. Includes `personIdOverride` for data-level reassignment. Accessible by any authenticated user, following the parent series' access.",
+          "params": [
+            {
+              "name": "seriesId",
+              "description": "The ID of the parent CalendarEventSeries to which this override belongs."
+            },
+            {
+              "name": "overrideId",
+              "description": "Unique identifier for an event occurrence override document."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The FamiliaFlow Firestore data structure is designed to be secure, scalable, and highly debuggable, adhering strictly to the core design principles. Given the critical constraint of \"Exactly 4 people exist in the system (no adding more users, no multi-family scaling)\", the architecture assumes a single-tenant model where all application data within a Firebase project is shared among any authenticated users (via password or anonymous). This fundamental decision drastically simplifies authorization.\n\n**Authorization Independence (CRITICAL):** This design achieves authorization independence by eliminating the need for hierarchical authorization dependencies, meaning no `get()` calls are required within Firestore security rules. Since all data (AppSettings, People, Fixed Event Templates, Calendar Event Series, and Event Occurrence Overrides) belongs to this single FamiliaFlow instance, access control is uniformly applied: any authenticated user (checking `request.auth != null`) is authorized to read and write to all data. This prevents atomic operation failures, simplifies rule debugging, and ensures a robust security model without complex role-based access for different users within the application's core functionality.\n\n**QAPs (Query as a security Policy) Support:** QAPs are fully supported through a combination of structural segregation and the clear, consistent authorization model. Each top-level collection (`/appSettings`, `/people`, `/fixedEventTemplates`, `/calendarEventSeries`) maintains a homogeneous security posture, meaning all documents within them share the exact same access requirements. Since authorization is simply `request.auth != null`, any `list` operation performed by an authenticated user is inherently secure; it will return all relevant documents because all are authorized. For displaying events specific to a person, the `calendarEventSeries` collection includes the `personId` field, enabling efficient client-side queries like `db.collection('calendarEventSeries').where('personId', '==', 'person1')`. The security rules do not need to act as filters because the structural design and global authorization ensure that all retrieved data is already permissible. The `eventOccurrenceOverrides` are structured as a subcollection of `calendarEventSeries`, providing a clear, performant, and securely accessible way to query overrides for a specific event series without additional rule complexities."
+  }
+}
