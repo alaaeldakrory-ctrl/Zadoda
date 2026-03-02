@@ -80,14 +80,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const auth = useAuth();
   const db = useFirestore();
 
-  // Handle anonymous sign-in if no user
   useEffect(() => {
     if (!isUserLoading && !user) {
       initiateAnonymousSignIn(auth);
     }
   }, [user, isUserLoading, auth]);
 
-  // Firestore Data Subscriptions
   const settingsRef = useMemoFirebase(() => doc(db, 'appSettings', 'global'), [db]);
   const { data: settingsData, isLoading: settingsLoading } = useDoc<AppSettings>(settingsRef);
 
@@ -102,7 +100,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [hasSeeded, setHasSeeded] = useState(false);
 
-  // Seed initial data if database is empty
   useEffect(() => {
     if (!personsLoading && personsData && db && !hasSeeded) {
       if (personsData.length === 0) {
@@ -116,8 +113,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [personsLoading, personsData, db, hasSeeded]);
 
   const settings = settingsData || DEFAULT_SETTINGS;
-  
-  // Use DB data if available, otherwise fallback to defaults (avoiding "person 1" placeholders)
   const persons = (personsData && personsData.length > 0) ? personsData : INITIAL_PEOPLE;
   const templates = templatesData || [];
   const series = seriesData || [];

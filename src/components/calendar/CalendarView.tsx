@@ -111,7 +111,6 @@ export const CalendarView: React.FC = () => {
     days.flatMap(day => filteredPersons.flatMap(p => getOccurrencesForDate(series, day, overrides).filter(occ => occ.id === activeDragId && occ.personId === p.id)))[0]
     : null;
 
-  // Header height constants (px)
   const DAY_HEADER_HEIGHT = 40;
   const PERSON_HEADER_HEIGHT = selectedPersonId === 'all' ? 72 : 0;
   const TOTAL_HEADER_HEIGHT = DAY_HEADER_HEIGHT + PERSON_HEADER_HEIGHT;
@@ -206,7 +205,6 @@ export const CalendarView: React.FC = () => {
           <div className="flex min-w-[800px] min-h-full">
             {/* Time Axis */}
             <div className="w-24 sticky left-0 z-50 bg-background/80 backdrop-blur-md border-r-2 shadow-sm shrink-0">
-              {/* Spacer matching combined header height */}
               <div 
                 className="border-b-2 bg-muted/10" 
                 style={{ height: `${TOTAL_HEADER_HEIGHT}px` }} 
@@ -222,7 +220,6 @@ export const CalendarView: React.FC = () => {
             <div className="flex-1 flex min-h-full">
               {days.map(day => (
                 <div key={day.toISOString()} className="flex-1 border-r-2 last:border-r-0 min-w-0 flex flex-col min-h-full">
-                  {/* Day Header - Compact height */}
                   <div 
                     className="border-b-2 bg-muted/40 flex items-center justify-center text-[10px] font-black sticky top-0 z-40 backdrop-blur-md uppercase tracking-[0.2em] text-muted-foreground shrink-0"
                     style={{ height: `${DAY_HEADER_HEIGHT}px` }}
@@ -230,7 +227,6 @@ export const CalendarView: React.FC = () => {
                     {format(day, 'EEEE d')}
                   </div>
 
-                  {/* Person Sub-columns */}
                   <div className="flex-1 flex relative min-h-full">
                      {filteredPersons.map(p => {
                       const occurrences = getOccurrencesForDate(series, day, overrides).filter(occ => occ.personId === p.id);
@@ -257,7 +253,6 @@ export const CalendarView: React.FC = () => {
                             </div>
                           )}
                           
-                          {/* Grid Lines and Droppable Areas */}
                           <div className="relative flex-1">
                             {timeSlots.map(slot => (
                               <GridSlot 
@@ -267,7 +262,6 @@ export const CalendarView: React.FC = () => {
                               />
                             ))}
 
-                            {/* Events - Overlayed on the grid */}
                             <div className="absolute inset-0 pointer-events-none">
                               {occurrences.map((occ) => (
                                 <div key={occ.id} className="pointer-events-auto">
