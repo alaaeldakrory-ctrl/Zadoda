@@ -1,9 +1,18 @@
+
 export type Language = 'en' | 'ar';
 
 export interface Person {
   id: string; // "person1", "person2", "person3", "person4"
   name: string;
   color: string;
+}
+
+export interface Memo {
+  id: string;
+  personId: string;
+  title: string;
+  content: string;
+  createdAt: number;
 }
 
 export type RecurrenceFrequency = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY';

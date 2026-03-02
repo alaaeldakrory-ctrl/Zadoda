@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Person": {
@@ -23,6 +24,37 @@
         "id",
         "name",
         "color"
+      ]
+    },
+    "Memo": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Memo",
+      "type": "object",
+      "description": "A personal note or memo belonging to a specific family member.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "personId": {
+          "type": "string",
+          "description": "The ID of the person this memo belongs to."
+        },
+        "title": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "personId",
+        "title",
+        "content",
+        "createdAt"
       ]
     },
     "FixedEventTemplate": {
@@ -266,11 +298,11 @@
           "schema": {
             "$ref": "#/backend/entities/AppSettings"
           },
-          "description": "Stores application-wide configuration settings, such as calendar display preferences and language. This collection is intended to hold a single document (e.g., with `settingsId='global'`) representing the global settings for the FamiliaFlow application. Accessible by any authenticated user.",
+          "description": "Stores application-wide configuration settings.",
           "params": [
             {
               "name": "settingsId",
-              "description": "The unique ID for the AppSettings document, typically 'global' for a singleton."
+              "description": "The unique ID for the AppSettings document."
             }
           ]
         }
@@ -282,11 +314,27 @@
           "schema": {
             "$ref": "#/backend/entities/Person"
           },
-          "description": "Defines one of the four core people in the FamiliaFlow application, with customizable display name and a distinct color theme. `personId` values are fixed (e.g., 'person1', 'person2', 'person3', 'person4'). Accessible by any authenticated user.",
+          "description": "Defines one of the four core people in the FamiliaFlow application.",
           "params": [
             {
               "name": "personId",
-              "description": "Unique identifier for one of the four fixed people (e.g., 'person1')."
+              "description": "Unique identifier for one of the four fixed people."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/memos/{memoId}",
+        "definition": {
+          "entityName": "Memo",
+          "schema": {
+            "$ref": "#/backend/entities/Memo"
+          },
+          "description": "Personal memos belonging to family members.",
+          "params": [
+            {
+              "name": "memoId",
+              "description": "Unique identifier for a memo."
             }
           ]
         }
@@ -298,7 +346,7 @@
           "schema": {
             "$ref": "#/backend/entities/FixedEventTemplate"
           },
-          "description": "A reusable library of templates for frequently scheduled events, allowing users to quickly add pre-defined events to the calendar. Includes `defaultAssigneePersonId` as a data field for linking to a Person. Accessible by any authenticated user.",
+          "description": "A reusable library of templates for frequently scheduled events.",
           "params": [
             {
               "name": "templateId",
@@ -314,7 +362,7 @@
           "schema": {
             "$ref": "#/backend/entities/CalendarEventSeries"
           },
-          "description": "Represents a single event or a series of recurring events on the calendar, defining its core properties and recurrence rules. Each series is assigned to a `personId` (for display/filtering, not authorization in this single-tenant context). Accessible by any authenticated user.",
+          "description": "Represents a single event or a series of recurring events on the calendar.",
           "params": [
             {
               "name": "seriesId",
@@ -330,11 +378,11 @@
           "schema": {
             "$ref": "#/backend/entities/EventOccurrenceOverride"
           },
-          "description": "Stores specific overrides or state changes (like completion) for individual occurrences of a `CalendarEventSeries`, diverging from the series' default properties. The `seriesId` in the path ensures a clear, hierarchical link to its parent event series. Includes `personIdOverride` for data-level reassignment. Accessible by any authenticated user, following the parent series' access.",
+          "description": "Stores specific overrides or state changes for individual occurrences of a CalendarEventSeries.",
           "params": [
             {
               "name": "seriesId",
-              "description": "The ID of the parent CalendarEventSeries to which this override belongs."
+              "description": "The ID of the parent CalendarEventSeries."
             },
             {
               "name": "overrideId",
@@ -344,6 +392,6 @@
         }
       }
     ],
-    "reasoning": "The FamiliaFlow Firestore data structure is designed to be secure, scalable, and highly debuggable, adhering strictly to the core design principles. Given the critical constraint of \"Exactly 4 people exist in the system (no adding more users, no multi-family scaling)\", the architecture assumes a single-tenant model where all application data within a Firebase project is shared among any authenticated users (via password or anonymous). This fundamental decision drastically simplifies authorization.\n\n**Authorization Independence (CRITICAL):** This design achieves authorization independence by eliminating the need for hierarchical authorization dependencies, meaning no `get()` calls are required within Firestore security rules. Since all data (AppSettings, People, Fixed Event Templates, Calendar Event Series, and Event Occurrence Overrides) belongs to this single FamiliaFlow instance, access control is uniformly applied: any authenticated user (checking `request.auth != null`) is authorized to read and write to all data. This prevents atomic operation failures, simplifies rule debugging, and ensures a robust security model without complex role-based access for different users within the application's core functionality.\n\n**QAPs (Query as a security Policy) Support:** QAPs are fully supported through a combination of structural segregation and the clear, consistent authorization model. Each top-level collection (`/appSettings`, `/people`, `/fixedEventTemplates`, `/calendarEventSeries`) maintains a homogeneous security posture, meaning all documents within them share the exact same access requirements. Since authorization is simply `request.auth != null`, any `list` operation performed by an authenticated user is inherently secure; it will return all relevant documents because all are authorized. For displaying events specific to a person, the `calendarEventSeries` collection includes the `personId` field, enabling efficient client-side queries like `db.collection('calendarEventSeries').where('personId', '==', 'person1')`. The security rules do not need to act as filters because the structural design and global authorization ensure that all retrieved data is already permissible. The `eventOccurrenceOverrides` are structured as a subcollection of `calendarEventSeries`, providing a clear, performant, and securely accessible way to query overrides for a specific event series without additional rule complexities."
+    "reasoning": "Standard hierarchical and flat collections for a single-tenant family application."
   }
 }

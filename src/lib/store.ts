@@ -1,7 +1,8 @@
+
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language } from './types';
+import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language, Memo } from './types';
 import { timeToMinutes, minutesToTime } from './utils';
 import { 
   useCollection, 
@@ -22,6 +23,7 @@ interface StoreContextValue {
   series: CalendarEventSeries[];
   overrides: CalendarEventOccurrenceOverride[];
   templates: FixedEventTemplate[];
+  memos: Memo[];
   settings: AppSettings;
   isLoading: boolean;
   setLanguage: (lang: Language) => void;
@@ -33,6 +35,9 @@ interface StoreContextValue {
   addTemplate: (t: FixedEventTemplate) => void;
   updateTemplate: (id: string, updates: Partial<FixedEventTemplate>) => void;
   deleteTemplate: (id: string) => void;
+  addMemo: (m: Memo) => void;
+  updateMemo: (id: string, updates: Partial<Memo>) => void;
+  deleteMemo: (id: string) => void;
   toggleCompletion: (seriesId: string, date: string) => void;
   updateOccurrence: (seriesId: string, date: string, updates: Partial<CalendarEventOccurrenceOverride>) => void;
   moveEvent: (seriesId: string, date: string, newStartTime: string, newPersonId: string) => void;
@@ -76,6 +81,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const seriesRef = useMemoFirebase(() => collection(db, 'calendarEventSeries'), [db]);
   const { data: seriesData, isLoading: seriesLoading } = useCollection<CalendarEventSeries>(seriesRef);
 
+  const memosRef = useMemoFirebase(() => collection(db, 'memos'), [db]);
+  const { data: memosData, isLoading: memosLoading } = useCollection<Memo>(memosRef);
+
   const [hasSeeded, setHasSeeded] = useState(false);
 
   useEffect(() => {
@@ -94,9 +102,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const persons = (personsData && personsData.length > 0) ? personsData : INITIAL_PEOPLE;
   const templates = templatesData || [];
   const series = seriesData || [];
+  const memos = memosData || [];
   const overrides: CalendarEventOccurrenceOverride[] = []; 
 
-  const isLoading = isUserLoading || settingsLoading || (personsLoading && !personsData);
+  const isLoading = isUserLoading || settingsLoading || (personsLoading && !personsData) || memosLoading;
 
   const setLanguage = (language: Language) => {
     setDocumentNonBlocking(settingsRef, { ...settings, language }, { merge: true });
@@ -141,6 +150,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     deleteDocumentNonBlocking(docRef);
   };
 
+  const addMemo = (m: Memo) => {
+    const docRef = doc(db, 'memos', m.id);
+    setDocumentNonBlocking(docRef, m, { merge: true });
+  };
+
+  const updateMemo = (id: string, updates: Partial<Memo>) => {
+    const docRef = doc(db, 'memos', id);
+    updateDocumentNonBlocking(docRef, updates);
+  };
+
+  const deleteMemo = (id: string) => {
+    const docRef = doc(db, 'memos', id);
+    deleteDocumentNonBlocking(docRef);
+  };
+
   const toggleCompletion = (seriesId: string, date: string) => {
     const overrideId = `${seriesId}_${date}`;
     const overrideRef = doc(db, 'calendarEventSeries', seriesId, 'eventOccurrenceOverrides', overrideId);
@@ -181,6 +205,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     series,
     overrides,
     templates,
+    memos,
     settings,
     isLoading,
     setLanguage,
@@ -192,6 +217,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addTemplate,
     updateTemplate,
     deleteTemplate,
+    addMemo,
+    updateMemo,
+    deleteMemo,
     toggleCompletion,
     updateOccurrence,
     moveEvent

@@ -5,7 +5,7 @@ import React from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import { Calendar, Layers, Settings, Globe, Sparkles } from 'lucide-react';
+import { Calendar, Layers, Settings, Globe, Sparkles, StickyNote } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
 
   const navItems = [
     { label: t.calendar, icon: Calendar, href: '/' },
+    { label: t.memos, icon: StickyNote, href: '/memos' },
     { label: t.fixedEvents, icon: Layers, href: '/templates' },
     { label: t.settings, icon: Settings, href: '/settings' },
   ];
@@ -86,7 +87,6 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           </Button>
         </header>
 
-        {/* This container allows for scrolling if the page needs it, but Calendar will fill h-full and handle its own if needed */}
         <div className="flex-1 p-4 lg:p-10 overflow-y-auto relative h-full">
           {children}
         </div>

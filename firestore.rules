@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -8,102 +9,54 @@ service cloud.firestore {
      * Core Philosophy: 
      * This ruleset implements a single-tenant, shared-access model for a household application. 
      * Since the application is designed for a fixed group of four people within a single 
-     * household, all authenticated users (whether via password or anonymous login) are 
-     * granted full access to read and write application data. 
-     *
-     * Data Structure:
-     * - /appSettings: Global configuration (singleton).
-     * - /people: The four core user profiles.
-     * - /fixedEventTemplates: Reusable event presets.
-     * - /calendarEventSeries: Recurring or single event definitions.
-     * - /calendarEventSeries/{id}/eventOccurrenceOverrides: Specific changes to occurrences.
-     *
-     * Key Security Decisions:
-     * - Authorization Independence: No cross-document lookups (get() calls) are required 
-     *   for authorization, ensuring high performance and reliability.
-     * - Flattened Permissions: Authorization is binary; if a user is signed into 
-     *   the Firebase project, they are authorized for all operations.
-     * - Prototyping Flexibility: Rules enforce relational integrity (matching IDs) 
-     *   but do not enforce strict data schemas or types to allow for rapid iteration.
+     * household, all authenticated users are granted full access to read and write application data. 
      */
 
     // --- Helper Functions ---
 
-    /** @description Checks if the request is from a verified, authenticated user. */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /** @description Verifies if a document exists before attempting an update or delete. */
     function isExisting() {
       return resource != null;
     }
 
-    /** @description Validates that a field in the document matches a value in the path. */
     function matchesPath(field, pathValue) {
       return field == pathValue;
     }
 
     // --- Collection Rules ---
 
-    /**
-     * @description Rules for global application configuration settings.
-     * @path /appSettings/{settingsId}
-     * @allow Authenticated user (get) - User is signed in.
-     * @deny Unauthenticated user (list) - User is not signed in.
-     * @principle Shared global configuration for all authorized app users.
-     */
     match /appSettings/{settingsId} {
       allow get, list: if isSignedIn();
       allow create: if isSignedIn() && matchesPath(request.resource.data.id, settingsId);
       allow update, delete: if isSignedIn() && isExisting();
     }
 
-    /**
-     * @description Rules for the four fixed Person entities in the system.
-     * @path /people/{personId}
-     * @allow Authenticated user (update) - Changing a person's display color.
-     * @deny Unauthenticated user (get) - Attempting to view family members.
-     * @principle Fixed-entity access control; all household members can update profiles.
-     */
     match /people/{personId} {
       allow get, list: if isSignedIn();
       allow create: if isSignedIn() && matchesPath(request.resource.data.id, personId);
       allow update, delete: if isSignedIn() && isExisting();
     }
 
-    /**
-     * @description Rules for reusable event templates used to populate the calendar.
-     * @path /fixedEventTemplates/{templateId}
-     * @allow Authenticated user (create) - Saving a new 'Gym' template.
-     * @deny Unauthenticated user (delete) - Trying to delete a template.
-     * @principle Shared library access for all authenticated household members.
-     */
+    match /memos/{memoId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && matchesPath(request.resource.data.id, memoId);
+      allow update, delete: if isSignedIn() && isExisting();
+    }
+
     match /fixedEventTemplates/{templateId} {
       allow get, list: if isSignedIn();
       allow create: if isSignedIn() && matchesPath(request.resource.data.id, templateId);
       allow update, delete: if isSignedIn() && isExisting();
     }
 
-    /**
-     * @description Rules for calendar event series and single events.
-     * @path /calendarEventSeries/{seriesId}
-     * @allow Authenticated user (list) - Fetching the calendar for the month.
-     * @deny Unauthenticated user (create) - Attempting to add an event.
-     * @principle Open read/write access for all authenticated users in a single-tenant app.
-     */
     match /calendarEventSeries/{seriesId} {
       allow get, list: if isSignedIn();
       allow create: if isSignedIn() && matchesPath(request.resource.data.id, seriesId);
       allow update, delete: if isSignedIn() && isExisting();
 
-      /**
-       * @description Rules for overrides (e.g., marking a recurring event as completed).
-       * @path /calendarEventSeries/{seriesId}/eventOccurrenceOverrides/{overrideId}
-       * @allow Authenticated user (create) - Marking today's 'Chore' as done.
-       * @deny Mismatched seriesId (create) - The internal seriesId does not match the path.
-       * @principle Validates relational integrity between the subcollection and parent.
-       */
       match /eventOccurrenceOverrides/{overrideId} {
         allow get, list: if isSignedIn();
         allow create: if isSignedIn() && matchesPath(request.resource.data.seriesId, seriesId);
