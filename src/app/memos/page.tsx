@@ -107,7 +107,7 @@ export default function MemosPage() {
                         alt={person.name} 
                         width={48} 
                         height={48} 
-                        className="object-cover"
+                        className={cn("object-cover", person.name === 'Mohamed' && "scale-110 -translate-y-2")}
                         data-ai-hint="person headshot"
                       />
                     </div>
@@ -183,7 +183,7 @@ export default function MemosPage() {
                               alt={person.name} 
                               width={20} 
                               height={20} 
-                              className="object-cover"
+                              className={cn("object-cover", person.name === 'Mohamed' && "scale-110 -translate-y-0.5")}
                               data-ai-hint="person headshot"
                             />
                           </div>

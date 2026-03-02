@@ -87,7 +87,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                       alt={person.name} 
                       width={40} 
                       height={40} 
-                      className="object-cover"
+                      className={cn("object-cover", person.name === 'Mohamed' && "scale-110 -translate-y-1")}
                       data-ai-hint="person headshot"
                       priority
                     />

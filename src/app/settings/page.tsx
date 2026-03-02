@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Globe, Calendar, Users, Clock, Palette } from 'lucide-react';
 import Image from 'next/image';
-import { getAvatarUrl } from '@/lib/utils';
+import { getAvatarUrl, cn } from '@/lib/utils';
 
 export default function SettingsPage() {
   const { settings, updateSettings, persons, updatePerson } = useStore();
@@ -112,7 +112,7 @@ export default function SettingsPage() {
                           alt={p.name} 
                           width={80} 
                           height={80} 
-                          className="object-cover"
+                          className={cn("object-cover", p.name === 'Mohamed' && "scale-110 -translate-y-2")}
                           data-ai-hint="person headshot"
                         />
                       </div>
