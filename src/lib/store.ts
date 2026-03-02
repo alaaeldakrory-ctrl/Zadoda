@@ -10,6 +10,7 @@ interface StoreState {
   overrides: CalendarEventOccurrenceOverride[];
   templates: FixedEventTemplate[];
   settings: AppSettings;
+  version: number;
 }
 
 interface StoreContextValue extends StoreState {
@@ -41,6 +42,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   language: 'en',
 };
 
+const CURRENT_VERSION = 2; // Incremented to trigger name migration
+
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<StoreState>({
     persons: DEFAULT_PERSONS,
@@ -48,6 +51,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     overrides: [],
     templates: [],
     settings: DEFAULT_SETTINGS,
+    version: CURRENT_VERSION,
   });
 
   const [hydrated, setHydrated] = useState(false);
@@ -56,7 +60,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const saved = localStorage.getItem('familiaflow_data');
     if (saved) {
       try {
-        setState(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        
+        // Migration logic: Force names to the requested ones if version is old
+        if (!parsed.version || parsed.version < CURRENT_VERSION) {
+          parsed.persons = DEFAULT_PERSONS;
+          parsed.version = CURRENT_VERSION;
+        }
+        
+        setState(parsed);
       } catch (e) {
         console.error('Failed to load storage', e);
       }

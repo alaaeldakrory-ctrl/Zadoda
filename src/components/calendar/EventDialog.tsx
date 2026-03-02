@@ -13,18 +13,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Trash2 } from 'lucide-react';
 
 interface EventDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialDate: Date;
-  eventToEdit?: { seriesId: string; date: string } | null;
+  eventToEdit?: { seriesId?: string; date: string; personId?: string; startTime?: string } | null;
 }
 
 export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, initialDate, eventToEdit }) => {
-  const { settings, persons, series, addSeries, updateSeries, deleteSeries, updateOccurrence } = useStore();
+  const { settings, persons, series, addSeries, updateSeries, deleteSeries } = useStore();
   const t = getTranslation(settings.language);
   const timeSlots = generateTimeSlots(settings.dayStartTime, settings.dayEndTime);
 
@@ -39,30 +38,43 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
     exceptions: [],
   });
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    if (eventToEdit) {
-      const existing = series.find(s => s.id === eventToEdit.seriesId);
-      if (existing) {
-        setFormData({ ...existing });
+    if (open) {
+      setError(null);
+      if (eventToEdit?.seriesId) {
+        const existing = series.find(s => s.id === eventToEdit.seriesId);
+        if (existing) {
+          setFormData({ ...existing });
+        }
+      } else {
+        // Handle new event (possibly from grid click)
+        const startTime = eventToEdit?.startTime || '09:00';
+        const start = parse(startTime, 'HH:mm', new Date());
+        const end = addMinutes(start, 60);
+        
+        setFormData({
+          title: '',
+          personId: eventToEdit?.personId || persons[0]?.id || '1',
+          startTime: startTime,
+          endTime: format(end, 'HH:mm'),
+          startDate: eventToEdit?.date || format(initialDate, 'yyyy-MM-dd'),
+          notes: '',
+          recurrence: { frequency: 'NONE', interval: 1 },
+          exceptions: [],
+        });
       }
-    } else {
-      setFormData({
-        title: '',
-        personId: persons[0]?.id || '1',
-        startTime: '09:00',
-        endTime: '10:00',
-        startDate: format(initialDate, 'yyyy-MM-dd'),
-        notes: '',
-        recurrence: { frequency: 'NONE', interval: 1 },
-        exceptions: [],
-      });
     }
-  }, [eventToEdit, initialDate, series, persons]);
+  }, [open, eventToEdit, initialDate, series, persons]);
 
   const handleSave = () => {
-    if (!formData.title) return;
+    if (!formData.title?.trim()) {
+      setError(t.title + " is required");
+      return;
+    }
 
-    if (eventToEdit) {
+    if (eventToEdit?.seriesId) {
       updateSeries(eventToEdit.seriesId, formData);
     } else {
       const newSeries: CalendarEventSeries = {
@@ -82,7 +94,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
   };
 
   const handleDelete = () => {
-    if (eventToEdit) {
+    if (eventToEdit?.seriesId) {
       deleteSeries(eventToEdit.seriesId);
       onOpenChange(false);
     }
@@ -92,17 +104,22 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{eventToEdit ? t.edit : t.addEvent}</DialogTitle>
+          <DialogTitle>{eventToEdit?.seriesId ? t.edit : t.addEvent}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="title">{t.title}</Label>
+            <Label htmlFor="title" className={error ? "text-destructive" : ""}>{t.title}</Label>
             <Input
               id="title"
               value={formData.title}
-              onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
+              onChange={e => {
+                setFormData(prev => ({ ...prev, title: e.target.value }));
+                if (e.target.value) setError(null);
+              }}
               placeholder={t.title}
+              className={error ? "border-destructive" : ""}
             />
+            {error && <p className="text-[10px] text-destructive font-medium">{error}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -205,7 +222,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
           </div>
         </div>
         <DialogFooter className="flex items-center justify-between sm:justify-between w-full">
-          {eventToEdit ? (
+          {eventToEdit?.seriesId ? (
             <Button variant="destructive" onClick={handleDelete}>
               <Trash2 className="w-4 h-4 mr-2" />
               {t.delete}

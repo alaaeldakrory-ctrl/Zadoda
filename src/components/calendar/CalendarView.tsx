@@ -22,7 +22,7 @@ export const CalendarView: React.FC = () => {
   const [selectedPersonId, setSelectedPersonId] = useState<string | 'all'>('all');
   
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<{ seriesId: string; date: string } | null>(null);
+  const [editingEvent, setEditingEvent] = useState<{ seriesId?: string; date: string; personId?: string; startTime?: string } | null>(null);
 
   const timeSlots = generateTimeSlots(settings.dayStartTime, settings.dayEndTime);
   const weekStart = startOfWeek(currentDate);
@@ -39,6 +39,15 @@ export const CalendarView: React.FC = () => {
 
   const handleEditEvent = (seriesId: string, date: string) => {
     setEditingEvent({ seriesId, date });
+    setIsEventDialogOpen(true);
+  };
+
+  const handleGridClick = (day: Date, personId: string, time: string) => {
+    setEditingEvent({ 
+      date: format(day, 'yyyy-MM-dd'), 
+      personId, 
+      startTime: time 
+    });
     setIsEventDialogOpen(true);
   };
 
@@ -136,22 +145,29 @@ export const CalendarView: React.FC = () => {
                             {p.name}
                           </div>
                         )}
-                        {/* Grid Lines */}
-                        <div className="absolute inset-0 pointer-events-none">
+                        {/* Grid Lines and Clickable Areas */}
+                        <div className="absolute inset-0">
                           {timeSlots.map(slot => (
-                            <div key={slot} className="h-10 border-b last:border-0" />
+                            <div 
+                              key={slot} 
+                              className="h-10 border-b last:border-0 cursor-crosshair hover:bg-muted/20 transition-colors" 
+                              onClick={() => handleGridClick(day, p.id, slot)}
+                            />
                           ))}
                         </div>
                         {/* Events */}
-                        {occurrences.map((occ, idx) => (
-                          <EventBlock
-                            key={occ.id + idx}
-                            occurrence={occ}
-                            dayStart={settings.dayStartTime}
-                            color={p.color}
-                            onClick={() => handleEditEvent(occ.id, occ.date)}
-                          />
-                        ))}
+                        <div className="absolute inset-0 pointer-events-none">
+                          {occurrences.map((occ, idx) => (
+                            <div key={occ.id + idx} className="pointer-events-auto">
+                              <EventBlock
+                                occurrence={occ}
+                                dayStart={settings.dayStartTime}
+                                color={p.color}
+                                onClick={() => handleEditEvent(occ.id, occ.date)}
+                              />
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )
                   })}
