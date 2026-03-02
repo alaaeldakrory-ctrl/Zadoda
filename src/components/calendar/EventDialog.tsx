@@ -1,11 +1,10 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { CalendarEventSeries, RecurrenceFrequency } from '@/lib/types';
-import { generateTimeSlots } from '@/lib/utils';
+import { generateTimeSlots, formatTime } from '@/lib/utils';
 import { format, addMinutes, parse, isSameDay } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -122,13 +121,13 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] rounded-3xl">
         <DialogHeader>
-          <DialogTitle>{eventToEdit?.seriesId ? t.edit : t.addEvent}</DialogTitle>
+          <DialogTitle className="text-2xl font-black">{eventToEdit?.seriesId ? t.edit : t.addEvent}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="title" className={error ? "text-destructive" : ""}>{t.title}</Label>
+            <Label htmlFor="title" className={cn("font-bold", error ? "text-destructive" : "")}>{t.title}</Label>
             <Input
               id="title"
               value={formData.title}
@@ -137,22 +136,22 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
                 if (e.target.value) setError(null);
               }}
               placeholder={t.title}
-              className={error ? "border-destructive" : ""}
+              className={cn("rounded-xl border-2 font-medium", error ? "border-destructive" : "focus:border-primary")}
             />
-            {error && <p className="text-[10px] text-destructive font-medium">{error}</p>}
+            {error && <p className="text-[10px] text-destructive font-bold uppercase tracking-wide">{error}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label>{t.person}</Label>
+              <Label className="font-bold">{t.person}</Label>
               <Select
                 value={formData.personId}
                 onValueChange={v => setFormData(prev => ({ ...prev, personId: v }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="rounded-xl border-2">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl">
                   {persons.map(p => (
                     <SelectItem key={p.id} value={p.id}>
                       <div className="flex items-center gap-2">
@@ -165,44 +164,45 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>{t.date}</Label>
+              <Label className="font-bold">{t.date}</Label>
               <Input
                 type="date"
                 value={formData.startDate}
                 onChange={e => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                className="rounded-xl border-2 font-medium"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label>{t.startTime}</Label>
+              <Label className="font-bold">{t.startTime}</Label>
               <Select
                 value={formData.startTime}
                 onValueChange={v => setFormData(prev => ({ ...prev, startTime: v }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="rounded-xl border-2">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl">
                   {timeSlots.map(slot => (
-                    <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                    <SelectItem key={slot} value={slot}>{formatTime(slot)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>{t.endTime}</Label>
+              <Label className="font-bold">{t.endTime}</Label>
               <Select
                 value={formData.endTime}
                 onValueChange={v => setFormData(prev => ({ ...prev, endTime: v }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="rounded-xl border-2">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl">
                   {timeSlots.map(slot => (
-                    <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                    <SelectItem key={slot} value={slot}>{formatTime(slot)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -210,7 +210,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
           </div>
 
           <div className="grid gap-2">
-            <Label>{t.repeats}</Label>
+            <Label className="font-bold">{t.repeats}</Label>
             <Select
               value={formData.recurrence?.frequency}
               onValueChange={(v: RecurrenceFrequency) => 
@@ -220,10 +220,10 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
                 }))
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="rounded-xl border-2">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-xl">
                 <SelectItem value="NONE">{t.repeatNone}</SelectItem>
                 <SelectItem value="DAILY">{t.repeatDaily}</SelectItem>
                 <SelectItem value="WEEKLY">{t.repeatWeekly}</SelectItem>
@@ -233,24 +233,25 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="notes">{t.notes}</Label>
+            <Label htmlFor="notes" className="font-bold">{t.notes}</Label>
             <Textarea
               id="notes"
               value={formData.notes || ''}
               onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+              className="rounded-xl border-2 min-h-[100px]"
             />
           </div>
         </div>
         <DialogFooter className="flex items-center justify-between sm:justify-between w-full">
           {eventToEdit?.seriesId ? (
-            <Button variant="destructive" onClick={handleDelete}>
+            <Button variant="destructive" onClick={handleDelete} className="rounded-full font-bold">
               <Trash2 className="w-4 h-4 mr-2" />
               {t.delete}
             </Button>
           ) : <div />}
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>{t.cancel}</Button>
-            <Button onClick={handleSave}>{t.save}</Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-full font-bold">{t.cancel}</Button>
+            <Button onClick={handleSave} className="rounded-full font-black px-8">{t.save}</Button>
           </div>
         </DialogFooter>
       </DialogContent>

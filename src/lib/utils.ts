@@ -1,4 +1,3 @@
-
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format, addMinutes, parse, isSameDay, startOfWeek, addDays, getDay } from 'date-fns';
@@ -8,14 +7,28 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function formatTime(time24h: string): string {
+  try {
+    if (!time24h) return '';
+    const date = parse(time24h, 'HH:mm', new Date());
+    return format(date, 'h:mm a');
+  } catch (e) {
+    return time24h;
+  }
+}
+
 export function generateTimeSlots(start: string, end: string) {
   const slots: string[] = [];
-  let current = parse(start, 'HH:mm', new Date());
-  const stop = parse(end, 'HH:mm', new Date());
+  try {
+    let current = parse(start, 'HH:mm', new Date());
+    const stop = parse(end, 'HH:mm', new Date());
 
-  while (current <= stop) {
-    slots.push(format(current, 'HH:mm'));
-    current = addMinutes(current, 30);
+    while (current <= stop) {
+      slots.push(format(current, 'HH:mm'));
+      current = addMinutes(current, 30);
+    }
+  } catch (e) {
+    console.error("Error generating time slots", e);
   }
   return slots;
 }

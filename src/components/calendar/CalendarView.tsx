@@ -1,10 +1,9 @@
-
 "use client"
 
 import React, { useState } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
-import { generateTimeSlots, getOccurrencesForDate } from '@/lib/utils';
+import { generateTimeSlots, getOccurrencesForDate, formatTime } from '@/lib/utils';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { EventBlock } from './EventBlock';
 import { EventDialog } from './EventDialog';
@@ -144,11 +143,11 @@ export const CalendarView: React.FC = () => {
       <div className="flex-1 overflow-auto relative bg-slate-50/50">
         <div className="flex min-w-[800px] h-full">
           {/* Time Axis */}
-          <div className="w-20 sticky left-0 z-20 bg-background/80 backdrop-blur-md border-r-2 shadow-sm">
+          <div className="w-24 sticky left-0 z-20 bg-background/80 backdrop-blur-md border-r-2 shadow-sm">
             <div className="h-14 border-b-2" /> {/* Corner spacer */}
             {timeSlots.map(slot => (
-              <div key={slot} className="h-12 text-[11px] font-bold text-muted-foreground flex items-center justify-center border-b border-dashed last:border-0">
-                {slot}
+              <div key={slot} className="h-12 text-[12px] font-black text-muted-foreground flex items-center justify-center border-b border-dashed last:border-0 px-2 text-center uppercase">
+                {formatTime(slot)}
               </div>
             ))}
           </div>
@@ -237,7 +236,7 @@ export const CalendarView: React.FC = () => {
                     <div className="text-xs font-bold text-muted-foreground flex gap-2 mt-2 bg-muted/50 w-fit px-2 py-1 rounded-md">
                       <span>{tpl.defaultDurationMinutes} {t.mins}</span>
                       {tpl.defaultTime && <span className="opacity-50">•</span>}
-                      {tpl.defaultTime && <span>{tpl.defaultTime}</span>}
+                      {tpl.defaultTime && <span>{formatTime(tpl.defaultTime)}</span>}
                     </div>
                   </CardContent>
                 </Card>

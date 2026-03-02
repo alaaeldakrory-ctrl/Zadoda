@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { FixedEventTemplate } from '@/lib/types';
-import { generateTimeSlots } from '@/lib/utils';
+import { generateTimeSlots, formatTime } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -77,13 +77,13 @@ export const TemplateDialog: React.FC<TemplateDialogProps> = ({ open, onOpenChan
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] rounded-3xl">
         <DialogHeader>
-          <DialogTitle>{templateToEdit ? t.edit : t.createTemplate}</DialogTitle>
+          <DialogTitle className="text-2xl font-black">{templateToEdit ? t.edit : t.createTemplate}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="name" className={error ? "text-destructive" : ""}>{t.title}</Label>
+            <Label htmlFor="name" className={error ? "text-destructive font-bold" : "font-bold"}>{t.title}</Label>
             <Input
               id="name"
               value={formData.name}
@@ -92,22 +92,22 @@ export const TemplateDialog: React.FC<TemplateDialogProps> = ({ open, onOpenChan
                 if (e.target.value) setError(null);
               }}
               placeholder={t.title}
-              className={error ? "border-destructive" : ""}
+              className={error ? "border-destructive border-2 rounded-xl" : "border-2 rounded-xl"}
             />
-            {error && <p className="text-[10px] text-destructive font-medium">{error}</p>}
+            {error && <p className="text-[10px] text-destructive font-bold uppercase">{error}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label>{t.duration}</Label>
+              <Label className="font-bold">{t.duration}</Label>
               <Select
                 value={String(formData.defaultDurationMinutes)}
                 onValueChange={v => setFormData(prev => ({ ...prev, defaultDurationMinutes: Number(v) }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="border-2 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl">
                   <SelectItem value="30">30 {t.mins}</SelectItem>
                   <SelectItem value="60">60 {t.mins}</SelectItem>
                   <SelectItem value="90">90 {t.mins}</SelectItem>
@@ -117,18 +117,18 @@ export const TemplateDialog: React.FC<TemplateDialogProps> = ({ open, onOpenChan
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>{t.startTime} ({t.none})</Label>
+              <Label className="font-bold">{t.startTime} ({t.none})</Label>
               <Select
                 value={formData.defaultTime || "none"}
                 onValueChange={v => setFormData(prev => ({ ...prev, defaultTime: v === "none" ? undefined : v }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="border-2 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl">
                   <SelectItem value="none">{t.none}</SelectItem>
                   {timeSlots.map(slot => (
-                    <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                    <SelectItem key={slot} value={slot}>{formatTime(slot)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -137,7 +137,7 @@ export const TemplateDialog: React.FC<TemplateDialogProps> = ({ open, onOpenChan
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label>{t.assignee}</Label>
+              <Label className="font-bold">{t.assignee}</Label>
               <Select
                 value={formData.defaultAssigneePersonId}
                 onValueChange={v => {
@@ -145,10 +145,10 @@ export const TemplateDialog: React.FC<TemplateDialogProps> = ({ open, onOpenChan
                   setFormData(prev => ({ ...prev, defaultAssigneePersonId: v, color: person?.color || prev.color }));
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="border-2 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl">
                   {persons.map(p => (
                     <SelectItem key={p.id} value={p.id}>
                       <div className="flex items-center gap-2">
@@ -161,12 +161,12 @@ export const TemplateDialog: React.FC<TemplateDialogProps> = ({ open, onOpenChan
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>{t.personColor}</Label>
+              <Label className="font-bold">{t.personColor}</Label>
               <div className="flex gap-2 items-center">
                 <Input 
                   type="color" 
                   value={formData.color}
-                  className="w-12 h-10 p-1"
+                  className="w-12 h-10 p-1 border-2 rounded-xl"
                   onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
                 />
               </div>
@@ -174,17 +174,18 @@ export const TemplateDialog: React.FC<TemplateDialogProps> = ({ open, onOpenChan
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="notes">{t.notes}</Label>
+            <Label htmlFor="notes" className="font-bold">{t.notes}</Label>
             <Textarea
               id="notes"
               value={formData.notes || ''}
               onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+              className="border-2 rounded-xl min-h-[100px]"
             />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>{t.cancel}</Button>
-          <Button onClick={handleSave}>{t.save}</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-full font-bold">{t.cancel}</Button>
+          <Button onClick={handleSave} className="rounded-full font-black px-8">{t.save}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
