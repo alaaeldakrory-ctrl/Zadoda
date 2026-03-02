@@ -1,11 +1,10 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { CalendarEventSeries, RecurrenceFrequency } from '@/lib/types';
-import { cn, generateTimeSlots, formatTime } from '@/lib/utils';
+import { cn, generateTimeSlots, formatTime, minutesToTime, timeToMinutes } from '@/lib/utils';
 import { format, addMinutes, parse } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -72,18 +71,19 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
   const applyTemplate = (templateId: string) => {
     const tpl = templates.find(t => t.id === templateId);
     if (tpl) {
-      const startTime = tpl.defaultTime || formData.startTime || '09:00';
-      const start = parse(startTime, 'HH:mm', new Date());
-      const end = addMinutes(start, tpl.defaultDurationMinutes || 60);
+      // Use existing start time or default
+      const startTime = formData.startTime || '09:00';
+      const startMins = timeToMinutes(startTime);
+      const endMins = startMins + tpl.defaultDurationMinutes;
       
       setFormData(prev => ({
         ...prev,
         title: tpl.name,
-        personId: tpl.defaultAssigneePersonId || prev.personId || persons[0]?.id || '1',
-        startTime: startTime,
-        endTime: format(end, 'HH:mm'),
+        // Keep the existing person/date from the click context
+        personId: prev.personId || persons[0]?.id || '1',
         startDate: prev.startDate || format(initialDate, 'yyyy-MM-dd'),
-        notes: tpl.notes || '',
+        startTime: startTime,
+        endTime: minutesToTime(endMins),
         templateId: tpl.id,
       }));
     }
@@ -106,7 +106,8 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
     };
 
     if (formData.notes !== undefined) dataToSave.notes = formData.notes;
-    if (formData.templateId !== undefined) dataToSave.templateId = formData.templateId;
+    // Only include templateId if it exists and is not empty
+    if (formData.templateId) dataToSave.templateId = formData.templateId;
 
     if (eventToEdit?.seriesId) {
       updateSeries(eventToEdit.seriesId, dataToSave);
@@ -146,10 +147,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
                 <SelectContent className="rounded-xl">
                   {templates.map(tpl => (
                     <SelectItem key={tpl.id} value={tpl.id}>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tpl.color || 'var(--primary)' }} />
-                        {tpl.name}
-                      </div>
+                      {tpl.name} ({tpl.defaultDurationMinutes}m)
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -210,7 +208,18 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
               <Label className="font-bold text-sm">{t.startTime}</Label>
               <Select
                 value={formData.startTime}
-                onValueChange={v => setFormData(prev => ({ ...prev, startTime: v }))}
+                onValueChange={v => {
+                  // If we change start time, we should also shift end time to preserve duration
+                  const oldStartMins = timeToMinutes(formData.startTime || '09:00');
+                  const oldEndMins = timeToMinutes(formData.endTime || '10:00');
+                  const duration = oldEndMins - oldStartMins;
+                  const newStartMins = timeToMinutes(v);
+                  setFormData(prev => ({ 
+                    ...prev, 
+                    startTime: v,
+                    endTime: minutesToTime(newStartMins + duration)
+                  }));
+                }}
               >
                 <SelectTrigger className="rounded-xl border-2 font-bold">
                   <SelectValue />

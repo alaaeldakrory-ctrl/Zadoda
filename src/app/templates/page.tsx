@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState } from 'react';
@@ -8,12 +7,12 @@ import { getTranslation } from '@/lib/i18n';
 import { FixedEventTemplate } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Clock, User, Pencil, Trash2, Calendar } from 'lucide-react';
+import { Plus, Clock, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { TemplateDialog } from '@/components/templates/TemplateDialog';
 
 export default function TemplatesPage() {
-  const { settings, templates, deleteTemplate, persons } = useStore();
+  const { settings, templates, deleteTemplate } = useStore();
   const t = getTranslation(settings.language);
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -33,8 +32,8 @@ export default function TemplatesPage() {
     <AppLayout>
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-black">{t.fixedEvents}</h1>
-          <Button onClick={handleCreate} className="rounded-full px-6 font-bold shadow-lg hover:scale-105 transition-transform">
+          <h1 className="text-4xl font-black tracking-tight">{t.fixedEvents}</h1>
+          <Button onClick={handleCreate} className="rounded-full px-6 h-12 font-bold shadow-lg hover:scale-105 transition-transform">
             <Plus className="w-5 h-5 mr-2 rtl:ml-2 rtl:mr-0" />
             {t.createTemplate}
           </Button>
@@ -48,25 +47,18 @@ export default function TemplatesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {templates.map(tpl => {
-              const assignee = persons.find(p => p.id === tpl.defaultAssigneePersonId);
               return (
-                <Card key={tpl.id} className="group overflow-hidden border-2 rounded-3xl transition-all hover:shadow-xl hover:-translate-y-1" style={{ borderColor: tpl.color || 'var(--border)' }}>
+                <Card key={tpl.id} className="group overflow-hidden border-2 rounded-3xl transition-all hover:shadow-xl hover:-translate-y-1">
                   <CardHeader className="bg-muted/10 pb-4">
                     <CardTitle className="flex justify-between items-start gap-2">
                       <span className="truncate text-xl font-black">{tpl.name}</span>
-                      <Badge variant="secondary" className="font-mono shrink-0 rounded-lg">{tpl.defaultDurationMinutes}{t.mins}</Badge>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4 pt-6">
                     <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
                       <Clock className="w-4 h-4 text-primary" />
-                      {tpl.defaultTime || t.none}
+                      {tpl.defaultDurationMinutes} {t.mins}
                     </div>
-                    <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
-                      <User className="w-4 h-4 text-primary" />
-                      {assignee?.name || t.none}
-                    </div>
-                    {tpl.notes && <p className="text-sm text-muted-foreground line-clamp-2 italic font-medium">{tpl.notes}</p>}
                   </CardContent>
                   <CardFooter className="flex gap-2 justify-end border-t pt-4 bg-muted/5">
                     <Button 
