@@ -4,7 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * FAMILIAFLOW SECURITY RULES
+     * ZADODA SCHEDULER SECURITY RULES
      *
      * Core Philosophy: 
      * This ruleset implements a single-tenant, shared-access model for a household application. 
@@ -24,6 +24,12 @@ service cloud.firestore {
 
     function matchesPath(field, pathValue) {
       return field == pathValue;
+    }
+
+    // --- Collection Group Rules ---
+    // Required for the 'overrides' collection group query in the store.
+    match /{path=**}/eventOccurrenceOverrides/{overrideId} {
+      allow get, list: if isSignedIn();
     }
 
     // --- Collection Rules ---
