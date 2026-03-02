@@ -28,21 +28,22 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
   };
 
   const isCompleted = occurrence.completed;
-  // A "short" event is 30 mins (64px). We show time if there's enough height.
-  const canShowTime = height >= 50; 
+  
+  // Dynamic styling based on event duration
+  const isShort = height <= 64; // 30 minutes or less
 
   const style = !isDragging ? {
     top: `${top}px`,
     height: `${height}px`,
     backgroundColor: isCompleted ? '#f0fdf4' : `${color}15`,
     borderColor: isCompleted ? '#22c55e' : color,
-    borderLeftWidth: '8px',
+    borderLeftWidth: '6px',
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
   } : {
     height: `${height}px`,
     backgroundColor: `${color}15`,
     borderColor: color,
-    borderLeftWidth: '8px',
+    borderLeftWidth: '6px',
   };
 
   return (
@@ -51,57 +52,59 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
       {...attributes}
       onClick={onClick}
       className={cn(
-        "absolute left-1 right-1 rounded-2xl border-2 text-xs shadow-md cursor-pointer transition-all overflow-hidden group/event hover:shadow-lg active:scale-95 z-10",
-        isCompleted ? "opacity-100 shadow-sm" : "opacity-100",
-        "p-3",
-        isDragging && "z-50 ring-4 ring-primary ring-offset-2",
-        !isDragging && "hover:scale-[1.02]"
+        "absolute left-1 right-1 rounded-xl border-2 shadow-sm cursor-pointer transition-all overflow-hidden group/event active:scale-95 z-10",
+        isCompleted ? "opacity-100" : "opacity-100",
+        isShort ? "p-1.5" : "p-3",
+        isDragging && "z-50 ring-4 ring-primary ring-offset-2 opacity-90",
+        !isDragging && "hover:shadow-md hover:translate-y-[-1px]"
       )}
       style={style}
     >
-      <div className="flex items-start justify-between gap-2 h-full">
-        {/* Grab Handle for Dragging */}
-        <div 
-          {...listeners}
-          className={cn(
-            "shrink-0 flex items-center justify-center transition-opacity cursor-grab active:cursor-grabbing p-0.5",
-            isCompleted ? "opacity-20" : "opacity-0 group-hover/event:opacity-40"
-          )}
-        >
-          <GripVertical className="w-5 h-5" />
-        </div>
+      <div className="flex items-center gap-2 h-full w-full">
+        {/* Drag Handle */}
+        {!isCompleted && (
+          <div 
+            {...listeners}
+            className="shrink-0 flex items-center justify-center opacity-0 group-hover/event:opacity-40 transition-opacity cursor-grab active:cursor-grabbing"
+          >
+            <GripVertical className={isShort ? "w-4 h-4" : "w-5 h-5"} />
+          </div>
+        )}
 
-        <div className="flex-1 min-w-0 overflow-hidden flex flex-col justify-center h-full">
+        <div className="flex-1 min-w-0 flex flex-col justify-center">
           <p className={cn(
             "font-black leading-tight truncate transition-all", 
-            isCompleted ? "line-through text-green-700 italic" : "text-foreground",
-            "text-lg"
+            isCompleted ? "line-through text-green-700/60 italic" : "text-foreground",
+            isShort ? "text-sm" : "text-lg"
           )}>
             {occurrence.title}
           </p>
-          {canShowTime && (
-            <p className={cn(
-              "text-xs font-black uppercase tracking-tight mt-1 transition-opacity",
-              isCompleted ? "text-green-600/60" : "opacity-80"
-            )}>
-              {formatTime(occurrence.startTime)} - {formatTime(occurrence.endTime)}
-            </p>
-          )}
+          <p className={cn(
+            "font-black uppercase tracking-tight transition-opacity",
+            isCompleted ? "text-green-600/40" : "opacity-60",
+            isShort ? "text-[10px]" : "text-xs mt-0.5"
+          )}>
+            {formatTime(occurrence.startTime)} - {formatTime(occurrence.endTime)}
+          </p>
         </div>
 
-        <div className="flex items-center justify-center h-full">
+        {/* Completion Toggle */}
+        <div className="shrink-0 flex items-center justify-center">
           <button
             onClick={handleToggle}
             className={cn(
-              "shrink-0 p-1 rounded-full transition-all transform group-hover/event:scale-110 active:scale-90",
-              isCompleted ? "bg-green-100/50" : "hover:bg-black/5"
+              "rounded-full transition-all transform group-hover/event:scale-110 active:scale-90 bg-white/50",
+              isShort ? "p-0.5" : "p-1"
             )}
           >
             {isCompleted ? (
-              <CheckCircle2 className="text-green-600 animate-pop shadow-sm rounded-full bg-white w-8 h-8" />
+              <CheckCircle2 className={cn("text-green-600 animate-pop", isShort ? "w-5 h-5" : "w-7 h-7")} />
             ) : (
               <div 
-                className="rounded-full border-4 border-current opacity-30 group-hover/event:opacity-100 transition-all shadow-inner w-8 h-8"
+                className={cn(
+                  "rounded-full border-2 border-current opacity-20 group-hover/event:opacity-100 transition-all",
+                  isShort ? "w-5 h-5" : "w-7 h-7"
+                )}
                 style={{ color: color }} 
               />
             )}
@@ -111,7 +114,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
       
       {!isCompleted && !isDragging && (
         <div 
-          className="absolute inset-x-0 bottom-0 h-1.5 opacity-30"
+          className="absolute inset-x-0 bottom-0 h-1 opacity-20"
           style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }}
         />
       )}
