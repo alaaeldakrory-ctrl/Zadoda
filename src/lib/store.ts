@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -17,7 +16,6 @@ import {
   initiateAnonymousSignIn
 } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
-import { PlaceHolderImages } from './placeholder-images';
 
 interface StoreContextValue {
   persons: Person[];
@@ -49,30 +47,10 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 const INITIAL_PEOPLE: Person[] = [
-  { 
-    id: 'person1', 
-    name: 'Lyla', 
-    color: '#6366f1', 
-    avatarUrl: PlaceHolderImages.find(img => img.id === 'avatar-lyla')?.imageUrl 
-  },
-  { 
-    id: 'person2', 
-    name: 'Malika', 
-    color: '#f59e0b', 
-    avatarUrl: PlaceHolderImages.find(img => img.id === 'avatar-malika')?.imageUrl 
-  },
-  { 
-    id: 'person3', 
-    name: 'Mohamed', 
-    color: '#10b981', 
-    avatarUrl: PlaceHolderImages.find(img => img.id === 'avatar-mohamed')?.imageUrl 
-  },
-  { 
-    id: 'person4', 
-    name: 'Wesam', 
-    color: '#ec4899', 
-    avatarUrl: PlaceHolderImages.find(img => img.id === 'avatar-wesam')?.imageUrl 
-  },
+  { id: 'person1', name: 'Lyla', color: '#6366f1' },
+  { id: 'person2', name: 'Malika', color: '#f59e0b' },
+  { id: 'person3', name: 'Mohamed', color: '#10b981' },
+  { id: 'person4', name: 'Wesam', color: '#ec4899' },
 ];
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

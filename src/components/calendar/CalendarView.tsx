@@ -1,10 +1,9 @@
-
 "use client"
 
 import React, { useState } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
-import { generateTimeSlots, getOccurrencesForDate, formatTime } from '@/lib/utils';
+import { generateTimeSlots, getOccurrencesForDate, formatTime, cn } from '@/lib/utils';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { EventBlock } from './EventBlock';
 import { EventDialog } from './EventDialog';
@@ -16,7 +15,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { DndContext, DragOverlay, closestCorners, DragEndEvent, useDroppable } from '@dnd-kit/core';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface GridSlotProps {
   id: string;
@@ -176,10 +174,7 @@ export const CalendarView: React.FC = () => {
                 {persons.map(p => (
                   <SelectItem key={p.id} value={p.id}>
                     <div className="flex items-center gap-2">
-                      <Avatar className="w-6 h-6 border-2" style={{ borderColor: p.color }}>
-                        <AvatarImage src={p.avatarUrl} alt={p.name} />
-                        <AvatarFallback style={{ backgroundColor: p.color, color: 'white' }}>{p.name[0]}</AvatarFallback>
-                      </Avatar>
+                      <div className="w-4 h-4 rounded-full" style={{ backgroundColor: p.color }} />
                       {p.name}
                     </div>
                   </SelectItem>
@@ -245,10 +240,6 @@ export const CalendarView: React.FC = () => {
                                 borderColor: `${p.color}30` 
                               }}
                             >
-                              <Avatar className="w-10 h-10 border-2" style={{ borderColor: p.color }}>
-                                <AvatarImage src={p.avatarUrl} alt={p.name} />
-                                <AvatarFallback style={{ backgroundColor: p.color, color: 'white' }}>{p.name[0]}</AvatarFallback>
-                              </Avatar>
                               {p.name}
                             </div>
                           )}
@@ -328,7 +319,7 @@ export const CalendarView: React.FC = () => {
                       <div className="text-xs font-bold text-muted-foreground flex gap-2 mt-2 bg-muted/50 w-fit px-2 py-1 rounded-md">
                         <span>{tpl.defaultDurationMinutes} {t.mins}</span>
                         {tpl.defaultTime && <span className="opacity-50">•</span>}
-                        {tpl.defaultTime && <span>{formatTime(tpl.defaultTime)}</span>}
+                        {tpl.defaultTime && <span className="uppercase">{formatTime(tpl.defaultTime)}</span>}
                       </div>
                     </CardContent>
                   </Card>
