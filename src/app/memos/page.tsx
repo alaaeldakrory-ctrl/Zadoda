@@ -112,7 +112,7 @@ export default function MemosPage() {
                           "object-cover", 
                           person.name === 'Mohamed' && "scale-110 -translate-y-4",
                           person.name === 'Wesam' && "scale-110 translate-y-2",
-                          person.name === 'Malika' && "scale-110 -translate-y-2",
+                          person.name === 'Malika' && "scale-125 -translate-y-1",
                           person.name === 'Lyla' && "scale-110 -translate-y-2"
                         )}
                         data-ai-hint="person headshot"
@@ -194,7 +194,7 @@ export default function MemosPage() {
                                 "object-cover", 
                                 person.name === 'Mohamed' && "scale-110 -translate-y-2",
                                 person.name === 'Wesam' && "scale-110 translate-y-1",
-                                person.name === 'Malika' && "scale-110 -translate-y-1",
+                                person.name === 'Malika' && "scale-125 -translate-y-1",
                                 person.name === 'Lyla' && "scale-110 -translate-y-1"
                               )}
                               data-ai-hint="person headshot"
