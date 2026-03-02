@@ -1,6 +1,7 @@
+
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { generateTimeSlots, getOccurrencesForDate, formatTime, cn, getAvatarUrl } from '@/lib/utils';
@@ -41,6 +42,7 @@ const GridSlot: React.FC<GridSlotProps> = ({ id, onSlotClick, children }) => {
 };
 
 export const CalendarView: React.FC = () => {
+  const [mounted, setMounted] = useState(false);
   const { settings, persons, series, overrides, templates, moveEvent } = useStore();
   const t = getTranslation(settings.language);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -52,6 +54,23 @@ export const CalendarView: React.FC = () => {
   const [isCreateTemplateOpen, setIsCreateTemplateOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<{ seriesId?: string; date: string; personId?: string; startTime?: string; templateId?: string } | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    setCurrentDate(new Date());
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="flex flex-col h-full overflow-hidden bg-white rounded-[2rem] shadow-2xl shadow-black/5 ring-1 ring-black/5 animate-pulse">
+        <div className="p-6 border-b flex justify-between gap-4 shrink-0">
+          <div className="w-48 h-10 bg-muted rounded-2xl" />
+          <div className="w-32 h-10 bg-muted rounded-full" />
+        </div>
+        <div className="flex-1 bg-muted/10" />
+      </div>
+    );
+  }
 
   const timeSlots = generateTimeSlots(settings.dayStartTime, settings.dayEndTime);
   const weekStart = startOfWeek(currentDate);
