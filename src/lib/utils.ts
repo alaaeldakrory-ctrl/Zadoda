@@ -116,7 +116,8 @@ export function getOccurrencesForDate(series: CalendarEventSeries[], date: Date,
       personId: override?.personId || s.personId,
       notes: override?.notes || s.notes,
       completed: !!override?.completed,
-      isImportant: override?.isImportant ?? s.isImportant
+      isImportant: override?.isImportant ?? s.isImportant,
+      isForAll: s.personId === 'all' || override?.personId === 'all'
     };
   });
 }

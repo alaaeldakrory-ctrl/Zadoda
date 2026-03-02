@@ -1,10 +1,9 @@
-
 "use client"
 
 import React from 'react';
 import { useStore } from '@/lib/store';
 import { cn, getGridPosition, formatTime } from '@/lib/utils';
-import { CheckCircle2, GripVertical, AlertCircle } from 'lucide-react';
+import { CheckCircle2, GripVertical, AlertCircle, Users } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 
 interface EventBlockProps {
@@ -13,9 +12,10 @@ interface EventBlockProps {
   color: string;
   onClick: () => void;
   isDragging?: boolean;
+  isFullWidth?: boolean;
 }
 
-export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, color, onClick, isDragging }) => {
+export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, color, onClick, isDragging, isFullWidth }) => {
   const { toggleCompletion } = useStore();
   const { top, height } = getGridPosition(occurrence.startTime, occurrence.endTime, dayStart, 80);
 
@@ -31,13 +31,14 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
 
   const isCompleted = occurrence.completed;
   const isImportant = occurrence.isImportant;
+  const isForAll = occurrence.personId === 'all';
   
   const isShort = height <= 80; // 30 minutes or less at slotHeight 80
 
   const style = !isDragging ? {
     top: `${top}px`,
     height: `${height}px`,
-    backgroundColor: isCompleted ? '#f0fdf4' : `${color}15`,
+    backgroundColor: isCompleted ? '#f0fdf4' : isForAll ? `${color}10` : `${color}15`,
     borderColor: isCompleted ? '#22c55e' : color,
     borderLeftWidth: isImportant ? '8px' : '6px',
     boxShadow: isImportant && !isCompleted ? `0 0 15px ${color}30` : 'none',
@@ -55,12 +56,14 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
       {...attributes}
       onClick={onClick}
       className={cn(
-        "absolute left-1 right-1 rounded-xl border-2 shadow-sm cursor-pointer transition-all overflow-hidden group/event active:scale-95 z-10",
+        "absolute rounded-xl border-2 shadow-sm cursor-pointer transition-all overflow-hidden group/event active:scale-95 z-10",
+        isFullWidth ? "left-2 right-2 backdrop-blur-sm" : "left-1 right-1",
         isImportant && !isCompleted && "border-opacity-100 ring-1 ring-primary/20",
         isCompleted ? "opacity-100" : "opacity-100",
         isShort ? "p-1.5" : "p-3",
         isDragging && "z-50 ring-4 ring-primary ring-offset-2 opacity-90",
-        !isDragging && "hover:shadow-md hover:translate-y-[-1px]"
+        !isDragging && "hover:shadow-md hover:translate-y-[-1px]",
+        isForAll && !isCompleted && "bg-gradient-to-r from-muted/50 to-transparent"
       )}
       style={style}
     >
@@ -71,7 +74,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
           </div>
         )}
 
-        {!isCompleted && (
+        {!isCompleted && !isFullWidth && (
           <div 
             {...listeners}
             className="shrink-0 flex items-center justify-center opacity-0 group-hover/event:opacity-40 transition-opacity cursor-grab active:cursor-grabbing"
@@ -81,14 +84,17 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
         )}
 
         <div className="flex-1 min-w-0 flex flex-col justify-center">
-          <p className={cn(
-            "font-black leading-tight truncate transition-all", 
-            isCompleted ? "line-through text-green-700/60 italic" : "text-foreground",
-            isImportant && !isCompleted && "text-destructive font-black uppercase",
-            isShort ? "text-sm" : "text-lg"
-          )}>
-            {occurrence.title}
-          </p>
+          <div className="flex items-center gap-2">
+            {isForAll && !isCompleted && <Users className={cn("text-muted-foreground", isShort ? "w-3 h-3" : "w-4 h-4")} />}
+            <p className={cn(
+              "font-black leading-tight truncate transition-all", 
+              isCompleted ? "line-through text-green-700/60 italic" : "text-foreground",
+              isImportant && !isCompleted && "text-destructive font-black uppercase",
+              isShort ? "text-sm" : "text-lg"
+            )}>
+              {occurrence.title}
+            </p>
+          </div>
           <p className={cn(
             "font-black uppercase tracking-tight transition-opacity",
             isCompleted ? "text-green-600/40" : "opacity-60",

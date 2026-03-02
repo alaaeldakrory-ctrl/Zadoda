@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, Sparkles, AlertCircle } from 'lucide-react';
+import { Trash2, Sparkles, AlertCircle, Users } from 'lucide-react';
 
 interface EventDialogProps {
   open: boolean;
@@ -74,7 +74,6 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
   const applyTemplate = (templateId: string) => {
     const tpl = templates.find(t => t.id === templateId);
     if (tpl) {
-      // Use existing start time or default
       const startTime = formData.startTime || '09:00';
       const startMins = timeToMinutes(startTime);
       const endMins = startMins + tpl.defaultDurationMinutes;
@@ -82,7 +81,6 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
       setFormData(prev => ({
         ...prev,
         title: tpl.name,
-        // Keep the existing person/date from the click context
         personId: prev.personId || persons[0]?.id || 'person1',
         startDate: prev.startDate || format(initialDate, 'yyyy-MM-dd'),
         startTime: startTime,
@@ -110,7 +108,6 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
     };
 
     if (formData.notes !== undefined) dataToSave.notes = formData.notes;
-    // Only include templateId if it exists and is not empty
     if (formData.templateId) dataToSave.templateId = formData.templateId;
 
     if (eventToEdit?.seriesId) {
@@ -137,7 +134,6 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
         </DialogHeader>
         
         <div className="grid gap-4 py-6">
-          {/* Template Quick Select */}
           {!eventToEdit?.seriesId && templates.length > 0 && (
             <div className="grid gap-2 p-3 bg-primary/5 rounded-2xl border-2 border-primary/10">
               <Label className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
@@ -174,17 +170,31 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
             {error && <p className="text-[10px] text-destructive font-black uppercase tracking-wide">{error}</p>}
           </div>
 
-          <div className="flex items-center space-x-2 bg-accent/5 p-3 rounded-xl border-2 border-dashed">
-            <Checkbox 
-              id="important" 
-              checked={formData.isImportant} 
-              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isImportant: !!checked }))}
-              className="rounded-md border-2"
-            />
-            <Label htmlFor="important" className="font-black text-xs cursor-pointer uppercase tracking-widest flex items-center gap-2">
-              <AlertCircle className="w-3.5 h-3.5 text-destructive" />
-              {t.important}
-            </Label>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center space-x-2 bg-accent/5 p-3 rounded-xl border-2 border-dashed">
+              <Checkbox 
+                id="important" 
+                checked={formData.isImportant} 
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isImportant: !!checked }))}
+                className="rounded-md border-2"
+              />
+              <Label htmlFor="important" className="font-black text-[10px] cursor-pointer uppercase tracking-widest flex items-center gap-2">
+                <AlertCircle className="w-3 h-3 text-destructive" />
+                {t.important}
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2 bg-primary/5 p-3 rounded-xl border-2 border-dashed">
+              <Checkbox 
+                id="everyone" 
+                checked={formData.personId === 'all'} 
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, personId: checked ? 'all' : persons[0]?.id }))}
+                className="rounded-md border-2"
+              />
+              <Label htmlFor="everyone" className="font-black text-[10px] cursor-pointer uppercase tracking-widest flex items-center gap-2">
+                <Users className="w-3 h-3 text-primary" />
+                {t.everyone}
+              </Label>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -198,6 +208,12 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
+                  <SelectItem value="all">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-3 h-3" />
+                      {t.everyone}
+                    </div>
+                  </SelectItem>
                   {persons.map(p => (
                     <SelectItem key={p.id} value={p.id}>
                       <div className="flex items-center gap-2">
@@ -226,7 +242,6 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
               <Select
                 value={formData.startTime}
                 onValueChange={v => {
-                  // If we change start time, we should also shift end time to preserve duration
                   const oldStartMins = timeToMinutes(formData.startTime || '09:00');
                   const oldEndMins = timeToMinutes(formData.endTime || '10:00');
                   const duration = oldEndMins - oldStartMins;

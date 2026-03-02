@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, Suspense } from 'react';
@@ -44,6 +43,9 @@ const GridSlot: React.FC<GridSlotProps> = ({ id, onSlotClick, children }) => {
 
 const CalendarContent: React.FC = () => {
   const { settings, persons, series, overrides, templates, moveEvent, isLoading } = useStore();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
   const [mounted, setMounted] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
@@ -54,17 +56,14 @@ const CalendarContent: React.FC = () => {
   const [editingEvent, setEditingEvent] = useState<{ seriesId?: string; date: string; personId?: string; startTime?: string; templateId?: string } | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
-  const searchParams = useSearchParams();
-  const router = useRouter();
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const personParam = searchParams.get('personId');
 
   useEffect(() => {
-    setMounted(true);
-    setCurrentDate(new Date());
-  }, []);
-
-  useEffect(() => {
-    if (personParam && persons.some(p => p.id === personParam)) {
+    if (personParam && (personParam === 'all' || persons.some(p => p.id === personParam))) {
       setSelectedPersonId(personParam);
     } else {
       setSelectedPersonId('all');
@@ -137,10 +136,9 @@ const CalendarContent: React.FC = () => {
   };
 
   const activeDragOccurrence = activeDragId ? 
-    days.flatMap(day => filteredPersons.flatMap(p => getOccurrencesForDate(series, day, overrides).filter(occ => occ.id === activeDragId && occ.personId === p.id)))[0]
+    days.flatMap(day => getOccurrencesForDate(series, day, overrides).filter(occ => occ.id === activeDragId))[0]
     : null;
 
-  // Optimized heights to dedicate more space to the calendar
   const DAY_HEADER_HEIGHT = 40;
   const PERSON_HEADER_HEIGHT = selectedPersonId === 'all' ? 140 : 0;
   const TOTAL_HEADER_HEIGHT = DAY_HEADER_HEIGHT + PERSON_HEADER_HEIGHT;
@@ -266,81 +264,107 @@ const CalendarContent: React.FC = () => {
             </div>
 
             <div className="flex-1 flex min-h-full">
-              {days.map(day => (
-                <div key={day.toISOString()} className="flex-1 border-r last:border-r-0 min-w-0 flex flex-col min-h-full">
-                  <div 
-                    className="flex items-center justify-center text-[10px] font-black sticky top-0 z-40 bg-white/50 backdrop-blur-sm uppercase tracking-[0.2em] text-muted-foreground shrink-0 border-b"
-                    style={{ height: `${DAY_HEADER_HEIGHT}px` }}
-                  >
-                    {format(day, 'EEEE d')}
-                  </div>
+              {days.map(day => {
+                const dayOccurrences = getOccurrencesForDate(series, day, overrides);
+                const allPersonOccurrences = dayOccurrences.filter(occ => occ.personId === 'all');
+                const individualOccurrences = dayOccurrences.filter(occ => occ.personId !== 'all');
 
-                  <div className="flex-1 flex relative min-h-full">
-                    {filteredPersons.map(p => {
-                      const occurrences = getOccurrencesForDate(series, day, overrides).filter(occ => occ.personId === p.id);
-                      const dayStr = format(day, 'yyyy-MM-dd');
-                      return (
-                        <div key={p.id} className="flex-1 border-r last:border-r-0 relative group min-h-full flex flex-col">
-                          {selectedPersonId === 'all' && (
-                            <div 
-                              className="flex items-center justify-center text-sm font-black border-b sticky z-30 transition-colors uppercase tracking-widest shrink-0" 
-                              style={{ 
-                                height: `${PERSON_HEADER_HEIGHT}px`,
-                                top: `${DAY_HEADER_HEIGHT}px`,
-                                backgroundColor: `white`, 
-                                color: p.color, 
-                              }}
-                            >
-                              <div className="flex flex-col items-center gap-2 p-2">
-                                <div className="w-20 h-20 rounded-full overflow-hidden border-4 shadow-md transition-transform group-hover:scale-110" style={{ borderColor: p.color }}>
-                                  <Image 
-                                    src={getAvatarUrl(p.id)} 
-                                    alt={p.name} 
-                                    width={80} 
-                                    height={80} 
-                                    className={cn(
-                                      "object-cover", 
-                                      p.id === 'person3' && "scale-110 -translate-y-4",
-                                      p.id === 'person4' && "scale-105 translate-y-[-2px]",
-                                      p.id === 'person2' && "scale-150 translate-y-3",
-                                      p.id === 'person1' && "scale-110 translate-y-4"
-                                    )}
-                                    data-ai-hint="person headshot"
-                                  />
+                return (
+                  <div key={day.toISOString()} className="flex-1 border-r last:border-r-0 min-w-0 flex flex-col min-h-full">
+                    <div 
+                      className="flex items-center justify-center text-[10px] font-black sticky top-0 z-40 bg-white/50 backdrop-blur-sm uppercase tracking-[0.2em] text-muted-foreground shrink-0 border-b"
+                      style={{ height: `${DAY_HEADER_HEIGHT}px` }}
+                    >
+                      {format(day, 'EEEE d')}
+                    </div>
+
+                    <div className="flex-1 flex relative min-h-full">
+                      {filteredPersons.map(p => {
+                        // Individual view: show person's events + events for all
+                        const personOccurrences = individualOccurrences.filter(occ => occ.personId === p.id);
+                        const displayedOccurrences = selectedPersonId === 'all' ? personOccurrences : [...personOccurrences, ...allPersonOccurrences];
+                        
+                        const dayStr = format(day, 'yyyy-MM-dd');
+                        return (
+                          <div key={p.id} className="flex-1 border-r last:border-r-0 relative group min-h-full flex flex-col">
+                            {selectedPersonId === 'all' && (
+                              <div 
+                                className="flex items-center justify-center text-sm font-black border-b sticky z-30 transition-colors uppercase tracking-widest shrink-0" 
+                                style={{ 
+                                  height: `${PERSON_HEADER_HEIGHT}px`,
+                                  top: `${DAY_HEADER_HEIGHT}px`,
+                                  backgroundColor: `white`, 
+                                  color: p.color, 
+                                }}
+                              >
+                                <div className="flex flex-col items-center gap-2 p-2">
+                                  <div className="w-20 h-20 rounded-full overflow-hidden border-4 shadow-md transition-transform group-hover:scale-110" style={{ borderColor: p.color }}>
+                                    <Image 
+                                      src={getAvatarUrl(p.id)} 
+                                      alt={p.name} 
+                                      width={80} 
+                                      height={80} 
+                                      className={cn(
+                                        "object-cover", 
+                                        p.id === 'person3' && "scale-110 -translate-y-4",
+                                        p.id === 'person4' && "scale-105 translate-y-[-2px]",
+                                        p.id === 'person2' && "scale-150 translate-y-3",
+                                        p.id === 'person1' && "scale-110 translate-y-4"
+                                      )}
+                                      data-ai-hint="person headshot"
+                                    />
+                                  </div>
+                                  <span className="text-[10px] font-black">{getPersonName(p, settings.language)}</span>
                                 </div>
-                                <span className="text-[10px] font-black">{getPersonName(p, settings.language)}</span>
+                              </div>
+                            )}
+                            
+                            <div className="relative flex-1">
+                              {timeSlots.map(slot => (
+                                <GridSlot 
+                                  key={slot}
+                                  id={`${dayStr}|${p.id}|${slot}`}
+                                  onSlotClick={() => handleGridClick(day, p.id, slot)}
+                                />
+                              ))}
+
+                              <div className="absolute inset-0 pointer-events-none">
+                                {displayedOccurrences.map((occ) => (
+                                  <div key={occ.id} className="pointer-events-auto">
+                                    <EventBlock
+                                      occurrence={occ}
+                                      dayStart={settings.dayStartTime}
+                                      color={occ.personId === 'all' ? 'var(--primary)' : p.color}
+                                      onClick={() => handleEditEvent(occ.seriesId, occ.date)}
+                                    />
+                                  </div>
+                                ))}
                               </div>
                             </div>
-                          )}
-                          
-                          <div className="relative flex-1">
-                            {timeSlots.map(slot => (
-                              <GridSlot 
-                                key={slot}
-                                id={`${dayStr}|${p.id}|${slot}`}
-                                onSlotClick={() => handleGridClick(day, p.id, slot)}
-                              />
-                            ))}
-
-                            <div className="absolute inset-0 pointer-events-none">
-                              {occurrences.map((occ) => (
-                                <div key={occ.id} className="pointer-events-auto">
-                                  <EventBlock
-                                    occurrence={occ}
-                                    dayStart={settings.dayStartTime}
-                                    color={p.color}
-                                    onClick={() => handleEditEvent(occ.seriesId, occ.date)}
-                                  />
-                                </div>
-                              ))}
-                            </div>
                           </div>
+                        )
+                      })}
+
+                      {/* Overlapping "Everyone" events layer when viewing all people */}
+                      {selectedPersonId === 'all' && (
+                        <div className="absolute inset-0 pointer-events-none" style={{ paddingTop: `${PERSON_HEADER_HEIGHT}px` }}>
+                          {allPersonOccurrences.map((occ) => (
+                            <div key={occ.id} className="pointer-events-auto absolute left-0 right-0 z-40 px-2">
+                              <EventBlock
+                                occurrence={occ}
+                                dayStart={settings.dayStartTime}
+                                color="#454545" // Neutral dark color for "everyone" events
+                                onClick={() => handleEditEvent(occ.seriesId, occ.date)}
+                                isFullWidth
+                              />
+                            </div>
+                          ))}
                         </div>
-                      )
-                    })}
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>
@@ -351,7 +375,7 @@ const CalendarContent: React.FC = () => {
               <EventBlock
                 occurrence={activeDragOccurrence}
                 dayStart={settings.dayStartTime}
-                color={persons.find(p => p.id === activeDragOccurrence.personId)?.color || '#000'}
+                color={activeDragOccurrence.personId === 'all' ? '#454545' : persons.find(p => p.id === activeDragOccurrence.personId)?.color || '#000'}
                 onClick={() => {}}
                 isDragging
               />
