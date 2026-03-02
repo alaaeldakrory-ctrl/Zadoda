@@ -6,7 +6,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
   title: 'Zadoda Scheduler - Effortless Family Scheduling',
-  description: 'Manage everyone’s schedule at a glance with Zadoda Scheduler.',
+  description: 'Organize your family life with Zadoda Scheduler. A shared calendar for Lyla, Malika, Mohamed, and Wesam.',
 };
 
 export default function RootLayout({
