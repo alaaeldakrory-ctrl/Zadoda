@@ -1,25 +1,39 @@
-
 "use client"
 
 import React, { useState } from 'react';
 import { AppLayout } from '@/components/ui/Layout';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
+import { FixedEventTemplate } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Clock, User, Pencil, Trash2, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { TemplateDialog } from '@/components/templates/TemplateDialog';
 
 export default function TemplatesPage() {
   const { settings, templates, deleteTemplate, persons } = useStore();
   const t = getTranslation(settings.language);
+  
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<FixedEventTemplate | null>(null);
+
+  const handleCreate = () => {
+    setEditingTemplate(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleEdit = (tpl: FixedEventTemplate) => {
+    setEditingTemplate(tpl);
+    setIsDialogOpen(true);
+  };
 
   return (
     <AppLayout>
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-black">{t.fixedEvents}</h1>
-          <Button>
+          <Button onClick={handleCreate}>
             <Plus className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
             {t.createTemplate}
           </Button>
@@ -38,8 +52,8 @@ export default function TemplatesPage() {
                 <Card key={tpl.id} className="group overflow-hidden border-t-4" style={{ borderTopColor: tpl.color || '#ddd' }}>
                   <CardHeader>
                     <CardTitle className="flex justify-between items-start gap-2">
-                      {tpl.name}
-                      <Badge variant="secondary" className="font-mono">{tpl.defaultDurationMinutes}{t.mins}</Badge>
+                      <span className="truncate">{tpl.name}</span>
+                      <Badge variant="secondary" className="font-mono shrink-0">{tpl.defaultDurationMinutes}{t.mins}</Badge>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -54,13 +68,22 @@ export default function TemplatesPage() {
                     {tpl.notes && <p className="text-sm text-muted-foreground line-clamp-2 italic">{tpl.notes}</p>}
                   </CardContent>
                   <CardFooter className="flex gap-2 justify-end border-t pt-4 bg-muted/10">
-                    <Button variant="ghost" size="icon" className="hover:text-destructive transition-colors">
-                      <Trash2 className="w-4 h-4" onClick={() => deleteTemplate(tpl.id)} />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="hover:text-destructive transition-colors"
+                      onClick={() => deleteTemplate(tpl.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="icon">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleEdit(tpl)}
+                    >
                       <Pencil className="w-4 h-4" />
                     </Button>
-                    <Button variant="secondary" size="sm">
+                    <Button variant="secondary" size="sm" className="hidden">
                       <Calendar className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
                       {t.schedule}
                     </Button>
@@ -71,6 +94,12 @@ export default function TemplatesPage() {
           </div>
         )}
       </div>
+
+      <TemplateDialog 
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        templateToEdit={editingTemplate}
+      />
     </AppLayout>
   );
 }
