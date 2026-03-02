@@ -212,8 +212,8 @@ export const CalendarView: React.FC = () => {
                           className={cn(
                             "object-cover", 
                             p.name === 'Mohamed' && "scale-110 -translate-y-2",
-                            p.name === 'Wesam' && "scale-110 translate-y-0",
-                            p.name === 'Malika' && "scale-150 translate-y-2",
+                            p.name === 'Wesam' && "scale-110 translate-y-1",
+                            p.name === 'Malika' && "scale-110 -translate-y-1",
                             p.name === 'Lyla' && "scale-110 -translate-y-1"
                           )}
                           data-ai-hint="person headshot"
@@ -286,8 +286,8 @@ export const CalendarView: React.FC = () => {
                                     className={cn(
                                       "object-cover", 
                                       p.name === 'Mohamed' && "scale-110 -translate-y-4",
-                                      p.name === 'Wesam' && "scale-110 translate-y-0",
-                                      p.name === 'Malika' && "scale-150 translate-y-3",
+                                      p.name === 'Wesam' && "scale-110 translate-y-1",
+                                      p.name === 'Malika' && "scale-110 -translate-y-2",
                                       p.name === 'Lyla' && "scale-110 -translate-y-2"
                                     )}
                                     data-ai-hint="person headshot"

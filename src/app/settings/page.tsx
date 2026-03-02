@@ -101,7 +101,7 @@ export default function SettingsPage() {
                   <CardDescription className="font-bold text-muted-foreground">Customize names and colors for each family member.</CardDescription>
                 </div>
               </div>
-            </CardHeader>
+            </Header>
             <CardContent className="grid gap-12 p-8">
               {persons.map(p => (
                 <div key={p.id} className="grid gap-8 border-b border-dashed pb-12 last:border-0 last:pb-0">
@@ -116,8 +116,8 @@ export default function SettingsPage() {
                           className={cn(
                             "object-cover", 
                             p.name === 'Mohamed' && "scale-110 -translate-y-4",
-                            p.name === 'Wesam' && "scale-110 translate-y-0",
-                            p.name === 'Malika' && "scale-150 translate-y-3",
+                            p.name === 'Wesam' && "scale-110 translate-y-1",
+                            p.name === 'Malika' && "scale-110 -translate-y-2",
                             p.name === 'Lyla' && "scale-110 -translate-y-2"
                           )}
                           data-ai-hint="person headshot"

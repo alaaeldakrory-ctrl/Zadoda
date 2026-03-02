@@ -111,8 +111,8 @@ export default function MemosPage() {
                         className={cn(
                           "object-cover", 
                           person.name === 'Mohamed' && "scale-110 -translate-y-4",
-                          person.name === 'Wesam' && "scale-110 translate-y-0",
-                          person.name === 'Malika' && "scale-150 translate-y-3",
+                          person.name === 'Wesam' && "scale-110 translate-y-1",
+                          person.name === 'Malika' && "scale-110 -translate-y-2",
                           person.name === 'Lyla' && "scale-110 -translate-y-2"
                         )}
                         data-ai-hint="person headshot"
@@ -193,8 +193,8 @@ export default function MemosPage() {
                               className={cn(
                                 "object-cover", 
                                 person.name === 'Mohamed' && "scale-110 -translate-y-2",
-                                person.name === 'Wesam' && "scale-110 translate-y-0",
-                                person.name === 'Malika' && "scale-150 translate-y-2",
+                                person.name === 'Wesam' && "scale-110 translate-y-1",
+                                person.name === 'Malika' && "scale-110 -translate-y-1",
                                 person.name === 'Lyla' && "scale-110 -translate-y-1"
                               )}
                               data-ai-hint="person headshot"

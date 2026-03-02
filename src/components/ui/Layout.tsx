@@ -32,14 +32,14 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       <aside className="w-80 border-r flex flex-col hidden lg:flex bg-white relative z-20">
         <div className="p-8 flex flex-col items-center text-center">
           <Link href="/" className="flex flex-col items-center gap-6 group">
-            <div className="w-32 h-32 rounded-full overflow-hidden shadow-2xl shadow-primary/30 border-4 border-primary/20 flex-shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:shadow-primary/40 group-hover:border-primary/40">
+            <div className="w-32 h-32 rounded-full overflow-hidden shadow-2xl shadow-primary/30 border-4 border-primary/20 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-primary/40 group-hover:border-primary/40">
               {logoImage ? (
                 <Image 
                   src={logoImage} 
                   alt="Zadoda Logo" 
                   width={128} 
                   height={128} 
-                  className="object-cover scale-110 -translate-y-2"
+                  className="object-cover scale-105 -translate-y-1"
                   priority
                 />
               ) : (
@@ -94,8 +94,8 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                       className={cn(
                         "object-cover", 
                         person.name === 'Mohamed' && "scale-110 -translate-y-4",
-                        person.name === 'Wesam' && "scale-110 translate-y-0",
-                        person.name === 'Malika' && "scale-150 translate-y-3",
+                        person.name === 'Wesam' && "scale-110 translate-y-1",
+                        person.name === 'Malika' && "scale-110 -translate-y-2",
                         person.name === 'Lyla' && "scale-110 -translate-y-2"
                       )}
                       data-ai-hint="person headshot"
