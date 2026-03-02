@@ -80,13 +80,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const seriesRef = useMemoFirebase(() => collection(db, 'calendarEventSeries'), [db]);
   const { data: seriesData, isLoading: seriesLoading } = useCollection<CalendarEventSeries>(seriesRef);
 
-  // Seed initial people if none exist
+  // Seed initial people if none exist or if they are placeholders
   useEffect(() => {
-    if (!personsLoading && personsData && personsData.length === 0 && db) {
-      INITIAL_PEOPLE.forEach(p => {
-        const pRef = doc(db, 'people', p.id);
-        setDocumentNonBlocking(pRef, p, { merge: true });
-      });
+    if (!personsLoading && personsData && db) {
+      const needsSeeding = personsData.length === 0;
+      // We also check if the existing data is the generic "Person 1" type to override it with requested names
+      const isGeneric = personsData.some(p => p.name.startsWith('Person '));
+      
+      if (needsSeeding || isGeneric) {
+        INITIAL_PEOPLE.forEach(p => {
+          const pRef = doc(db, 'people', p.id);
+          setDocumentNonBlocking(pRef, p, { merge: true });
+        });
+      }
     }
   }, [personsLoading, personsData, db]);
 
@@ -94,7 +100,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const persons = (personsData && personsData.length > 0) ? personsData : INITIAL_PEOPLE;
   const templates = templatesData || [];
   const series = seriesData || [];
-  const overrides: CalendarEventOccurrenceOverride[] = []; // Simplified for now
+  const overrides: CalendarEventOccurrenceOverride[] = []; 
 
   const isLoading = isUserLoading || settingsLoading || personsLoading || templatesLoading || seriesLoading;
 

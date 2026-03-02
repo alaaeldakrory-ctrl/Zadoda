@@ -197,7 +197,7 @@ export const CalendarView: React.FC = () => {
           <div className="flex min-w-[800px] min-h-full">
             {/* Time Axis */}
             <div className="w-24 sticky left-0 z-30 bg-background/80 backdrop-blur-md border-r-2 shadow-sm shrink-0">
-              <div className="h-16 border-b-2" />
+              <div className="h-24 border-b-2" />
               {timeSlots.map(slot => (
                 <div key={slot} className="h-16 text-sm font-black text-muted-foreground flex items-center justify-center border-b border-dashed last:border-0 px-2 text-center uppercase">
                   {formatTime(slot)}
@@ -210,7 +210,7 @@ export const CalendarView: React.FC = () => {
               {days.map(day => (
                 <div key={day.toISOString()} className="flex-1 border-r-2 last:border-r-0 min-w-0 flex flex-col min-h-full">
                   {/* Day Header */}
-                  <div className="h-16 border-b-2 bg-muted/40 flex items-center justify-center text-sm font-black sticky top-0 z-30 backdrop-blur-md uppercase tracking-wider text-muted-foreground">
+                  <div className="h-16 border-b-2 bg-muted/40 flex items-center justify-center text-sm font-black sticky top-0 z-40 backdrop-blur-md uppercase tracking-wider text-muted-foreground">
                     {format(day, 'EEE d')}
                   </div>
 
@@ -224,7 +224,7 @@ export const CalendarView: React.FC = () => {
                         <div key={p.id} className="flex-1 border-r-2 last:border-r-0 relative bg-white/30 group min-h-full flex flex-col">
                           {selectedPersonId === 'all' && (
                             <div 
-                              className="h-16 flex items-center justify-center text-lg font-black border-b-2 sticky top-16 z-20 shadow-sm transition-colors uppercase tracking-widest shrink-0" 
+                              className="h-24 flex items-center justify-center text-2xl font-black border-b-2 sticky top-16 z-30 shadow-md transition-colors uppercase tracking-widest shrink-0" 
                               style={{ backgroundColor: `${p.color}20`, color: p.color, borderColor: `${p.color}40` }}
                             >
                               {p.name}
@@ -232,7 +232,7 @@ export const CalendarView: React.FC = () => {
                           )}
                           
                           {/* Grid Lines and Droppable Areas */}
-                          <div className="relative flex-1">
+                          <div className="relative flex-1 min-h-[calc(100vh)]">
                             {timeSlots.map(slot => (
                               <GridSlot 
                                 key={slot}
