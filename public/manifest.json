@@ -1,0 +1,17 @@
+{
+  "name": "Zadoda Scheduler",
+  "short_name": "Zadoda",
+  "description": "Effortless Family Scheduling",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#FBBF24",
+  "icons": [
+    {
+      "src": "https://firebasestorage.googleapis.com/v0/b/studio-3744208193-a3aca.firebasestorage.app/o/Gemini_Generated_Image_uu2mjyuu2mjyuu2m.png?alt=media&token=12f22b8b-ef13-41c2-8fb8-748c545e792c",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
