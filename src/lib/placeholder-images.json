@@ -5,6 +5,30 @@
       "description": "Family organizing their schedule on a large tablet",
       "imageUrl": "https://images.unsplash.com/photo-1758523418162-97e39cf60624?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxmYW1pbHklMjBvcmdhbml6YXRpb258ZW58MHx8fHwxNzcyNDYyODc2fDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "family organization"
+    },
+    {
+      "id": "avatar-lyla",
+      "description": "Avatar for Lyla",
+      "imageUrl": "https://images.unsplash.com/photo-1706025090731-061925241498?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxjaGlsZCUyMGhlYWRzaG90fGVufDB8fHx8MTc3MjQ3MDIzN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "child headshot"
+    },
+    {
+      "id": "avatar-malika",
+      "description": "Avatar for Malika",
+      "imageUrl": "https://images.unsplash.com/photo-1553514029-1318c9127859?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHx3b21hbiUyMGhlYWRzaG90fGVufDB8fHx8MTc3MjQ3MDIzN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman headshot"
+    },
+    {
+      "id": "avatar-mohamed",
+      "description": "Avatar for Mohamed",
+      "imageUrl": "https://images.unsplash.com/photo-1627161684458-a62da52b51c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxtYW4lMjBoZWFkc2hvdHxlbnwwfHx8fDE3NzI0NDkzOTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man headshot"
+    },
+    {
+      "id": "avatar-wesam",
+      "description": "Avatar for Wesam",
+      "imageUrl": "https://images.unsplash.com/photo-1545205597-85ce61ef3ef1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxnaXJsJTIwaGVhZHNob3R8ZW58MHx8fHwxNzcyNDcwMjM3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "girl headshot"
     }
   ]
 }

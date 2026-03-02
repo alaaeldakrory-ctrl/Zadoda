@@ -1,10 +1,10 @@
-
 export type Language = 'en' | 'ar';
 
 export interface Person {
-  id: string; // "1", "2", "3", "4"
+  id: string; // "person1", "person2", "person3", "person4"
   name: string;
   color: string;
+  avatarUrl?: string;
 }
 
 export type RecurrenceFrequency = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY';

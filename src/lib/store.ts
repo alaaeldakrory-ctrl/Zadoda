@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { createContext, useContext, useEffect } from 'react';
@@ -17,7 +16,8 @@ import {
   deleteDocumentNonBlocking,
   initiateAnonymousSignIn
 } from '@/firebase';
-import { collection, doc, query, where, DocumentReference, CollectionReference, writeBatch } from 'firebase/firestore';
+import { collection, doc, query, where, DocumentReference, CollectionReference } from 'firebase/firestore';
+import { PlaceHolderImages } from './placeholder-images';
 
 interface StoreContextValue {
   persons: Person[];
@@ -49,10 +49,30 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 const INITIAL_PEOPLE: Person[] = [
-  { id: 'person1', name: 'Lyla', color: '#6366f1' },
-  { id: 'person2', name: 'Malika', color: '#f59e0b' },
-  { id: 'person3', name: 'Mohamed', color: '#10b981' },
-  { id: 'person4', name: 'Wesam', color: '#ec4899' },
+  { 
+    id: 'person1', 
+    name: 'Lyla', 
+    color: '#6366f1', 
+    avatarUrl: PlaceHolderImages.find(img => img.id === 'avatar-lyla')?.imageUrl 
+  },
+  { 
+    id: 'person2', 
+    name: 'Malika', 
+    color: '#f59e0b', 
+    avatarUrl: PlaceHolderImages.find(img => img.id === 'avatar-malika')?.imageUrl 
+  },
+  { 
+    id: 'person3', 
+    name: 'Mohamed', 
+    color: '#10b981', 
+    avatarUrl: PlaceHolderImages.find(img => img.id === 'avatar-mohamed')?.imageUrl 
+  },
+  { 
+    id: 'person4', 
+    name: 'Wesam', 
+    color: '#ec4899', 
+    avatarUrl: PlaceHolderImages.find(img => img.id === 'avatar-wesam')?.imageUrl 
+  },
 ];
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -84,10 +104,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     if (!personsLoading && personsData && db) {
       const needsSeeding = personsData.length === 0;
-      // We also check if the existing data is the generic "Person 1" type to override it with requested names
-      const isGeneric = personsData.some(p => p.name.startsWith('Person '));
+      // We check if we need to enforce the specific names requested
+      const namesDontMatch = !personsData.some(p => p.name === 'Lyla');
       
-      if (needsSeeding || isGeneric) {
+      if (needsSeeding || namesDontMatch) {
         INITIAL_PEOPLE.forEach(p => {
           const pRef = doc(db, 'people', p.id);
           setDocumentNonBlocking(pRef, p, { merge: true });

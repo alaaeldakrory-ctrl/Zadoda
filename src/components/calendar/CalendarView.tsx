@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState } from 'react';
@@ -16,6 +15,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { DndContext, DragOverlay, closestCorners, DragEndEvent, useDroppable } from '@dnd-kit/core';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface GridSlotProps {
   id: string;
@@ -171,7 +171,10 @@ export const CalendarView: React.FC = () => {
                 {persons.map(p => (
                   <SelectItem key={p.id} value={p.id}>
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: p.color }} />
+                      <Avatar className="w-6 h-6 border-2" style={{ borderColor: p.color }}>
+                        <AvatarImage src={p.avatarUrl} alt={p.name} />
+                        <AvatarFallback style={{ backgroundColor: p.color, color: 'white' }}>{p.name[0]}</AvatarFallback>
+                      </Avatar>
                       {p.name}
                     </div>
                   </SelectItem>
@@ -224,9 +227,13 @@ export const CalendarView: React.FC = () => {
                         <div key={p.id} className="flex-1 border-r-2 last:border-r-0 relative bg-white/30 group min-h-full flex flex-col">
                           {selectedPersonId === 'all' && (
                             <div 
-                              className="h-24 flex items-center justify-center text-2xl font-black border-b-2 sticky top-16 z-30 shadow-md transition-colors uppercase tracking-widest shrink-0" 
+                              className="h-24 flex items-center justify-center gap-4 text-2xl font-black border-b-2 sticky top-16 z-30 shadow-md transition-colors uppercase tracking-widest shrink-0" 
                               style={{ backgroundColor: `${p.color}20`, color: p.color, borderColor: `${p.color}40` }}
                             >
+                              <Avatar className="w-12 h-12 border-4" style={{ borderColor: p.color }}>
+                                <AvatarImage src={p.avatarUrl} alt={p.name} />
+                                <AvatarFallback style={{ backgroundColor: p.color, color: 'white' }}>{p.name[0]}</AvatarFallback>
+                              </Avatar>
                               {p.name}
                             </div>
                           )}
