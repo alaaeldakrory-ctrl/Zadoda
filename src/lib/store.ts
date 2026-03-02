@@ -105,21 +105,30 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     if (!personsLoading && personsData && db) {
       const needsSeeding = personsData.length === 0;
-      const namesDontMatch = !personsData.some(p => p.name === 'Lyla' || p.name === 'Mohamed');
       
-      if (needsSeeding || namesDontMatch) {
+      // We only seed the database if it's completely empty
+      if (needsSeeding) {
         INITIAL_PEOPLE.forEach(p => {
           const pRef = doc(db, 'people', p.id);
           setDocumentNonBlocking(pRef, p, { merge: true });
         });
       } else {
-        // Force update specifically for Mohamed if the URL is old/generic
+        // Ensure Mohamed's specific photo is set if it's missing or generic
         const mohamed = personsData.find(p => p.id === 'person3');
         const mohamedAvatar = PlaceHolderImages.find(img => img.id === 'avatar-mohamed')?.imageUrl;
-        if (mohamed && mohamed.avatarUrl !== mohamedAvatar) {
+        if (mohamed && (!mohamed.avatarUrl || mohamed.avatarUrl.includes('picsum'))) {
           const pRef = doc(db, 'people', 'person3');
-          updateDocumentNonBlocking(pRef, { avatarUrl: mohamedAvatar });
+          updateDocumentNonBlocking(pRef, { avatarUrl: mohamedAvatar, name: 'Mohamed' });
         }
+        
+        // Ensure other names are correct if they were somehow reverted
+        personsData.forEach(p => {
+          const initial = INITIAL_PEOPLE.find(ip => ip.id === p.id);
+          if (initial && p.name.includes('Person')) {
+            const pRef = doc(db, 'people', p.id);
+            updateDocumentNonBlocking(pRef, { name: initial.name });
+          }
+        });
       }
     }
   }, [personsLoading, personsData, db]);
