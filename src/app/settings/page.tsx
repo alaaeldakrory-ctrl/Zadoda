@@ -1,4 +1,3 @@
-
 "use client"
 
 import React from 'react';
@@ -11,16 +10,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Globe, Calendar, Users, Clock, Palette } from 'lucide-react';
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { getAvatarUrl } from '@/lib/utils';
 
 export default function SettingsPage() {
   const { settings, updateSettings, persons, updatePerson } = useStore();
   const t = getTranslation(settings.language);
-
-  const getAvatarUrl = (personName: string) => {
-    const avatar = PlaceHolderImages.find(img => img.id === `avatar-${personName.toLowerCase().replace(/\d+$/, '')}`);
-    return avatar?.imageUrl || `https://picsum.photos/seed/${personName}/100/100`;
-  };
 
   return (
     <AppLayout>
@@ -112,7 +106,7 @@ export default function SettingsPage() {
                 <div key={p.id} className="grid gap-8 border-b border-dashed pb-12 last:border-0 last:pb-0">
                   <div className="flex items-center gap-6">
                     <div className="relative">
-                      <div className="w-20 h-20 rounded-[2rem] overflow-hidden border-4 shadow-xl" style={{ borderColor: p.color }}>
+                      <div className="w-20 h-20 rounded-[2rem] overflow-hidden border-4 shadow-2xl" style={{ borderColor: p.color }}>
                         <Image 
                           src={getAvatarUrl(p.name)} 
                           alt={p.name} 
@@ -147,7 +141,7 @@ export default function SettingsPage() {
                         <Input 
                           type="color" 
                           value={p.color}
-                          className="w-20 h-14 p-1.5 rounded-2xl border-2 cursor-pointer bg-white"
+                          className="w-20 h-14 p-1.5 rounded-2xl border-2 cursor-pointer bg-white shadow-sm"
                           onChange={(e) => updatePerson(p.id, { color: e.target.value })}
                         />
                         <span className="text-sm font-mono font-black opacity-60 uppercase bg-muted px-4 py-2 rounded-xl border-2">

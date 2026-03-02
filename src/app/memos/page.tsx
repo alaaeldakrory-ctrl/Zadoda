@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState } from 'react';
@@ -7,12 +6,12 @@ import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { Memo, CalendarEventSeries } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Pencil, Calendar, CheckSquare, Square, Inbox } from 'lucide-react';
+import { Plus, Trash2, Pencil, Calendar, CheckSquare, Square } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
+import { cn, getAvatarUrl } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -79,11 +78,6 @@ export default function MemosPage() {
     router.push('/');
   };
 
-  const getAvatarUrl = (personName: string) => {
-    const avatar = PlaceHolderImages.find(img => img.id === `avatar-${personName.toLowerCase().replace(/\d+$/, '')}`);
-    return avatar?.imageUrl || `https://picsum.photos/seed/${personName}/100/100`;
-  };
-
   return (
     <AppLayout>
       <div className="max-w-[1600px] mx-auto space-y-8">
@@ -103,16 +97,16 @@ export default function MemosPage() {
             return (
               <div key={person.id} className="flex flex-col space-y-4">
                 <div 
-                  className="p-4 rounded-[2rem] flex items-center justify-between shadow-sm border-2 bg-white"
+                  className="p-4 rounded-[2rem] flex items-center justify-between shadow-md border-2 bg-white"
                   style={{ borderColor: `${person.color}20` }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden border-2 shadow-sm" style={{ borderColor: person.color }}>
+                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 shadow-sm" style={{ borderColor: person.color }}>
                       <Image 
                         src={getAvatarUrl(person.name)} 
                         alt={person.name} 
-                        width={40} 
-                        height={40} 
+                        width={48} 
+                        height={48} 
                         className="object-cover"
                         data-ai-hint="person headshot"
                       />
@@ -134,7 +128,7 @@ export default function MemosPage() {
                 <div className="flex-1 space-y-2">
                   {personMemos.length === 0 ? (
                     <div className="h-48 rounded-[2rem] border-2 border-dashed flex flex-col items-center justify-center p-6 text-center space-y-3 opacity-30 grayscale">
-                      <div className="w-20 h-20 rounded-full overflow-hidden">
+                      <div className="w-20 h-20 rounded-full overflow-hidden shadow-sm">
                         <Image 
                           src={PlaceHolderImages.find(img => img.id === 'empty-tasks')?.imageUrl || 'https://picsum.photos/seed/rest/400/400'} 
                           alt="No tasks" 
@@ -181,6 +175,17 @@ export default function MemosPage() {
                                 {memo.content}
                               </p>
                             )}
+                          </div>
+
+                          <div className="shrink-0 w-5 h-5 rounded-full overflow-hidden border opacity-40 shadow-sm">
+                            <Image 
+                              src={getAvatarUrl(person.name)} 
+                              alt={person.name} 
+                              width={20} 
+                              height={20} 
+                              className="object-cover"
+                              data-ai-hint="person headshot"
+                            />
                           </div>
                         </div>
 

@@ -1,16 +1,14 @@
-
 "use client"
 
 import React from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
-import { cn } from '@/lib/utils';
+import { cn, getAvatarUrl } from '@/lib/utils';
 import { Calendar, Layers, Settings, Globe, StickyNote, Plus, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { settings, setLanguage, persons } = useStore();
@@ -23,11 +21,6 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
     { label: t.memos, icon: StickyNote, href: '/memos' },
     { label: t.settings, icon: Settings, href: '/settings' },
   ];
-
-  const getAvatarUrl = (personId: string) => {
-    const avatar = PlaceHolderImages.find(img => img.id === `avatar-${personId.toLowerCase().replace(/\d+$/, '')}`);
-    return avatar?.imageUrl || `https://picsum.photos/seed/${personId}/100/100`;
-  };
 
   return (
     <div className="flex h-screen bg-background overflow-hidden selection:bg-primary selection:text-primary-foreground">
@@ -72,7 +65,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
             {persons.map(person => (
               <div key={person.id} className="flex items-center gap-3 group">
                 <div className="relative">
-                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 transition-transform group-hover:scale-110" style={{ borderColor: person.color }}>
+                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 transition-transform group-hover:scale-110 shadow-sm" style={{ borderColor: person.color }}>
                     <Image 
                       src={getAvatarUrl(person.name)} 
                       alt={person.name} 
@@ -80,6 +73,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                       height={40} 
                       className="object-cover"
                       data-ai-hint="person headshot"
+                      priority
                     />
                   </div>
                 </div>

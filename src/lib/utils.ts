@@ -1,11 +1,18 @@
-
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format, addMinutes, parse, isSameDay, startOfWeek, addDays, getDay } from 'date-fns';
 import { CalendarEventSeries, CalendarEventOccurrenceOverride, RecurrenceRule } from './types';
+import { PlaceHolderImages } from './placeholder-images';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+export function getAvatarUrl(name: string): string {
+  if (!name) return 'https://picsum.photos/seed/default/100/100';
+  const cleanName = name.toLowerCase().trim();
+  const avatar = PlaceHolderImages.find(img => img.id === `avatar-${cleanName}`);
+  return avatar?.imageUrl || `https://picsum.photos/seed/${cleanName}/100/100`;
 }
 
 export function formatTime(time24h: string): string {

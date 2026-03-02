@@ -1,20 +1,18 @@
-
 "use client"
 
 import React, { useState } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
-import { generateTimeSlots, getOccurrencesForDate, formatTime, cn } from '@/lib/utils';
+import { generateTimeSlots, getOccurrencesForDate, formatTime, cn, getAvatarUrl } from '@/lib/utils';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { EventBlock } from './EventBlock';
 import { EventDialog } from './EventDialog';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Layers, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Card, CardContent } from '@/components/ui/card';
 import { DndContext, DragOverlay, closestCorners, DragEndEvent, useDroppable } from '@dnd-kit/core';
 import { TemplateDialog } from '@/components/templates/TemplateDialog';
 import Image from 'next/image';
@@ -110,11 +108,6 @@ export const CalendarView: React.FC = () => {
     }
   };
 
-  const getAvatarUrl = (personName: string) => {
-    const avatar = PlaceHolderImages.find(img => img.id === `avatar-${personName.toLowerCase().replace(/\d+$/, '')}`);
-    return avatar?.imageUrl || `https://picsum.photos/seed/${personName}/100/100`;
-  };
-
   const activeDragOccurrence = activeDragId ? 
     days.flatMap(day => filteredPersons.flatMap(p => getOccurrencesForDate(series, day, overrides).filter(occ => occ.id === activeDragId && occ.personId === p.id)))[0]
     : null;
@@ -191,8 +184,15 @@ export const CalendarView: React.FC = () => {
                 {persons.map(p => (
                   <SelectItem key={p.id} value={p.id}>
                     <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 rounded-full overflow-hidden border">
-                        <Image src={getAvatarUrl(p.name)} alt={p.name} width={16} height={16} className="object-cover" />
+                      <div className="w-6 h-6 rounded-full overflow-hidden border shadow-sm" style={{ borderColor: p.color }}>
+                        <Image 
+                          src={getAvatarUrl(p.name)} 
+                          alt={p.name} 
+                          width={24} 
+                          height={24} 
+                          className="object-cover"
+                          data-ai-hint="person headshot"
+                        />
                       </div>
                       {p.name}
                     </div>
@@ -252,7 +252,7 @@ export const CalendarView: React.FC = () => {
                               }}
                             >
                               <div className="flex flex-col items-center gap-1.5 p-2">
-                                <div className="w-10 h-10 rounded-full overflow-hidden border-2 shadow-sm" style={{ borderColor: p.color }}>
+                                <div className="w-10 h-10 rounded-full overflow-hidden border-2 shadow-md transition-transform group-hover:scale-110" style={{ borderColor: p.color }}>
                                   <Image 
                                     src={getAvatarUrl(p.name)} 
                                     alt={p.name} 
@@ -328,7 +328,7 @@ export const CalendarView: React.FC = () => {
             <div className="grid grid-cols-1 gap-4 p-8 pt-0 max-h-[60vh] overflow-y-auto">
               {templates.length === 0 ? (
                 <div className="text-center py-16 space-y-4">
-                  <div className="w-48 h-48 mx-auto rounded-3xl overflow-hidden opacity-50 grayscale">
+                  <div className="w-48 h-48 mx-auto rounded-3xl overflow-hidden opacity-50 grayscale shadow-lg">
                     <Image 
                       src={PlaceHolderImages.find(img => img.id === 'empty-templates')?.imageUrl || 'https://picsum.photos/seed/empty/400/400'} 
                       alt="No templates" 
