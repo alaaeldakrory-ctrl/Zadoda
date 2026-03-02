@@ -1,6 +1,11 @@
-
 {
   "placeholderImages": [
+    {
+      "id": "app-logo",
+      "description": "Zadoda Scheduler Logo",
+      "imageUrl": "https://firebasestorage.googleapis.com/v0/b/studio-3744208193-a3aca.firebasestorage.app/o/Gemini_Generated_Image_uu2mjyuu2mjyuu2m.png?alt=media&token=12f22b8b-ef13-41c2-8fb8-748c545e792c",
+      "imageHint": "app logo"
+    },
     {
       "id": "app-hero",
       "description": "Family organizing their schedule on a large tablet",

@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { settings, setLanguage, persons } = useStore();
@@ -22,15 +23,30 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
     { label: t.settings, icon: Settings, href: '/settings' },
   ];
 
+  const logoImage = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl;
+
   return (
     <div className="flex h-screen bg-background overflow-hidden selection:bg-primary selection:text-primary-foreground">
       {/* Sidebar */}
       <aside className="w-80 border-r flex flex-col hidden lg:flex bg-white relative z-20">
         <div className="p-10">
-          <Link href="/" className="text-4xl font-black text-foreground flex items-center gap-3">
-            <span className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-primary/20">
-              <Plus className="w-6 h-6 text-primary-foreground stroke-[3px]" />
-            </span>
+          <Link href="/" className="text-4xl font-black text-foreground flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-lg shadow-primary/20 border-2 border-primary/10 flex-shrink-0">
+              {logoImage ? (
+                <Image 
+                  src={logoImage} 
+                  alt="Zadoda Logo" 
+                  width={48} 
+                  height={48} 
+                  className="object-cover"
+                  priority
+                />
+              ) : (
+                <div className="w-full h-full bg-primary flex items-center justify-center">
+                  <Plus className="w-6 h-6 text-primary-foreground stroke-[3px]" />
+                </div>
+              )}
+            </div>
             <span className="tracking-tight lowercase">zadoda</span>
           </Link>
         </div>
