@@ -111,6 +111,11 @@ export const CalendarView: React.FC = () => {
     days.flatMap(day => filteredPersons.flatMap(p => getOccurrencesForDate(series, day, overrides).filter(occ => occ.id === activeDragId && occ.personId === p.id)))[0]
     : null;
 
+  // Header height constants (px)
+  const DAY_HEADER_HEIGHT = 40;
+  const PERSON_HEADER_HEIGHT = selectedPersonId === 'all' ? 72 : 0;
+  const TOTAL_HEADER_HEIGHT = DAY_HEADER_HEIGHT + PERSON_HEADER_HEIGHT;
+
   return (
     <DndContext 
       collisionDetection={closestCorners} 
@@ -201,8 +206,11 @@ export const CalendarView: React.FC = () => {
           <div className="flex min-w-[800px] min-h-full">
             {/* Time Axis */}
             <div className="w-24 sticky left-0 z-50 bg-background/80 backdrop-blur-md border-r-2 shadow-sm shrink-0">
-              {/* Spacer matching Day Header (h-16) + Person Header (h-24) = h-40 */}
-              <div className={selectedPersonId === 'all' ? "h-40 border-b-2" : "h-16 border-b-2"} />
+              {/* Spacer matching combined header height */}
+              <div 
+                className="border-b-2 bg-muted/10" 
+                style={{ height: `${TOTAL_HEADER_HEIGHT}px` }} 
+              />
               {timeSlots.map(slot => (
                 <div key={slot} className="h-16 text-sm font-black text-muted-foreground flex items-center justify-center border-b border-dashed last:border-0 px-2 text-center uppercase">
                   {formatTime(slot)}
@@ -214,9 +222,12 @@ export const CalendarView: React.FC = () => {
             <div className="flex-1 flex min-h-full">
               {days.map(day => (
                 <div key={day.toISOString()} className="flex-1 border-r-2 last:border-r-0 min-w-0 flex flex-col min-h-full">
-                  {/* Day Header */}
-                  <div className="h-16 border-b-2 bg-muted/40 flex items-center justify-center text-sm font-black sticky top-0 z-40 backdrop-blur-md uppercase tracking-wider text-muted-foreground">
-                    {format(day, 'EEE d')}
+                  {/* Day Header - Compact height */}
+                  <div 
+                    className="border-b-2 bg-muted/40 flex items-center justify-center text-[10px] font-black sticky top-0 z-40 backdrop-blur-md uppercase tracking-[0.2em] text-muted-foreground shrink-0"
+                    style={{ height: `${DAY_HEADER_HEIGHT}px` }}
+                  >
+                    {format(day, 'EEEE d')}
                   </div>
 
                   {/* Person Sub-columns */}
@@ -229,10 +240,16 @@ export const CalendarView: React.FC = () => {
                         <div key={p.id} className="flex-1 border-r-2 last:border-r-0 relative bg-white/30 group min-h-full flex flex-col">
                           {selectedPersonId === 'all' && (
                             <div 
-                              className="h-24 flex items-center justify-center gap-4 text-2xl font-black border-b-2 sticky top-16 z-30 shadow-md transition-colors uppercase tracking-widest shrink-0" 
-                              style={{ backgroundColor: `${p.color}20`, color: p.color, borderColor: `${p.color}40` }}
+                              className="flex items-center justify-center gap-3 text-2xl font-black border-b-2 sticky z-30 shadow-sm transition-colors uppercase tracking-widest shrink-0" 
+                              style={{ 
+                                height: `${PERSON_HEADER_HEIGHT}px`,
+                                top: `${DAY_HEADER_HEIGHT}px`,
+                                backgroundColor: `${p.color}15`, 
+                                color: p.color, 
+                                borderColor: `${p.color}30` 
+                              }}
                             >
-                              <Avatar className="w-12 h-12 border-4" style={{ borderColor: p.color }}>
+                              <Avatar className="w-10 h-10 border-2" style={{ borderColor: p.color }}>
                                 <AvatarImage src={p.avatarUrl} alt={p.name} />
                                 <AvatarFallback style={{ backgroundColor: p.color, color: 'white' }}>{p.name[0]}</AvatarFallback>
                               </Avatar>
