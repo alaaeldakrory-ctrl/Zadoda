@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { createContext, useContext, useEffect } from 'react';
@@ -100,11 +101,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const seriesRef = useMemoFirebase(() => collection(db, 'calendarEventSeries'), [db]);
   const { data: seriesData, isLoading: seriesLoading } = useCollection<CalendarEventSeries>(seriesRef);
 
-  // Seed initial people if none exist or if they are placeholders
+  // Seed or update people
   useEffect(() => {
     if (!personsLoading && personsData && db) {
+      // Force update the avatar for Mohamed if it doesn't match the new placeholder
+      const mohamed = personsData.find(p => p.id === 'person3');
+      const mohamedAvatar = PlaceHolderImages.find(img => img.id === 'avatar-mohamed')?.imageUrl;
+      
+      if (mohamed && mohamed.avatarUrl !== mohamedAvatar) {
+        const pRef = doc(db, 'people', 'person3');
+        setDocumentNonBlocking(pRef, { avatarUrl: mohamedAvatar }, { merge: true });
+      }
+
       const needsSeeding = personsData.length === 0;
-      // We check if we need to enforce the specific names requested
       const namesDontMatch = !personsData.some(p => p.name === 'Lyla');
       
       if (needsSeeding || namesDontMatch) {

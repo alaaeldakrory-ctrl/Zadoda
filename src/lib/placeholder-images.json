@@ -20,9 +20,9 @@
     },
     {
       "id": "avatar-mohamed",
-      "description": "Avatar for Mohamed",
-      "imageUrl": "https://images.unsplash.com/photo-1627161684458-a62da52b51c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxtYW4lMjBoZWFkc2hvdHxlbnwwfHx8fDE3NzI0NDkzOTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "man headshot"
+      "description": "Avatar for Mohamed (Man with glasses and beard)",
+      "imageUrl": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+      "imageHint": "man glasses beard"
     },
     {
       "id": "avatar-wesam",
