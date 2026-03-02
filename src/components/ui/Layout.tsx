@@ -98,7 +98,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                         person.id === 'person3' && "scale-110 -translate-y-4",
                         person.id === 'person4' && "scale-105 translate-y-1",
                         person.id === 'person2' && "scale-150 translate-y-3",
-                        person.id === 'person1' && "scale-110 -translate-y-4"
+                        person.id === 'person1' && "scale-110 translate-y-1"
                       )}
                       data-ai-hint="person headshot"
                       priority
