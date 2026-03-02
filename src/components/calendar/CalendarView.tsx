@@ -7,9 +7,12 @@ import { getTranslation } from '@/lib/i18n';
 import { generateTimeSlots, getOccurrencesForDate } from '@/lib/utils';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { EventBlock } from './EventBlock';
+import { EventDialog } from './EventDialog';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 
 export const CalendarView: React.FC = () => {
   const { settings, persons, series, overrides } = useStore();
@@ -17,6 +20,9 @@ export const CalendarView: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
   const [selectedPersonId, setSelectedPersonId] = useState<string | 'all'>('all');
+  
+  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<{ seriesId: string; date: string } | null>(null);
 
   const timeSlots = generateTimeSlots(settings.dayStartTime, settings.dayEndTime);
   const weekStart = startOfWeek(currentDate);
@@ -26,6 +32,16 @@ export const CalendarView: React.FC = () => {
     ? persons 
     : persons.filter(p => p.id === selectedPersonId);
 
+  const handleAddEvent = () => {
+    setEditingEvent(null);
+    setIsEventDialogOpen(true);
+  };
+
+  const handleEditEvent = (seriesId: string, date: string) => {
+    setEditingEvent({ seriesId, date });
+    setIsEventDialogOpen(true);
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden bg-card rounded-xl border shadow-sm">
       {/* Header Controls */}
@@ -34,9 +50,24 @@ export const CalendarView: React.FC = () => {
           <Button variant="outline" size="icon" onClick={() => setCurrentDate(addDays(currentDate, -1))}>
             <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
           </Button>
-          <h2 className="text-xl font-bold min-w-32 text-center">
-            {format(currentDate, 'MMMM yyyy')}
-          </h2>
+          
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="min-w-40 font-bold flex gap-2">
+                <CalendarIcon className="w-4 h-4 text-muted-foreground" />
+                {format(currentDate, viewMode === 'day' ? 'MMMM d, yyyy' : 'MMMM yyyy')}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={currentDate}
+                onSelect={(date) => date && setCurrentDate(date)}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+
           <Button variant="outline" size="icon" onClick={() => setCurrentDate(addDays(currentDate, 1))}>
             <ChevronRight className="w-4 h-4 rtl:rotate-180" />
           </Button>
@@ -65,7 +96,7 @@ export const CalendarView: React.FC = () => {
             </SelectContent>
           </Select>
 
-          <Button onClick={() => {}}>
+          <Button onClick={handleAddEvent}>
             <Plus className="w-4 h-4 mr-2 rtl:ml-2 rtl:mr-0" />
             {t.addEvent}
           </Button>
@@ -118,7 +149,7 @@ export const CalendarView: React.FC = () => {
                             occurrence={occ}
                             dayStart={settings.dayStartTime}
                             color={p.color}
-                            onClick={() => {}}
+                            onClick={() => handleEditEvent(occ.id, occ.date)}
                           />
                         ))}
                       </div>
@@ -130,6 +161,13 @@ export const CalendarView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <EventDialog
+        open={isEventDialogOpen}
+        onOpenChange={setIsEventDialogOpen}
+        initialDate={currentDate}
+        eventToEdit={editingEvent}
+      />
     </div>
   );
 };
