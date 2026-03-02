@@ -17,7 +17,7 @@ import {
   deleteDocumentNonBlocking,
   initiateAnonymousSignIn
 } from '@/firebase';
-import { collection, doc, query, where, DocumentReference, CollectionReference } from 'firebase/firestore';
+import { collection, doc, query, where, DocumentReference, CollectionReference, writeBatch } from 'firebase/firestore';
 
 interface StoreContextValue {
   persons: Person[];
@@ -48,6 +48,13 @@ const DEFAULT_SETTINGS: AppSettings = {
   language: 'en',
 };
 
+const INITIAL_PEOPLE: Person[] = [
+  { id: 'person1', name: 'Person 1', color: '#6366f1' },
+  { id: 'person2', name: 'Person 2', color: '#f59e0b' },
+  { id: 'person3', name: 'Person 3', color: '#10b981' },
+  { id: 'person4', name: 'Person 4', color: '#ec4899' },
+];
+
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
@@ -73,13 +80,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const seriesRef = useMemoFirebase(() => collection(db, 'calendarEventSeries'), [db]);
   const { data: seriesData, isLoading: seriesLoading } = useCollection<CalendarEventSeries>(seriesRef);
 
-  // Note: For a true MVP, we fetch all overrides. In a larger app, we'd scope this by date or series.
-  // Since they are subcollections in the schema, we'd typically fetch them per series.
-  // For simplicity here, we'll assume overrides are handled specifically when needed or 
-  // we use the local state pattern for non-essential UI feedback if necessary.
-  // However, the schema defines them as subcollections: /calendarEventSeries/{seriesId}/eventOccurrenceOverrides/{overrideId}
-  // To keep it performant, we'll collect them from the series we have.
-  // In this simplified StoreProvider, we'll focus on the primary entities.
+  // Seed initial people if none exist
+  useEffect(() => {
+    if (!personsLoading && personsData && personsData.length === 0 && db) {
+      INITIAL_PEOPLE.forEach(p => {
+        const pRef = doc(db, 'people', p.id);
+        setDocumentNonBlocking(pRef, p, { merge: true });
+      });
+    }
+  }, [personsLoading, personsData, db]);
 
   const settings = settingsData || DEFAULT_SETTINGS;
   const persons = personsData || [];
@@ -135,13 +144,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const toggleCompletion = (seriesId: string, date: string) => {
     const overrideId = `${seriesId}_${date}`;
     const overrideRef = doc(db, 'calendarEventSeries', seriesId, 'eventOccurrenceOverrides', overrideId);
-    // This is a simplified toggle logic for the demo
     setDocumentNonBlocking(overrideRef, { 
       id: overrideId, 
       seriesId, 
       date, 
       completed: true, 
-      completedAt: new Date().toISOString() 
+      completedAt: new Date().getTime() 
     }, { merge: true });
   };
 
