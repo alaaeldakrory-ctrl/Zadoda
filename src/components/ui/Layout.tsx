@@ -27,12 +27,12 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       {/* Sidebar - Matching Taskly Left Rail */}
       <aside className="w-80 border-r flex flex-col hidden lg:flex bg-white relative z-20">
         <div className="p-10">
-          <h1 className="text-4xl font-black text-foreground flex items-center gap-3">
+          <Link href="/" className="text-4xl font-black text-foreground flex items-center gap-3">
             <span className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-primary/20">
               <Plus className="w-6 h-6 text-primary-foreground stroke-[3px]" />
             </span>
             <span className="tracking-tight lowercase">zadoda</span>
-          </h1>
+          </Link>
         </div>
 
         <nav className="flex-1 px-6 space-y-1.5 mt-4">
@@ -71,12 +71,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 bg-[#F9F9F9] relative overflow-hidden">
         {/* Header - Matching Taskly Right Info */}
-        <header className="h-24 flex items-center justify-between px-10 bg-white/50 backdrop-blur-md sticky top-0 z-30 lg:border-b">
-           <div className="flex flex-col">
-             <h2 className="text-3xl font-black text-foreground tracking-tight">Today's schedule</h2>
-             <p className="text-primary font-bold text-lg mt-0.5">Thursday 11</p>
-           </div>
-           
+        <header className="h-24 flex items-center justify-end px-10 bg-white/50 backdrop-blur-md sticky top-0 z-30 lg:border-b">
            <div className="flex items-center gap-4">
              <Button 
                 variant="outline" 
