@@ -1,10 +1,9 @@
-
 "use client"
 
 import React from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
-import { cn, getAvatarUrl } from '@/lib/utils';
+import { cn, getAvatarUrl, getPersonName } from '@/lib/utils';
 import { Calendar, Layers, Settings, Globe, StickyNote, Plus, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -87,23 +86,25 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                 <div className="relative">
                   <div className="w-20 h-20 rounded-full overflow-hidden border-4 transition-transform group-hover:scale-110 shadow-sm" style={{ borderColor: person.color }}>
                     <Image 
-                      src={getAvatarUrl(person.name)} 
+                      src={getAvatarUrl(person.id)} 
                       alt={person.name} 
                       width={80} 
                       height={80} 
                       className={cn(
                         "object-cover", 
-                        person.name === 'Mohamed' && "scale-110 -translate-y-4",
-                        person.name === 'Wesam' && "scale-110 translate-y-1",
-                        person.name === 'Malika' && "scale-110 -translate-y-2",
-                        person.name === 'Lyla' && "scale-110 -translate-y-2"
+                        person.id === 'person3' && "scale-110 -translate-y-4",
+                        person.id === 'person4' && "scale-110 translate-y-1",
+                        person.id === 'person2' && "scale-110 -translate-y-2",
+                        person.id === 'person1' && "scale-110 -translate-y-2"
                       )}
                       data-ai-hint="person headshot"
                       priority
                     />
                   </div>
                 </div>
-                <span className="font-black text-base text-muted-foreground group-hover:text-foreground transition-colors">{person.name}</span>
+                <span className="font-black text-base text-muted-foreground group-hover:text-foreground transition-colors">
+                  {getPersonName(person, settings.language)}
+                </span>
               </div>
             ))}
           </div>

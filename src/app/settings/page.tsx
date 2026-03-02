@@ -1,4 +1,3 @@
-
 "use client"
 
 import React from 'react';
@@ -11,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Globe, Calendar, Users, Clock, Palette } from 'lucide-react';
 import Image from 'next/image';
-import { getAvatarUrl, cn } from '@/lib/utils';
+import { getAvatarUrl, cn, getPersonName } from '@/lib/utils';
 
 export default function SettingsPage() {
   const { settings, updateSettings, persons, updatePerson } = useStore();
@@ -109,23 +108,23 @@ export default function SettingsPage() {
                     <div className="relative">
                       <div className="w-40 h-40 rounded-[3rem] overflow-hidden border-8 shadow-2xl" style={{ borderColor: p.color }}>
                         <Image 
-                          src={getAvatarUrl(p.name)} 
+                          src={getAvatarUrl(p.id)} 
                           alt={p.name} 
                           width={160} 
                           height={160} 
                           className={cn(
                             "object-cover", 
-                            p.name === 'Mohamed' && "scale-110 -translate-y-4",
-                            p.name === 'Wesam' && "scale-110 translate-y-1",
-                            p.name === 'Malika' && "scale-110 -translate-y-2",
-                            p.name === 'Lyla' && "scale-110 -translate-y-2"
+                            p.id === 'person3' && "scale-110 -translate-y-4",
+                            p.id === 'person4' && "scale-110 translate-y-1",
+                            p.id === 'person2' && "scale-110 -translate-y-2",
+                            p.id === 'person1' && "scale-110 -translate-y-2"
                           )}
                           data-ai-hint="person headshot"
                         />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <h3 className="text-5xl font-black" style={{ color: p.color }}>{p.name}</h3>
+                      <h3 className="text-5xl font-black" style={{ color: p.color }}>{getPersonName(p, settings.language)}</h3>
                       <p className="text-sm text-muted-foreground font-black uppercase tracking-[0.3em]">{p.id}</p>
                     </div>
                   </div>

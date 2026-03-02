@@ -1,10 +1,9 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
-import { generateTimeSlots, getOccurrencesForDate, formatTime, cn, getAvatarUrl } from '@/lib/utils';
+import { generateTimeSlots, getOccurrencesForDate, formatTime, cn, getAvatarUrl, getPersonName } from '@/lib/utils';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { EventBlock } from './EventBlock';
 import { EventDialog } from './EventDialog';
@@ -205,21 +204,21 @@ export const CalendarView: React.FC = () => {
                     <div className="flex items-center gap-4 py-2">
                       <div className="w-12 h-12 rounded-full overflow-hidden border-2 shadow-sm" style={{ borderColor: p.color }}>
                         <Image 
-                          src={getAvatarUrl(p.name)} 
+                          src={getAvatarUrl(p.id)} 
                           alt={p.name} 
                           width={48} 
                           height={48} 
                           className={cn(
                             "object-cover", 
-                            p.name === 'Mohamed' && "scale-110 -translate-y-2",
-                            p.name === 'Wesam' && "scale-110 translate-y-1",
-                            p.name === 'Malika' && "scale-110 -translate-y-1",
-                            p.name === 'Lyla' && "scale-110 -translate-y-1"
+                            p.id === 'person3' && "scale-110 -translate-y-2",
+                            p.id === 'person4' && "scale-110 translate-y-1",
+                            p.id === 'person2' && "scale-110 -translate-y-1",
+                            p.id === 'person1' && "scale-110 -translate-y-1"
                           )}
                           data-ai-hint="person headshot"
                         />
                       </div>
-                      <span className="text-lg">{p.name}</span>
+                      <span className="text-lg">{getPersonName(p, settings.language)}</span>
                     </div>
                   </SelectItem>
                 ))}
@@ -279,21 +278,21 @@ export const CalendarView: React.FC = () => {
                               <div className="flex flex-col items-center gap-3 p-4">
                                 <div className="w-20 h-20 rounded-full overflow-hidden border-4 shadow-md transition-transform group-hover:scale-110" style={{ borderColor: p.color }}>
                                   <Image 
-                                    src={getAvatarUrl(p.name)} 
+                                    src={getAvatarUrl(p.id)} 
                                     alt={p.name} 
                                     width={80} 
                                     height={80} 
                                     className={cn(
                                       "object-cover", 
-                                      p.name === 'Mohamed' && "scale-110 -translate-y-4",
-                                      p.name === 'Wesam' && "scale-110 translate-y-1",
-                                      p.name === 'Malika' && "scale-110 -translate-y-2",
-                                      p.name === 'Lyla' && "scale-110 -translate-y-2"
+                                      p.id === 'person3' && "scale-110 -translate-y-4",
+                                      p.id === 'person4' && "scale-110 translate-y-1",
+                                      p.id === 'person2' && "scale-110 -translate-y-2",
+                                      p.id === 'person1' && "scale-110 -translate-y-2"
                                     )}
                                     data-ai-hint="person headshot"
                                   />
                                 </div>
-                                <span className="text-sm font-black">{p.name}</span>
+                                <span className="text-sm font-black">{getPersonName(p, settings.language)}</span>
                               </div>
                             </div>
                           )}

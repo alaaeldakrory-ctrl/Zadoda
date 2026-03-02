@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState } from 'react';
@@ -12,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { cn, getAvatarUrl } from '@/lib/utils';
+import { cn, getAvatarUrl, getPersonName } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -104,22 +103,22 @@ export default function MemosPage() {
                   <div className="flex items-center gap-4">
                     <div className="w-24 h-24 rounded-full overflow-hidden border-4 shadow-sm" style={{ borderColor: person.color }}>
                       <Image 
-                        src={getAvatarUrl(person.name)} 
+                        src={getAvatarUrl(person.id)} 
                         alt={person.name} 
                         width={96} 
                         height={96} 
                         className={cn(
                           "object-cover", 
-                          person.name === 'Mohamed' && "scale-110 -translate-y-4",
-                          person.name === 'Wesam' && "scale-110 translate-y-1",
-                          person.name === 'Malika' && "scale-110 -translate-y-2",
-                          person.name === 'Lyla' && "scale-110 -translate-y-2"
+                          person.id === 'person3' && "scale-110 -translate-y-4",
+                          person.id === 'person4' && "scale-110 translate-y-1",
+                          person.id === 'person2' && "scale-110 -translate-y-2",
+                          person.id === 'person1' && "scale-110 -translate-y-2"
                         )}
                         data-ai-hint="person headshot"
                       />
                     </div>
                     <h2 className="text-xl font-black uppercase tracking-widest" style={{ color: person.color }}>
-                      {person.name}
+                      {getPersonName(person, settings.language)}
                     </h2>
                   </div>
                   <Button 
@@ -186,16 +185,16 @@ export default function MemosPage() {
 
                           <div className="shrink-0 w-10 h-10 rounded-full overflow-hidden border-2 opacity-40 shadow-sm" style={{ borderColor: person.color }}>
                             <Image 
-                              src={getAvatarUrl(person.name)} 
+                              src={getAvatarUrl(person.id)} 
                               alt={person.name} 
                               width={40} 
                               height={40} 
                               className={cn(
                                 "object-cover", 
-                                person.name === 'Mohamed' && "scale-110 -translate-y-2",
-                                person.name === 'Wesam' && "scale-110 translate-y-1",
-                                person.name === 'Malika' && "scale-110 -translate-y-1",
-                                person.name === 'Lyla' && "scale-110 -translate-y-1"
+                                person.id === 'person3' && "scale-110 -translate-y-2",
+                                person.id === 'person4' && "scale-110 translate-y-1",
+                                person.id === 'person2' && "scale-110 -translate-y-1",
+                                person.id === 'person1' && "scale-110 -translate-y-1"
                               )}
                               data-ai-hint="person headshot"
                             />

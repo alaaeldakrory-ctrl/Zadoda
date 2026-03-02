@@ -1,4 +1,3 @@
-
 import { Language } from './types';
 
 const translations = {
@@ -55,7 +54,11 @@ const translations = {
     searchTemplates: 'Search templates...',
     none: 'None',
     confirmDelete: 'Are you sure you want to delete this?',
-    sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat'
+    sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat',
+    person1: 'Lyla',
+    person2: 'Malika',
+    person3: 'Mohamed',
+    person4: 'Wesam'
   },
   ar: {
     appTitle: 'جدول زادودا',
@@ -110,7 +113,11 @@ const translations = {
     searchTemplates: 'البحث في النماذج...',
     none: 'بدون',
     confirmDelete: 'هل أنت متأكد من الحذف؟',
-    sun: 'أحد', mon: 'إثنين', tue: 'ثلاثاء', wed: 'أربعاء', thu: 'خميس', fri: 'جمعة', sat: 'سبت'
+    sun: 'أحد', mon: 'إثنين', tue: 'ثلاثاء', wed: 'أربعاء', thu: 'خميس', fri: 'جمعة', sat: 'سبت',
+    person1: 'ليلى',
+    person2: 'مليكة',
+    person3: 'محمد',
+    person4: 'وسام'
   }
 };
 

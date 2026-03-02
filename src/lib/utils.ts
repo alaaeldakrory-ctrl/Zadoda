@@ -1,18 +1,45 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format, addMinutes, parse, isSameDay, startOfWeek, addDays, getDay } from 'date-fns';
-import { CalendarEventSeries, CalendarEventOccurrenceOverride, RecurrenceRule } from './types';
+import { CalendarEventSeries, CalendarEventOccurrenceOverride, RecurrenceRule, Person, Language } from './types';
 import { PlaceHolderImages } from './placeholder-images';
+import { getTranslation } from './i18n';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function getAvatarUrl(name: string): string {
-  if (!name) return 'https://picsum.photos/seed/default/100/100';
-  const cleanName = name.toLowerCase().trim();
-  const avatar = PlaceHolderImages.find(img => img.id === `avatar-${cleanName}`);
-  return avatar?.imageUrl || `https://picsum.photos/seed/${cleanName}/100/100`;
+export function getPersonName(person: Person, lang: Language): string {
+  if (!person) return '';
+  const t = getTranslation(lang);
+  // @ts-ignore - Dynamically check for person names in translations
+  const translatedName = t[`${person.id}Name`] || t[person.id];
+  return translatedName || person.name;
+}
+
+export function getAvatarUrl(personIdOrName: string): string {
+  if (!personIdOrName) return 'https://picsum.photos/seed/default/100/100';
+  
+  const cleanKey = personIdOrName.toLowerCase().trim();
+  
+  // Try ID first (most robust)
+  if (cleanKey.startsWith('person')) {
+    const idMap: Record<string, string> = {
+      person1: 'lyla',
+      person2: 'malika',
+      person3: 'mohamed',
+      person4: 'wesam'
+    };
+    const nameKey = idMap[cleanKey];
+    if (nameKey) {
+      const avatar = PlaceHolderImages.find(img => img.id === `avatar-${nameKey}`);
+      if (avatar) return avatar.imageUrl;
+    }
+  }
+
+  // Fallback to name-based lookup
+  const avatar = PlaceHolderImages.find(img => img.id === `avatar-${cleanKey}`);
+  return avatar?.imageUrl || `https://picsum.photos/seed/${cleanKey}/100/100`;
 }
 
 export function formatTime(time24h: string): string {

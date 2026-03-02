@@ -1,11 +1,10 @@
-
 "use client"
 
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { CalendarEventSeries, RecurrenceFrequency } from '@/lib/types';
-import { cn, generateTimeSlots, formatTime, minutesToTime, timeToMinutes } from '@/lib/utils';
+import { cn, generateTimeSlots, formatTime, minutesToTime, timeToMinutes, getPersonName } from '@/lib/utils';
 import { format, addMinutes, parse } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -30,7 +29,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
 
   const [formData, setFormData] = useState<Partial<CalendarEventSeries>>({
     title: '',
-    personId: persons[0]?.id || '1',
+    personId: persons[0]?.id || 'person1',
     startTime: '09:00',
     endTime: '10:00',
     startDate: format(initialDate, 'yyyy-MM-dd'),
@@ -59,7 +58,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
         
         setFormData({
           title: '',
-          personId: eventToEdit?.personId || persons[0]?.id || '1',
+          personId: eventToEdit?.personId || persons[0]?.id || 'person1',
           startTime: startTime,
           endTime: format(end, 'HH:mm'),
           startDate: eventToEdit?.date || format(initialDate, 'yyyy-MM-dd'),
@@ -84,7 +83,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
         ...prev,
         title: tpl.name,
         // Keep the existing person/date from the click context
-        personId: prev.personId || persons[0]?.id || '1',
+        personId: prev.personId || persons[0]?.id || 'person1',
         startDate: prev.startDate || format(initialDate, 'yyyy-MM-dd'),
         startTime: startTime,
         endTime: minutesToTime(endMins),
@@ -101,7 +100,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
 
     const dataToSave: any = {
       title: formData.title || '',
-      personId: formData.personId || '1',
+      personId: formData.personId || 'person1',
       startTime: formData.startTime || '09:00',
       endTime: formData.endTime || '10:00',
       startDate: formData.startDate || format(initialDate, 'yyyy-MM-dd'),
@@ -203,7 +202,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
                     <SelectItem key={p.id} value={p.id}>
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: p.color }} />
-                        {p.name}
+                        {getPersonName(p, settings.language)}
                       </div>
                     </SelectItem>
                   ))}
