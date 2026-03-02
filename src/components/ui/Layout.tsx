@@ -17,8 +17,8 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
 
   const navItems = [
     { label: t.calendar, icon: Calendar, href: '/' },
-    { label: t.memos, icon: StickyNote, href: '/memos' },
     { label: t.fixedEvents, icon: Layers, href: '/templates' },
+    { label: t.memos, icon: StickyNote, href: '/memos' },
     { label: t.settings, icon: Settings, href: '/settings' },
   ];
 

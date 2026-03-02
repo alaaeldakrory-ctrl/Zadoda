@@ -8,7 +8,7 @@ import { getTranslation } from '@/lib/i18n';
 import { Memo } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Pencil, StickyNote } from 'lucide-react';
+import { Plus, Trash2, Pencil } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,19 +31,24 @@ export default function MemosPage() {
   };
 
   const handleEditMemo = (memo: Memo) => {
-    setEditingMemo(memo);
+    setEditingMemo({ ...memo });
     setIsDialogOpen(true);
   };
 
   const handleSaveMemo = () => {
-    if (!editingMemo?.title || !editingMemo?.content) return;
+    if (!editingMemo || !editingMemo.personId || !editingMemo.title?.trim() || !editingMemo.content?.trim()) {
+      return;
+    }
 
     if (editingMemo.id) {
-      updateMemo(editingMemo.id, editingMemo);
+      // Update existing memo
+      const { id, ...updates } = editingMemo;
+      updateMemo(id!, updates);
     } else {
+      // Create new memo
       const newMemo: Memo = {
         id: crypto.randomUUID(),
-        personId: editingMemo.personId!,
+        personId: editingMemo.personId,
         title: editingMemo.title,
         content: editingMemo.content,
         createdAt: Date.now(),
@@ -51,6 +56,7 @@ export default function MemosPage() {
       addMemo(newMemo);
     }
     setIsDialogOpen(false);
+    setEditingMemo(null);
   };
 
   return (
@@ -100,10 +106,20 @@ export default function MemosPage() {
                           {memo.content}
                         </CardContent>
                         <CardFooter className="justify-end gap-2 pt-2 border-t bg-muted/5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 text-destructive" onClick={() => deleteMemo(memo.id)}>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="rounded-full h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" 
+                            onClick={() => deleteMemo(memo.id)}
+                          >
                             <Trash2 className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => handleEditMemo(memo)}>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="rounded-full h-8 w-8 hover:bg-primary/10 hover:text-primary" 
+                            onClick={() => handleEditMemo(memo)}
+                          >
                             <Pencil className="w-4 h-4" />
                           </Button>
                         </CardFooter>
@@ -117,7 +133,10 @@ export default function MemosPage() {
         </div>
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        setIsDialogOpen(open);
+        if (!open) setEditingMemo(null);
+      }}>
         <DialogContent className="rounded-3xl sm:max-w-[500px] border-2">
           <DialogHeader>
             <DialogTitle className="text-2xl font-black">
@@ -129,7 +148,7 @@ export default function MemosPage() {
               <Label className="font-bold">{t.title}</Label>
               <Input 
                 value={editingMemo?.title || ''} 
-                onChange={e => setEditingMemo(prev => ({ ...prev, title: e.target.value }))}
+                onChange={e => setEditingMemo(prev => prev ? ({ ...prev, title: e.target.value }) : null)}
                 className="rounded-xl border-2 font-bold h-12"
                 placeholder={t.memoTitle}
               />
@@ -138,7 +157,7 @@ export default function MemosPage() {
               <Label className="font-bold">{t.notes}</Label>
               <Textarea 
                 value={editingMemo?.content || ''} 
-                onChange={e => setEditingMemo(prev => ({ ...prev, content: e.target.value }))}
+                onChange={e => setEditingMemo(prev => prev ? ({ ...prev, content: e.target.value }) : null)}
                 className="rounded-xl border-2 font-medium min-h-[200px]"
                 placeholder={t.writeMemo}
               />

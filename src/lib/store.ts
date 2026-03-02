@@ -157,7 +157,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateMemo = (id: string, updates: Partial<Memo>) => {
     const docRef = doc(db, 'memos', id);
-    updateDocumentNonBlocking(docRef, updates);
+    // Remove ID if present in updates to avoid Firestore errors
+    const { id: _, ...cleanUpdates } = updates as any;
+    updateDocumentNonBlocking(docRef, cleanUpdates);
   };
 
   const deleteMemo = (id: string) => {
