@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { generateTimeSlots, getOccurrencesForDate, formatTime, cn, getAvatarUrl, getPersonName } from '@/lib/utils';
@@ -17,6 +17,7 @@ import { DndContext, DragOverlay, closestCorners, DragEndEvent, useDroppable } f
 import { TemplateDialog } from '@/components/templates/TemplateDialog';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
 interface GridSlotProps {
   id: string;
@@ -40,14 +41,29 @@ const GridSlot: React.FC<GridSlotProps> = ({ id, onSlotClick, children }) => {
   );
 };
 
-export const CalendarView: React.FC = () => {
+const CalendarContent: React.FC = () => {
   const [mounted, setMounted] = useState(false);
   const { settings, persons, series, overrides, templates, moveEvent } = useStore();
   const t = getTranslation(settings.language);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
-  const [selectedPersonId, setSelectedPersonId] = useState<string | 'all'>('all');
   
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  
+  const selectedPersonId = searchParams.get('personId') || 'all';
+
+  const setSelectedPersonId = (id: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (id === 'all') {
+      params.delete('personId');
+    } else {
+      params.set('personId', id);
+    }
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
   const [isCreateTemplateOpen, setIsCreateTemplateOpen] = useState(false);
@@ -212,8 +228,8 @@ export const CalendarView: React.FC = () => {
                             "object-cover", 
                             p.id === 'person3' && "scale-110 -translate-y-2",
                             p.id === 'person4' && "scale-105 translate-y-1",
-                            p.id === 'person2' && "scale-110 -translate-y-1",
-                            p.id === 'person1' && "scale-110 -translate-y-1"
+                            p.id === 'person2' && "scale-150 translate-y-3",
+                            p.id === 'person1' && "scale-110 -translate-y-2"
                           )}
                           data-ai-hint="person headshot"
                         />
@@ -286,8 +302,8 @@ export const CalendarView: React.FC = () => {
                                       "object-cover", 
                                       p.id === 'person3' && "scale-110 -translate-y-4",
                                       p.id === 'person4' && "scale-105 translate-y-1",
-                                      p.id === 'person2' && "scale-110 -translate-y-2",
-                                      p.id === 'person1' && "scale-110 -translate-y-2"
+                                      p.id === 'person2' && "scale-150 translate-y-3",
+                                      p.id === 'person1' && "scale-110 -translate-y-4"
                                     )}
                                     data-ai-hint="person headshot"
                                   />
@@ -406,5 +422,13 @@ export const CalendarView: React.FC = () => {
         />
       </div>
     </DndContext>
+  );
+};
+
+export const CalendarView: React.FC = () => {
+  return (
+    <Suspense fallback={<div className="flex-1 bg-white/50 animate-pulse rounded-[2rem]" />}>
+      <CalendarContent />
+    </Suspense>
   );
 };

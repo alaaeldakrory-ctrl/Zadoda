@@ -38,7 +38,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                   alt="Zadoda Logo" 
                   width={128} 
                   height={128} 
-                  className="object-cover scale-105 -translate-y-1"
+                  className="object-cover scale-95 translate-y-1"
                   priority
                 />
               ) : (
@@ -82,7 +82,11 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           </div>
           <div className="px-4 space-y-6">
             {persons.map(person => (
-              <div key={person.id} className="flex items-center gap-4 group">
+              <Link 
+                key={person.id} 
+                href={`/?personId=${person.id}`}
+                className="flex items-center gap-4 group cursor-pointer"
+              >
                 <div className="relative">
                   <div className="w-20 h-20 rounded-full overflow-hidden border-4 transition-transform group-hover:scale-110 shadow-sm" style={{ borderColor: person.color }}>
                     <Image 
@@ -94,8 +98,8 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                         "object-cover", 
                         person.id === 'person3' && "scale-110 -translate-y-4",
                         person.id === 'person4' && "scale-105 translate-y-1",
-                        person.id === 'person2' && "scale-110 -translate-y-2",
-                        person.id === 'person1' && "scale-110 -translate-y-2"
+                        person.id === 'person2' && "scale-150 translate-y-3",
+                        person.id === 'person1' && "scale-110 -translate-y-4"
                       )}
                       data-ai-hint="person headshot"
                       priority
@@ -105,7 +109,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                 <span className="font-black text-base text-muted-foreground group-hover:text-foreground transition-colors">
                   {getPersonName(person, settings.language)}
                 </span>
-              </div>
+              </Link>
             ))}
           </div>
         </nav>
