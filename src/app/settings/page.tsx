@@ -116,7 +116,7 @@ export default function SettingsPage() {
                           className={cn(
                             "object-cover", 
                             p.name === 'Mohamed' && "scale-110 -translate-y-2",
-                            p.name === 'Wesam' && "scale-110 -translate-y-2"
+                            p.name === 'Wesam' && "scale-110 translate-y-1"
                           )}
                           data-ai-hint="person headshot"
                         />

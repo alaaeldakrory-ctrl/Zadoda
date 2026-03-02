@@ -111,7 +111,7 @@ export default function MemosPage() {
                         className={cn(
                           "object-cover", 
                           person.name === 'Mohamed' && "scale-110 -translate-y-2",
-                          person.name === 'Wesam' && "scale-110 -translate-y-2"
+                          person.name === 'Wesam' && "scale-110 translate-y-1"
                         )}
                         data-ai-hint="person headshot"
                       />
@@ -191,7 +191,7 @@ export default function MemosPage() {
                               className={cn(
                                 "object-cover", 
                                 person.name === 'Mohamed' && "scale-110 -translate-y-1",
-                                person.name === 'Wesam' && "scale-110 -translate-y-1"
+                                person.name === 'Wesam' && "scale-110 translate-y-0.5"
                               )}
                               data-ai-hint="person headshot"
                             />
