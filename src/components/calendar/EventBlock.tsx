@@ -33,8 +33,8 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
   const style = !isDragging ? {
     top: `${top}px`,
     height: `${height}px`,
-    backgroundColor: isCompleted ? '#f1f5f9' : `${color}15`,
-    borderColor: isCompleted ? '#cbd5e1' : color,
+    backgroundColor: isCompleted ? '#f0fdf4' : `${color}15`,
+    borderColor: isCompleted ? '#22c55e' : color,
     borderLeftWidth: '8px',
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
   } : {
@@ -51,7 +51,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
       onClick={onClick}
       className={cn(
         "absolute left-1 right-1 rounded-2xl border-2 text-xs shadow-md cursor-pointer transition-all overflow-hidden group/event hover:shadow-lg active:scale-95 z-10",
-        isCompleted ? "opacity-60 grayscale shadow-sm" : "opacity-100",
+        isCompleted ? "opacity-100 shadow-sm" : "opacity-100",
         isShortEvent ? "p-1" : "p-3",
         isDragging && "z-50 ring-4 ring-primary ring-offset-2",
         !isDragging && "hover:scale-[1.02]"
@@ -73,7 +73,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
         <div className="flex-1 min-w-0 overflow-hidden flex flex-col justify-center">
           <p className={cn(
             "font-black leading-tight truncate transition-all", 
-            isCompleted ? "line-through text-slate-500 italic" : "text-foreground",
+            isCompleted ? "line-through text-green-700 italic" : "text-foreground",
             isShortEvent ? "text-[13px]" : "text-base"
           )}>
             {occurrence.title}
@@ -81,7 +81,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
           {!isShortEvent && (
             <p className={cn(
               "text-[10px] font-black uppercase tracking-tight mt-1 transition-opacity",
-              isCompleted ? "opacity-40" : "opacity-80"
+              isCompleted ? "text-green-600/60" : "opacity-80"
             )}>
               {formatTime(occurrence.startTime)} - {formatTime(occurrence.endTime)}
             </p>
@@ -92,11 +92,11 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
           onClick={handleToggle}
           className={cn(
             "shrink-0 p-1 rounded-full transition-all transform group-hover/event:scale-110 active:scale-90",
-            isCompleted ? "bg-slate-200" : "hover:bg-black/5"
+            isCompleted ? "bg-green-100/50" : "hover:bg-black/5"
           )}
         >
           {isCompleted ? (
-            <CheckCircle2 className={cn("text-slate-400 animate-pop shadow-sm rounded-full bg-white", isShortEvent ? "w-5 h-5" : "w-8 h-8")} />
+            <CheckCircle2 className={cn("text-green-600 animate-pop shadow-sm rounded-full bg-white", isShortEvent ? "w-5 h-5" : "w-8 h-8")} />
           ) : (
             <div 
               className={cn(
