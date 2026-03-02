@@ -5,7 +5,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Person",
       "type": "object",
-      "description": "Represents one of the four core users in the FamiliaFlow application, with customizable display name and a distinct color theme.",
+      "description": "Represents one of the four core users in the Zadoda Scheduler application, with customizable display name and a distinct color theme.",
       "properties": {
         "id": {
           "type": "string",

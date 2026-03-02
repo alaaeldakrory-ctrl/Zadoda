@@ -3,7 +3,7 @@ import { Language } from './types';
 
 const translations = {
   en: {
-    appTitle: 'FamiliaFlow',
+    appTitle: 'Zadoda Scheduler',
     calendar: 'Calendar',
     fixedEvents: 'Fixed Events',
     settings: 'Settings',
@@ -58,7 +58,7 @@ const translations = {
     sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat'
   },
   ar: {
-    appTitle: 'فاميليا فلو',
+    appTitle: 'زادودا',
     calendar: 'التقويم',
     fixedEvents: 'الأحداث الثابتة',
     settings: 'الإعدادات',

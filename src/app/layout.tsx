@@ -5,8 +5,8 @@ import { StoreProvider } from '@/lib/store';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
-  title: 'FamiliaFlow - Effortless Family Scheduling',
-  description: 'Manage everyone’s schedule at a glance with FamiliaFlow.',
+  title: 'Zadoda Scheduler - Effortless Family Scheduling',
+  description: 'Manage everyone’s schedule at a glance with Zadoda Scheduler.',
 };
 
 export default function RootLayout({

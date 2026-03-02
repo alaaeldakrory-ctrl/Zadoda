@@ -1,10 +1,11 @@
+
 "use client"
 
 import React from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import { Calendar, Layers, Settings, Globe, Sparkles, StickyNote, Plus } from 'lucide-react';
+import { Calendar, Layers, Settings, Globe, StickyNote, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
             <span className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-primary/20">
               <Plus className="w-6 h-6 text-primary-foreground stroke-[3px]" />
             </span>
-            <span className="tracking-tight lowercase">taskly</span>
+            <span className="tracking-tight lowercase">zadoda</span>
           </h1>
         </div>
 
