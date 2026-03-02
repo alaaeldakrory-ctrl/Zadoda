@@ -27,8 +27,9 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
     toggleCompletion(occurrence.seriesId, occurrence.date);
   };
 
-  const isShortEvent = height <= 64;
   const isCompleted = occurrence.completed;
+  // A "short" event is 30 mins (64px). We still want to show time if possible.
+  const canShowTime = height >= 60; 
 
   const style = !isDragging ? {
     top: `${top}px`,
@@ -52,7 +53,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
       className={cn(
         "absolute left-1 right-1 rounded-2xl border-2 text-xs shadow-md cursor-pointer transition-all overflow-hidden group/event hover:shadow-lg active:scale-95 z-10",
         isCompleted ? "opacity-100 shadow-sm" : "opacity-100",
-        isShortEvent ? "p-1" : "p-3",
+        "p-3", // Consistent padding
         isDragging && "z-50 ring-4 ring-primary ring-offset-2",
         !isDragging && "hover:scale-[1.02]"
       )}
@@ -67,20 +68,20 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
             isCompleted ? "opacity-20" : "opacity-0 group-hover/event:opacity-40"
           )}
         >
-          <GripVertical className="w-4 h-4" />
+          <GripVertical className="w-5 h-5" />
         </div>
 
-        <div className="flex-1 min-w-0 overflow-hidden flex flex-col justify-center">
+        <div className="flex-1 min-w-0 overflow-hidden flex flex-col justify-center h-full">
           <p className={cn(
             "font-black leading-tight truncate transition-all", 
             isCompleted ? "line-through text-green-700 italic" : "text-foreground",
-            isShortEvent ? "text-[13px]" : "text-base"
+            "text-lg" // Larger title font
           )}>
             {occurrence.title}
           </p>
-          {!isShortEvent && (
+          {canShowTime && (
             <p className={cn(
-              "text-[10px] font-black uppercase tracking-tight mt-1 transition-opacity",
+              "text-xs font-black uppercase tracking-tight mt-1 transition-opacity", // Larger time font
               isCompleted ? "text-green-600/60" : "opacity-80"
             )}>
               {formatTime(occurrence.startTime)} - {formatTime(occurrence.endTime)}
@@ -88,25 +89,24 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
           )}
         </div>
 
-        <button
-          onClick={handleToggle}
-          className={cn(
-            "shrink-0 p-1 rounded-full transition-all transform group-hover/event:scale-110 active:scale-90",
-            isCompleted ? "bg-green-100/50" : "hover:bg-black/5"
-          )}
-        >
-          {isCompleted ? (
-            <CheckCircle2 className={cn("text-green-600 animate-pop shadow-sm rounded-full bg-white", isShortEvent ? "w-5 h-5" : "w-8 h-8")} />
-          ) : (
-            <div 
-              className={cn(
-                "rounded-full border-4 border-current opacity-30 group-hover/event:opacity-100 transition-all shadow-inner", 
-                isShortEvent ? "w-5 h-5 border-[3px]" : "w-8 h-8"
-              )} 
-              style={{ color: color }} 
-            />
-          )}
-        </button>
+        <div className="flex items-center justify-center h-full">
+          <button
+            onClick={handleToggle}
+            className={cn(
+              "shrink-0 p-1 rounded-full transition-all transform group-hover/event:scale-110 active:scale-90",
+              isCompleted ? "bg-green-100/50" : "hover:bg-black/5"
+            )}
+          >
+            {isCompleted ? (
+              <CheckCircle2 className="text-green-600 animate-pop shadow-sm rounded-full bg-white w-8 h-8" />
+            ) : (
+              <div 
+                className="rounded-full border-4 border-current opacity-30 group-hover/event:opacity-100 transition-all shadow-inner w-8 h-8"
+                style={{ color: color }} 
+              />
+            )}
+          </button>
+        </div>
       </div>
       
       {!isCompleted && !isDragging && (
