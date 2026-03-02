@@ -149,14 +149,12 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 bg-[#F9F9F9] relative overflow-hidden">
-        <div className="flex-1 p-4 lg:p-8 overflow-y-auto relative h-full">
+        <div className="flex-1 p-2 lg:p-4 overflow-y-auto relative h-full">
           {children}
         </div>
 
         <nav className="h-20 border-t flex lg:hidden bg-white/95 backdrop-blur-xl sticky bottom-0 z-30 px-4 gap-2">
            <Suspense fallback={<div className="flex-1 flex items-center justify-center"><Skeleton className="h-8 w-32" /></div>}>
-             {/* Note: Mobile nav would ideally use a shared NavItems component, but for simplicity we'll keep the SidebarNav logic if it fits or refactor */}
-             {/* In this version, we'll keep it simple to fix the build first */}
              <div className="flex w-full gap-2 items-center justify-around">
                <Link href="/" className="flex flex-col items-center"><Calendar className="w-5 h-5"/><span className="text-[10px] font-black uppercase">Calendar</span></Link>
                <Link href="/templates" className="flex flex-col items-center"><Layers className="w-5 h-5"/><span className="text-[10px] font-black uppercase">Templates</span></Link>
