@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState } from 'react';
@@ -14,7 +15,29 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
-import { DndContext, DragOverlay, closestCorners, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, DragOverlay, closestCorners, DragEndEvent, useDroppable } from '@dnd-kit/core';
+
+interface GridSlotProps {
+  id: string;
+  onSlotClick: () => void;
+  children?: React.ReactNode;
+}
+
+const GridSlot: React.FC<GridSlotProps> = ({ id, onSlotClick, children }) => {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  
+  return (
+    <div 
+      ref={setNodeRef}
+      className={`h-16 border-b border-dashed last:border-0 cursor-crosshair transition-colors relative ${
+        isOver ? 'bg-primary/20 ring-2 ring-primary ring-inset z-20' : 'hover:bg-primary/5'
+      }`}
+      onClick={onSlotClick}
+    >
+      {children}
+    </div>
+  );
+};
 
 export const CalendarView: React.FC = () => {
   const { settings, persons, series, overrides, templates, moveEvent } = useStore();
@@ -207,19 +230,15 @@ export const CalendarView: React.FC = () => {
                               {p.name}
                             </div>
                           )}
-                          {/* Grid Lines and Clickable Areas */}
+                          {/* Grid Lines and Droppable Areas */}
                           <div className="absolute inset-0">
-                            {timeSlots.map(slot => {
-                              const dropId = `${dayStr}|${p.id}|${slot}`;
-                              return (
-                                <div 
-                                  key={slot}
-                                  id={dropId}
-                                  className="h-16 border-b border-dashed last:border-0 cursor-crosshair hover:bg-primary/5 transition-colors" 
-                                  onClick={() => handleGridClick(day, p.id, slot)}
-                                />
-                              )
-                            })}
+                            {timeSlots.map(slot => (
+                              <GridSlot 
+                                key={slot}
+                                id={`${dayStr}|${p.id}|${slot}`}
+                                onSlotClick={() => handleGridClick(day, p.id, slot)}
+                              />
+                            ))}
                           </div>
                           {/* Events */}
                           <div className="absolute inset-0 pointer-events-none">
@@ -244,10 +263,10 @@ export const CalendarView: React.FC = () => {
           </div>
         </div>
 
-        {/* Drag Overlay for smooth visual feedback */}
-        <DragOverlay>
+        {/* Drag Overlay */}
+        <DragOverlay dropAnimation={null}>
           {activeDragOccurrence ? (
-            <div className="w-[150px] opacity-80 rotate-3 cursor-grabbing">
+            <div className="w-[180px] cursor-grabbing">
               <EventBlock
                 occurrence={activeDragOccurrence}
                 dayStart={settings.dayStartTime}

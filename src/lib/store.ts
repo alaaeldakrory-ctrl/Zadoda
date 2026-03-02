@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -63,7 +64,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Force migration for user-requested names if version is old
         if (!parsed.version || parsed.version < CURRENT_VERSION) {
           parsed.persons = DEFAULT_PERSONS;
           parsed.version = CURRENT_VERSION;
@@ -176,23 +176,29 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const newStartMins = timeToMinutes(newStartTime);
       const newEndTime = minutesToTime(newStartMins + durationMins);
 
-      // 1. Update the target event
-      let updatedSeries = prev.series.map(s => {
+      // 1. Create shallow copy of events for calculations
+      let updatedSeries = [...prev.series];
+      
+      // 2. Update the dragged event's core properties
+      updatedSeries = updatedSeries.map(s => {
         if (s.id === seriesId) {
           return { ...s, startTime: newStartTime, endTime: newEndTime, personId: newPersonId, startDate: date };
         }
         return s;
       });
 
-      // 2. Perform collision resolution (shifting subsequent events)
-      // Sort events in the target column by start time
+      // 3. Perform collision resolution (shifting subsequent events)
+      // Only care about events for the same person on the same date
       const columnEvents = updatedSeries
         .filter(s => s.personId === newPersonId && s.startDate === date)
         .sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
 
+      // Iteratively push events down if they overlap
       let changed = true;
-      while (changed) {
+      let iterations = 0;
+      while (changed && iterations < 100) { // Safety cap
         changed = false;
+        iterations++;
         for (let i = 0; i < columnEvents.length - 1; i++) {
           const first = columnEvents[i];
           const second = columnEvents[i+1];
@@ -212,13 +218,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       }
 
-      // Sync the changed references back to updatedSeries
-      updatedSeries = updatedSeries.map(s => {
+      // 4. Sync the calculated changes back to the main list
+      const finalSeries = updatedSeries.map(s => {
         const found = columnEvents.find(c => c.id === s.id);
         return found ? { ...found } : s;
       });
 
-      return { ...prev, series: updatedSeries };
+      return { ...prev, series: finalSeries };
     });
   };
 
