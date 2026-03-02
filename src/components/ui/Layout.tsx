@@ -70,20 +70,9 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 bg-[#F9F9F9] relative overflow-hidden">
-        {/* Header - Matching Taskly Right Info */}
-        <header className="h-24 flex items-center justify-end px-10 bg-white/50 backdrop-blur-md sticky top-0 z-30 lg:border-b">
-           <div className="flex items-center gap-4">
-             <Button 
-                variant="outline" 
-                className="rounded-full font-bold border-2 h-12 px-6 hidden sm:flex"
-                onClick={() => setLanguage(settings.language === 'en' ? 'ar' : 'en')}
-              >
-                {settings.language === 'en' ? 'العربية' : 'English'}
-              </Button>
-           </div>
-        </header>
-
-        <div className="flex-1 p-6 lg:p-12 overflow-y-auto relative h-full">
+        {/* Header removed to maximize space for the calendar */}
+        
+        <div className="flex-1 p-4 lg:p-8 overflow-y-auto relative h-full">
           {children}
         </div>
 
