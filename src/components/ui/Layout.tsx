@@ -39,7 +39,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                   alt="Zadoda Logo" 
                   width={128} 
                   height={128} 
-                  className="object-cover scale-150 -translate-y-4"
+                  className="object-cover scale-110 -translate-y-2"
                   priority
                 />
               ) : (
