@@ -95,9 +95,7 @@ export const CalendarView: React.FC = () => {
     const { active, over } = event;
     
     if (over) {
-      // Over ID is formatted as "date|personId|time"
       const [date, personId, time] = String(over.id).split('|');
-      // Active ID is formatted as "seriesId_date"
       const seriesIdDate = String(active.id);
       const seriesId = seriesIdDate.split('_')[0];
       
@@ -195,9 +193,9 @@ export const CalendarView: React.FC = () => {
 
         {/* Grid Content */}
         <div className="flex-1 overflow-auto relative bg-slate-50/50">
-          <div className="flex min-w-[800px] h-full">
+          <div className="flex min-w-[800px]">
             {/* Time Axis */}
-            <div className="w-24 sticky left-0 z-20 bg-background/80 backdrop-blur-md border-r-2 shadow-sm">
+            <div className="w-24 sticky left-0 z-20 bg-background/80 backdrop-blur-md border-r-2 shadow-sm shrink-0">
               <div className="h-14 border-b-2" />
               {timeSlots.map(slot => (
                 <div key={slot} className="h-16 text-sm font-black text-muted-foreground flex items-center justify-center border-b border-dashed last:border-0 px-2 text-center uppercase">
@@ -209,9 +207,9 @@ export const CalendarView: React.FC = () => {
             {/* Days Columns */}
             <div className="flex-1 flex">
               {days.map(day => (
-                <div key={day.toISOString()} className="flex-1 border-r last:border-0 min-w-0 flex flex-col">
+                <div key={day.toISOString()} className="flex-1 border-r-2 last:border-r-0 min-w-0 flex flex-col">
                   {/* Day Header */}
-                  <div className="h-14 border-b-2 bg-muted/40 flex items-center justify-center text-sm font-black sticky top-0 z-10 backdrop-blur-md uppercase tracking-wider text-muted-foreground">
+                  <div className="h-14 border-b-2 bg-muted/40 flex items-center justify-center text-sm font-black sticky top-0 z-20 backdrop-blur-md uppercase tracking-wider text-muted-foreground">
                     {format(day, 'EEE d')}
                   </div>
 
@@ -222,17 +220,18 @@ export const CalendarView: React.FC = () => {
                       const dayStr = format(day, 'yyyy-MM-dd');
                       
                       return (
-                        <div key={p.id} className="flex-1 border-r last:border-0 relative bg-white/30 group">
+                        <div key={p.id} className="flex-1 border-r-2 last:border-r-0 relative bg-white/30 group min-h-full">
                           {selectedPersonId === 'all' && (
                             <div 
-                              className="h-8 flex items-center justify-center text-[10px] font-black border-b-2 sticky top-14 z-10 shadow-sm transition-colors" 
-                              style={{ backgroundColor: `${p.color}15`, color: p.color, borderColor: `${p.color}30` }}
+                              className="h-12 flex items-center justify-center text-sm font-black border-b-2 sticky top-14 z-20 shadow-sm transition-colors uppercase tracking-widest" 
+                              style={{ backgroundColor: `${p.color}20`, color: p.color, borderColor: `${p.color}40` }}
                             >
                               {p.name}
                             </div>
                           )}
+                          
                           {/* Grid Lines and Droppable Areas */}
-                          <div className="absolute inset-0">
+                          <div className="relative">
                             {timeSlots.map(slot => (
                               <GridSlot 
                                 key={slot}
@@ -241,18 +240,21 @@ export const CalendarView: React.FC = () => {
                               />
                             ))}
                           </div>
-                          {/* Events */}
-                          <div className="absolute inset-0 pointer-events-none">
-                            {occurrences.map((occ, idx) => (
-                              <div key={occ.id} className="pointer-events-auto">
-                                <EventBlock
-                                  occurrence={occ}
-                                  dayStart={settings.dayStartTime}
-                                  color={p.color}
-                                  onClick={() => handleEditEvent(occ.seriesId, occ.date)}
-                                />
-                              </div>
-                            ))}
+
+                          {/* Events - Overlayed on the grid */}
+                          <div className="absolute inset-0 pointer-events-none mt-12">
+                            <div className="relative h-full">
+                              {occurrences.map((occ) => (
+                                <div key={occ.id} className="pointer-events-auto">
+                                  <EventBlock
+                                    occurrence={occ}
+                                    dayStart={settings.dayStartTime}
+                                    color={p.color}
+                                    onClick={() => handleEditEvent(occ.seriesId, occ.date)}
+                                  />
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       )
