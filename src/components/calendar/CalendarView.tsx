@@ -132,7 +132,7 @@ export const CalendarView: React.FC = () => {
     : null;
 
   const DAY_HEADER_HEIGHT = 40;
-  const PERSON_HEADER_HEIGHT = selectedPersonId === 'all' ? 100 : 0;
+  const PERSON_HEADER_HEIGHT = selectedPersonId === 'all' ? 180 : 0;
   const TOTAL_HEADER_HEIGHT = DAY_HEADER_HEIGHT + PERSON_HEADER_HEIGHT;
 
   return (
@@ -195,31 +195,31 @@ export const CalendarView: React.FC = () => {
             </div>
 
             <Select value={selectedPersonId} onValueChange={setSelectedPersonId}>
-              <SelectTrigger className="w-48 rounded-full font-black border-none bg-muted h-12 px-6">
+              <SelectTrigger className="w-64 rounded-full font-black border-none bg-muted h-14 px-8">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl border-none shadow-2xl">
+              <SelectContent className="rounded-3xl border-none shadow-2xl">
                 <SelectItem value="all">{t.allPeople}</SelectItem>
                 {persons.map(p => (
                   <SelectItem key={p.id} value={p.id}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 rounded-full overflow-hidden border shadow-sm" style={{ borderColor: p.color }}>
+                    <div className="flex items-center gap-4 py-2">
+                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 shadow-sm" style={{ borderColor: p.color }}>
                         <Image 
                           src={getAvatarUrl(p.name)} 
                           alt={p.name} 
-                          width={24} 
-                          height={24} 
+                          width={48} 
+                          height={48} 
                           className={cn(
                             "object-cover", 
-                            p.name === 'Mohamed' && "scale-110 -translate-y-1",
-                            p.name === 'Wesam' && "scale-110 translate-y-0.5",
-                            p.name === 'Malika' && "scale-110 -translate-y-0.5",
-                            p.name === 'Lyla' && "scale-110 -translate-y-0.5"
+                            p.name === 'Mohamed' && "scale-110 -translate-y-2",
+                            p.name === 'Wesam' && "scale-110 translate-y-1",
+                            p.name === 'Malika' && "scale-110 -translate-y-1",
+                            p.name === 'Lyla' && "scale-110 -translate-y-1"
                           )}
                           data-ai-hint="person headshot"
                         />
                       </div>
-                      {p.name}
+                      <span className="text-lg">{p.name}</span>
                     </div>
                   </SelectItem>
                 ))}
@@ -276,24 +276,24 @@ export const CalendarView: React.FC = () => {
                                 color: p.color, 
                               }}
                             >
-                              <div className="flex flex-col items-center gap-1.5 p-2">
-                                <div className="w-10 h-10 rounded-full overflow-hidden border-2 shadow-md transition-transform group-hover:scale-110" style={{ borderColor: p.color }}>
+                              <div className="flex flex-col items-center gap-3 p-4">
+                                <div className="w-20 h-20 rounded-full overflow-hidden border-4 shadow-md transition-transform group-hover:scale-110" style={{ borderColor: p.color }}>
                                   <Image 
                                     src={getAvatarUrl(p.name)} 
                                     alt={p.name} 
-                                    width={40} 
-                                    height={40} 
+                                    width={80} 
+                                    height={80} 
                                     className={cn(
                                       "object-cover", 
-                                      p.name === 'Mohamed' && "scale-110 -translate-y-2",
-                                      p.name === 'Wesam' && "scale-110 translate-y-1",
+                                      p.name === 'Mohamed' && "scale-110 -translate-y-4",
+                                      p.name === 'Wesam' && "scale-110 translate-y-2",
                                       p.name === 'Malika' && "scale-110 -translate-y-2",
                                       p.name === 'Lyla' && "scale-110 -translate-y-2"
                                     )}
                                     data-ai-hint="person headshot"
                                   />
                                 </div>
-                                <span className="text-[10px] font-black">{p.name}</span>
+                                <span className="text-sm font-black">{p.name}</span>
                               </div>
                             </div>
                           )}

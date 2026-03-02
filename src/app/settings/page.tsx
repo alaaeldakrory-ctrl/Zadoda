@@ -105,18 +105,18 @@ export default function SettingsPage() {
             <CardContent className="grid gap-12 p-8">
               {persons.map(p => (
                 <div key={p.id} className="grid gap-8 border-b border-dashed pb-12 last:border-0 last:pb-0">
-                  <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-10">
                     <div className="relative">
-                      <div className="w-20 h-20 rounded-[2rem] overflow-hidden border-4 shadow-2xl" style={{ borderColor: p.color }}>
+                      <div className="w-40 h-40 rounded-[3rem] overflow-hidden border-8 shadow-2xl" style={{ borderColor: p.color }}>
                         <Image 
                           src={getAvatarUrl(p.name)} 
                           alt={p.name} 
-                          width={80} 
-                          height={80} 
+                          width={160} 
+                          height={160} 
                           className={cn(
                             "object-cover", 
-                            p.name === 'Mohamed' && "scale-110 -translate-y-2",
-                            p.name === 'Wesam' && "scale-110 translate-y-1",
+                            p.name === 'Mohamed' && "scale-110 -translate-y-4",
+                            p.name === 'Wesam' && "scale-110 translate-y-2",
                             p.name === 'Malika' && "scale-110 -translate-y-2",
                             p.name === 'Lyla' && "scale-110 -translate-y-2"
                           )}
@@ -124,9 +124,9 @@ export default function SettingsPage() {
                         />
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <h3 className="text-3xl font-black" style={{ color: p.color }}>{p.name}</h3>
-                      <p className="text-xs text-muted-foreground font-black uppercase tracking-[0.2em]">{p.id}</p>
+                    <div className="space-y-2">
+                      <h3 className="text-5xl font-black" style={{ color: p.color }}>{p.name}</h3>
+                      <p className="text-sm text-muted-foreground font-black uppercase tracking-[0.3em]">{p.id}</p>
                     </div>
                   </div>
 

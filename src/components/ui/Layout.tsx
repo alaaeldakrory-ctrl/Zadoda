@@ -78,29 +78,29 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
               Family
             </p>
           </div>
-          <div className="px-4 space-y-3">
+          <div className="px-4 space-y-6">
             {persons.map(person => (
-              <div key={person.id} className="flex items-center gap-3 group">
+              <div key={person.id} className="flex items-center gap-4 group">
                 <div className="relative">
-                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 transition-transform group-hover:scale-110 shadow-sm" style={{ borderColor: person.color }}>
+                  <div className="w-20 h-20 rounded-full overflow-hidden border-4 transition-transform group-hover:scale-110 shadow-sm" style={{ borderColor: person.color }}>
                     <Image 
                       src={getAvatarUrl(person.name)} 
                       alt={person.name} 
-                      width={40} 
-                      height={40} 
+                      width={80} 
+                      height={80} 
                       className={cn(
                         "object-cover", 
-                        person.name === 'Mohamed' && "scale-110 -translate-y-2",
-                        person.name === 'Wesam' && "scale-110 translate-y-1",
-                        person.name === 'Malika' && "scale-110 -translate-y-1",
-                        person.name === 'Lyla' && "scale-110 -translate-y-1"
+                        person.name === 'Mohamed' && "scale-110 -translate-y-4",
+                        person.name === 'Wesam' && "scale-110 translate-y-2",
+                        person.name === 'Malika' && "scale-110 -translate-y-2",
+                        person.name === 'Lyla' && "scale-110 -translate-y-2"
                       )}
                       data-ai-hint="person headshot"
                       priority
                     />
                   </div>
                 </div>
-                <span className="font-bold text-sm text-muted-foreground group-hover:text-foreground transition-colors">{person.name}</span>
+                <span className="font-black text-base text-muted-foreground group-hover:text-foreground transition-colors">{person.name}</span>
               </div>
             ))}
           </div>
