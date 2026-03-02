@@ -43,7 +43,7 @@ const GridSlot: React.FC<GridSlotProps> = ({ id, onSlotClick, children }) => {
 };
 
 const CalendarContent: React.FC = () => {
-  // 1. All Hook declarations must be at the very top
+  // CRITICAL: All Hooks must be at the very top, before any return statements.
   const [mounted, setMounted] = useState(false);
   const { settings, persons, series, overrides, templates, moveEvent } = useStore();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -58,9 +58,7 @@ const CalendarContent: React.FC = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const personParam = searchParams.get('personId');
-  const t = getTranslation(settings.language);
 
-  // 2. Effects
   useEffect(() => {
     setMounted(true);
     setCurrentDate(new Date());
@@ -74,7 +72,7 @@ const CalendarContent: React.FC = () => {
     }
   }, [personParam, persons]);
 
-  // 3. Early return for hydration safety
+  // Early return for hydration safety AFTER hooks are declared
   if (!mounted) {
     return (
       <div className="flex flex-col h-full overflow-hidden bg-white rounded-[2rem] shadow-2xl shadow-black/5 ring-1 ring-black/5 animate-pulse">
@@ -87,7 +85,7 @@ const CalendarContent: React.FC = () => {
     );
   }
 
-  // 4. Component Logic
+  const t = getTranslation(settings.language);
   const timeSlots = generateTimeSlots(settings.dayStartTime, settings.dayEndTime);
   const weekStart = startOfWeek(currentDate);
   const days = viewMode === 'day' ? [currentDate] : Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
