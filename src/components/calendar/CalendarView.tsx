@@ -226,10 +226,10 @@ const CalendarContent: React.FC = () => {
                           height={48} 
                           className={cn(
                             "object-cover", 
-                            p.id === 'person3' && "scale-110 -translate-y-2",
+                            p.id === 'person3' && "scale-110 -translate-y-4",
                             p.id === 'person4' && "scale-105 translate-y-1",
                             p.id === 'person2' && "scale-150 translate-y-3",
-                            p.id === 'person1' && "scale-110 -translate-y-2"
+                            p.id === 'person1' && "scale-110 -translate-y-4"
                           )}
                           data-ai-hint="person headshot"
                         />
