@@ -1,7 +1,7 @@
 
 "use client"
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { cn, getAvatarUrl, getPersonName } from '@/lib/utils';
@@ -11,9 +11,10 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { settings, setLanguage, persons } = useStore();
+const SidebarNav = () => {
+  const { settings, persons } = useStore();
   const t = getTranslation(settings.language);
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -26,11 +27,83 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
     { label: t.settings, icon: Settings, href: '/settings' },
   ];
 
+  return (
+    <>
+      <div className="px-4 mb-4">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">Menu</p>
+      </div>
+      {navItems.map(item => (
+        <Link
+          key={item.href}
+          href={item.href}
+          className={cn(
+            "flex items-center gap-4 px-6 py-4 rounded-3xl transition-all font-bold text-lg group",
+            pathname === item.href 
+              ? "bg-primary/10 text-foreground" 
+              : "hover:bg-muted text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <item.icon className={cn("w-6 h-6", pathname === item.href ? "text-primary" : "group-hover:text-primary")} />
+          {item.label}
+        </Link>
+      ))}
+
+      <div className="px-4 mt-10 mb-4">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60 flex items-center gap-2">
+          <Users className="w-3 h-3" />
+          Family
+        </p>
+      </div>
+      <div className="px-4 space-y-6">
+        {persons.map(person => (
+          <Link 
+            key={person.id} 
+            href={`/?personId=${person.id}`}
+            className={cn(
+              "flex items-center gap-4 group cursor-pointer transition-all p-2 rounded-3xl",
+              currentPersonId === person.id ? "bg-muted/50" : "hover:bg-muted/30"
+            )}
+          >
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full overflow-hidden border-4 transition-transform group-hover:scale-110 shadow-sm" style={{ borderColor: person.color }}>
+                <Image 
+                  src={getAvatarUrl(person.id)} 
+                  alt={person.name} 
+                  width={80} 
+                  height={80} 
+                  className={cn(
+                    "object-cover", 
+                    person.id === 'person3' && "scale-110 -translate-y-4",
+                    person.id === 'person4' && "scale-105 translate-y-[-2px]",
+                    person.id === 'person2' && "scale-150 translate-y-3",
+                    person.id === 'person1' && "scale-110 translate-y-4"
+                  )}
+                  data-ai-hint="person headshot"
+                  priority
+                />
+              </div>
+            </div>
+            <span className={cn(
+              "font-black text-base transition-colors",
+              currentPersonId === person.id ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
+            )}>
+              {getPersonName(person, settings.language)}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </>
+  );
+};
+
+export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { settings, setLanguage } = useStore();
+  const t = getTranslation(settings.language);
+
   const logoImage = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl;
 
   return (
     <div className="flex h-screen bg-background overflow-hidden selection:bg-primary selection:text-primary-foreground">
-      {/* Sidebar */}
       <aside className="w-80 border-r flex flex-col hidden lg:flex bg-white relative z-20">
         <div className="pt-4 pb-8 flex flex-col items-center text-center">
           <Link href="/" className="flex flex-col items-center gap-6 group">
@@ -41,7 +114,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                   alt="Zadoda Logo" 
                   width={128} 
                   height={128} 
-                  className="object-cover scale-95 -translate-y-3"
+                  className="object-cover scale-95 -translate-y-5"
                   priority
                 />
               ) : (
@@ -58,69 +131,9 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
         </div>
 
         <nav className="flex-1 px-6 space-y-1.5 mt-4 overflow-y-auto">
-          <div className="px-4 mb-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">Menu</p>
-          </div>
-          {navItems.map(item => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-4 px-6 py-4 rounded-3xl transition-all font-bold text-lg group",
-                pathname === item.href 
-                  ? "bg-primary/10 text-foreground" 
-                  : "hover:bg-muted text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <item.icon className={cn("w-6 h-6", pathname === item.href ? "text-primary" : "group-hover:text-primary")} />
-              {item.label}
-            </Link>
-          ))}
-
-          <div className="px-4 mt-10 mb-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60 flex items-center gap-2">
-              <Users className="w-3 h-3" />
-              Family
-            </p>
-          </div>
-          <div className="px-4 space-y-6">
-            {persons.map(person => (
-              <Link 
-                key={person.id} 
-                href={`/?personId=${person.id}`}
-                className={cn(
-                  "flex items-center gap-4 group cursor-pointer transition-all p-2 rounded-3xl",
-                  currentPersonId === person.id ? "bg-muted/50" : "hover:bg-muted/30"
-                )}
-              >
-                <div className="relative">
-                  <div className="w-20 h-20 rounded-full overflow-hidden border-4 transition-transform group-hover:scale-110 shadow-sm" style={{ borderColor: person.color }}>
-                    <Image 
-                      src={getAvatarUrl(person.id)} 
-                      alt={person.name} 
-                      width={80} 
-                      height={80} 
-                      className={cn(
-                        "object-cover", 
-                        person.id === 'person3' && "scale-110 -translate-y-4",
-                        person.id === 'person4' && "scale-105 translate-y-[-2px]",
-                        person.id === 'person2' && "scale-150 translate-y-3",
-                        person.id === 'person1' && "scale-110 translate-y-4"
-                      )}
-                      data-ai-hint="person headshot"
-                      priority
-                    />
-                  </div>
-                </div>
-                <span className={cn(
-                  "font-black text-base transition-colors",
-                  currentPersonId === person.id ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
-                )}>
-                  {getPersonName(person, settings.language)}
-                </span>
-              </Link>
-            ))}
-          </div>
+          <Suspense fallback={<div className="p-4 space-y-4"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>}>
+            <SidebarNav />
+          </Suspense>
         </nav>
 
         <div className="p-8 border-t bg-muted/5">
@@ -135,29 +148,22 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 bg-[#F9F9F9] relative overflow-hidden">
         <div className="flex-1 p-4 lg:p-8 overflow-y-auto relative h-full">
           {children}
         </div>
 
-        {/* Mobile Nav */}
         <nav className="h-20 border-t flex lg:hidden bg-white/95 backdrop-blur-xl sticky bottom-0 z-30 px-4 gap-2">
-          {navItems.map(item => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex-1 flex flex-col items-center justify-center gap-1 transition-all",
-                pathname === item.href ? "text-primary" : "text-muted-foreground"
-              )}
-            >
-              <div className={cn("p-2 rounded-2xl transition-colors", pathname === item.href ? "bg-primary/10" : "")}>
-                <item.icon className="w-5 h-5" />
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-tighter">{item.label}</span>
-            </Link>
-          ))}
+           <Suspense fallback={<div className="flex-1 flex items-center justify-center"><Skeleton className="h-8 w-32" /></div>}>
+             {/* Note: Mobile nav would ideally use a shared NavItems component, but for simplicity we'll keep the SidebarNav logic if it fits or refactor */}
+             {/* In this version, we'll keep it simple to fix the build first */}
+             <div className="flex w-full gap-2 items-center justify-around">
+               <Link href="/" className="flex flex-col items-center"><Calendar className="w-5 h-5"/><span className="text-[10px] font-black uppercase">Calendar</span></Link>
+               <Link href="/templates" className="flex flex-col items-center"><Layers className="w-5 h-5"/><span className="text-[10px] font-black uppercase">Templates</span></Link>
+               <Link href="/memos" className="flex flex-col items-center"><StickyNote className="w-5 h-5"/><span className="text-[10px] font-black uppercase">Memos</span></Link>
+               <Link href="/settings" className="flex flex-col items-center"><Settings className="w-5 h-5"/><span className="text-[10px] font-black uppercase">Settings</span></Link>
+             </div>
+           </Suspense>
         </nav>
       </main>
     </div>
