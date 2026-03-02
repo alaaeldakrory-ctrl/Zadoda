@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -15,7 +16,7 @@ import {
   deleteDocumentNonBlocking,
   initiateAnonymousSignIn
 } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, collectionGroup, query } from 'firebase/firestore';
 
 interface StoreContextValue {
   persons: Person[];
@@ -53,10 +54,10 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 const INITIAL_PEOPLE: Person[] = [
-  { id: 'person1', name: 'Lyla', color: '#F87171' }, // Soft Red
-  { id: 'person2', name: 'Malika', color: '#60A5FA' }, // Sky Blue
-  { id: 'person3', name: 'Mohamed', color: '#34D399' }, // Mint
-  { id: 'person4', name: 'Wesam', color: '#FBBF24' }, // Gold
+  { id: 'person1', name: 'Lyla', color: '#F87171' }, 
+  { id: 'person2', name: 'Malika', color: '#60A5FA' }, 
+  { id: 'person3', name: 'Mohamed', color: '#34D399' }, 
+  { id: 'person4', name: 'Wesam', color: '#FBBF24' }, 
 ];
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -82,6 +83,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const seriesRef = useMemoFirebase(() => collection(db, 'calendarEventSeries'), [db]);
   const { data: seriesData, isLoading: seriesLoading } = useCollection<CalendarEventSeries>(seriesRef);
 
+  const overridesRef = useMemoFirebase(() => query(collectionGroup(db, 'eventOccurrenceOverrides')), [db]);
+  const { data: overridesData, isLoading: overridesLoading } = useCollection<CalendarEventOccurrenceOverride>(overridesRef);
+
   const memosRef = useMemoFirebase(() => collection(db, 'memos'), [db]);
   const { data: memosData, isLoading: memosLoading } = useCollection<Memo>(memosRef);
 
@@ -104,9 +108,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const templates = templatesData || [];
   const series = seriesData || [];
   const memos = memosData || [];
-  const overrides: CalendarEventOccurrenceOverride[] = []; 
+  const overrides = overridesData || []; 
 
-  const isLoading = isUserLoading || settingsLoading || (personsLoading && !personsData) || memosLoading;
+  const isLoading = isUserLoading || settingsLoading || (personsLoading && !personsData) || memosLoading || overridesLoading;
 
   const setLanguage = (language: Language) => {
     setDocumentNonBlocking(settingsRef, { ...settings, language, id: 'global' }, { merge: true });
@@ -176,13 +180,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const toggleCompletion = (seriesId: string, date: string) => {
     const overrideId = `${seriesId}_${date}`;
+    const existing = overrides.find(o => o.id === overrideId);
     const overrideRef = doc(db, 'calendarEventSeries', seriesId, 'eventOccurrenceOverrides', overrideId);
+    
     setDocumentNonBlocking(overrideRef, { 
       id: overrideId, 
       seriesId, 
       date, 
-      completed: true, 
-      completedAt: new Date().getTime() 
+      completed: !existing?.completed, 
+      completedAt: !existing?.completed ? new Date().getTime() : null
     }, { merge: true });
   };
 

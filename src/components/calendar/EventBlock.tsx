@@ -17,13 +17,14 @@ interface EventBlockProps {
 
 export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, color, onClick, isDragging }) => {
   const { toggleCompletion } = useStore();
-  const { top, height } = getGridPosition(occurrence.startTime, occurrence.endTime, dayStart, 64);
+  const { top, height } = getGridPosition(occurrence.startTime, occurrence.endTime, dayStart, 80);
 
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: occurrence.id,
   });
 
   const handleToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     toggleCompletion(occurrence.seriesId, occurrence.date);
   };
@@ -31,8 +32,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
   const isCompleted = occurrence.completed;
   const isImportant = occurrence.isImportant;
   
-  // Dynamic styling based on event duration
-  const isShort = height <= 64; // 30 minutes or less
+  const isShort = height <= 80; // 30 minutes or less at slotHeight 80
 
   const style = !isDragging ? {
     top: `${top}px`,
@@ -65,14 +65,12 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
       style={style}
     >
       <div className="flex items-center gap-2 h-full w-full relative">
-        {/* Important Icon */}
         {isImportant && !isCompleted && (
           <div className="absolute top-0 right-0 opacity-80 animate-pulse">
             <AlertCircle className={cn("text-destructive", isShort ? "w-3 h-3" : "w-4 h-4")} />
           </div>
         )}
 
-        {/* Drag Handle */}
         {!isCompleted && (
           <div 
             {...listeners}
@@ -100,12 +98,12 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
           </p>
         </div>
 
-        {/* Completion Toggle */}
         <div className="shrink-0 flex items-center justify-center">
           <button
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={handleToggle}
             className={cn(
-              "rounded-full transition-all transform group-hover/event:scale-110 active:scale-90 bg-white/50",
+              "rounded-full transition-all transform group-hover/event:scale-110 active:scale-90 bg-white/50 relative z-20",
               isShort ? "p-0.5" : "p-1"
             )}
           >
