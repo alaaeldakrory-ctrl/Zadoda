@@ -1,6 +1,88 @@
+
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { format, addMinutes, parse, isSameDay, startOfWeek, addDays, getDay } from 'date-fns';
+import { CalendarEventSeries, CalendarEventOccurrenceOverride, RecurrenceRule } from './types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+export function generateTimeSlots(start: string, end: string) {
+  const slots: string[] = [];
+  let current = parse(start, 'HH:mm', new Date());
+  const stop = parse(end, 'HH:mm', new Date());
+
+  while (current <= stop) {
+    slots.push(format(current, 'HH:mm'));
+    current = addMinutes(current, 30);
+  }
+  return slots;
+}
+
+export function getOccurrencesForDate(series: CalendarEventSeries[], date: Date, overrides: CalendarEventOccurrenceOverride[]) {
+  const dateStr = format(date, 'yyyy-MM-dd');
+  const dayIdx = getDay(date);
+
+  return series.filter(s => {
+    if (s.exceptions.includes(dateStr)) return false;
+    if (dateStr < s.startDate) return false;
+    
+    // Simple recurrence check
+    const r = s.recurrence;
+    if (r.frequency === 'NONE') {
+      return s.startDate === dateStr;
+    }
+    
+    if (r.untilDate && dateStr > r.untilDate) return false;
+
+    if (r.frequency === 'DAILY') {
+      // Check interval
+      const start = new Date(s.startDate);
+      const diffTime = Math.abs(date.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays % r.interval === 0;
+    }
+
+    if (r.frequency === 'WEEKLY') {
+      return r.byWeekday?.includes(dayIdx);
+    }
+
+    if (r.frequency === 'MONTHLY') {
+      const dayOfMonth = date.getDate();
+      return r.byMonthDay === dayOfMonth;
+    }
+
+    return false;
+  }).map(s => {
+    const override = overrides.find(o => o.seriesId === s.id && o.date === dateStr);
+    return {
+      id: s.id,
+      series: s,
+      date: dateStr,
+      override,
+      title: override?.title || s.title,
+      startTime: override?.startTime || s.startTime,
+      endTime: override?.endTime || s.endTime,
+      personId: override?.personId || s.personId,
+      notes: override?.notes || s.notes,
+      completed: !!override?.completed
+    };
+  });
+}
+
+export function timeToMinutes(time: string) {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
+
+export function getGridPosition(startTime: string, endTime: string, dayStart: string, slotHeight: number = 40) {
+  const startMins = timeToMinutes(startTime);
+  const endMins = timeToMinutes(endTime);
+  const dayStartMins = timeToMinutes(dayStart);
+
+  const top = ((startMins - dayStartMins) / 30) * slotHeight;
+  const height = ((endMins - startMins) / 30) * slotHeight;
+
+  return { top, height };
 }

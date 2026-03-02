@@ -1,3 +1,10 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "app-hero",
+      "description": "Family organizing their schedule on a large tablet",
+      "imageUrl": "https://images.unsplash.com/photo-1758523418162-97e39cf60624?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxmYW1pbHklMjBvcmdhbml6YXRpb258ZW58MHx8fHwxNzcyNDYyODc2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "family organization"
+    }
+  ]
 }
