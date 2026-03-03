@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -53,11 +52,12 @@ const DEFAULT_SETTINGS: AppSettings = {
   language: 'en',
 };
 
+// Reordered to put Kids (Lyla, Wesam) first so they are adjacent in the grid
 const INITIAL_PEOPLE: Person[] = [
   { id: 'person1', name: 'Lyla', color: '#F87171' }, 
+  { id: 'person4', name: 'Wesam', color: '#FBBF24' },
   { id: 'person2', name: 'Malika', color: '#60A5FA' }, 
   { id: 'person3', name: 'Mohamed', color: '#34D399' }, 
-  { id: 'person4', name: 'Wesam', color: '#FBBF24' }, 
 ];
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -71,7 +71,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [user, isUserLoading, auth]);
 
-  // We only create references if we have an authenticated user to avoid permission errors
   const settingsRef = useMemoFirebase(() => user ? doc(db, 'appSettings', 'global') : null, [db, user]);
   const { data: settingsData, isLoading: settingsLoading } = useDoc<AppSettings>(settingsRef);
 

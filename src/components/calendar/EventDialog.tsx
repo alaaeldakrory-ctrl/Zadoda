@@ -170,29 +170,41 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
             {error && <p className="text-[10px] text-destructive font-black uppercase tracking-wide">{error}</p>}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center space-x-2 bg-accent/5 p-3 rounded-xl border-2 border-dashed">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="flex flex-col items-center gap-2 bg-accent/5 p-2 rounded-xl border-2 border-dashed">
               <Checkbox 
                 id="important" 
                 checked={formData.isImportant} 
                 onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isImportant: !!checked }))}
                 className="rounded-md border-2"
               />
-              <Label htmlFor="important" className="font-black text-[10px] cursor-pointer uppercase tracking-widest flex items-center gap-2">
+              <Label htmlFor="important" className="font-black text-[8px] cursor-pointer uppercase tracking-tighter flex items-center gap-1 text-center">
                 <AlertCircle className="w-3 h-3 text-destructive" />
                 {t.important}
               </Label>
             </div>
-            <div className="flex items-center space-x-2 bg-primary/5 p-3 rounded-xl border-2 border-dashed">
+            <div className="flex flex-col items-center gap-2 bg-primary/5 p-2 rounded-xl border-2 border-dashed">
               <Checkbox 
                 id="everyone" 
                 checked={formData.personId === 'all'} 
                 onCheckedChange={(checked) => setFormData(prev => ({ ...prev, personId: checked ? 'all' : persons[0]?.id }))}
                 className="rounded-md border-2"
               />
-              <Label htmlFor="everyone" className="font-black text-[10px] cursor-pointer uppercase tracking-widest flex items-center gap-2">
+              <Label htmlFor="everyone" className="font-black text-[8px] cursor-pointer uppercase tracking-tighter flex items-center gap-1 text-center">
                 <Users className="w-3 h-3 text-primary" />
-                {t.everyone}
+                {t.allPeople}
+              </Label>
+            </div>
+            <div className="flex flex-col items-center gap-2 bg-yellow-500/5 p-2 rounded-xl border-2 border-dashed">
+              <Checkbox 
+                id="kids" 
+                checked={formData.personId === 'kids'} 
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, personId: checked ? 'kids' : persons[0]?.id }))}
+                className="rounded-md border-2"
+              />
+              <Label htmlFor="kids" className="font-black text-[8px] cursor-pointer uppercase tracking-tighter flex items-center gap-1 text-center">
+                <Users className="w-3 h-3 text-yellow-600" />
+                {t.allKids}
               </Label>
             </div>
           </div>
@@ -210,8 +222,14 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
                 <SelectContent className="rounded-xl">
                   <SelectItem value="all">
                     <div className="flex items-center gap-2">
-                      <Users className="w-3 h-3" />
-                      {t.everyone}
+                      <Users className="w-3 h-3 text-primary" />
+                      {t.allPeople}
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="kids">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-3 h-3 text-yellow-600" />
+                      {t.allKids}
                     </div>
                   </SelectItem>
                   {persons.map(p => (

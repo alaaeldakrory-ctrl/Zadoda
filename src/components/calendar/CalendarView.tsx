@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, Suspense } from 'react';
@@ -9,7 +8,7 @@ import { format, startOfWeek, addDays } from 'date-fns';
 import { EventBlock } from './EventBlock';
 import { EventDialog } from './EventDialog';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Users } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -140,8 +139,8 @@ const CalendarContent: React.FC = () => {
     days.flatMap(day => getOccurrencesForDate(series, day, overrides).filter(occ => occ.id === activeDragId))[0]
     : null;
 
-  const DAY_HEADER_HEIGHT = 40;
-  const PERSON_HEADER_HEIGHT = selectedPersonId === 'all' ? 140 : 0;
+  const DAY_HEADER_HEIGHT = 32;
+  const PERSON_HEADER_HEIGHT = selectedPersonId === 'all' ? 100 : 0;
   const TOTAL_HEADER_HEIGHT = DAY_HEADER_HEIGHT + PERSON_HEADER_HEIGHT;
 
   if (!mounted || isLoading) {
@@ -268,7 +267,8 @@ const CalendarContent: React.FC = () => {
               {days.map(day => {
                 const dayOccurrences = getOccurrencesForDate(series, day, overrides);
                 const allPersonOccurrences = dayOccurrences.filter(occ => occ.personId === 'all');
-                const individualOccurrences = dayOccurrences.filter(occ => occ.personId !== 'all');
+                const kidsPersonOccurrences = dayOccurrences.filter(occ => occ.personId === 'kids');
+                const individualOccurrences = dayOccurrences.filter(occ => occ.personId !== 'all' && occ.personId !== 'kids');
 
                 return (
                   <div key={day.toISOString()} className="flex-1 border-r last:border-r-0 min-w-0 flex flex-col min-h-full">
@@ -282,7 +282,16 @@ const CalendarContent: React.FC = () => {
                     <div className="flex-1 flex relative min-h-full">
                       {filteredPersons.map(p => {
                         const personOccurrences = individualOccurrences.filter(occ => occ.personId === p.id);
-                        const displayedOccurrences = selectedPersonId === 'all' ? personOccurrences : [...personOccurrences, ...allPersonOccurrences];
+                        
+                        // Check if this person should see shared events
+                        const isKid = p.id === 'person1' || p.id === 'person4';
+                        const displayedOccurrences = selectedPersonId === 'all' 
+                          ? personOccurrences 
+                          : [
+                              ...personOccurrences, 
+                              ...allPersonOccurrences,
+                              ...(isKid ? kidsPersonOccurrences : [])
+                            ];
                         
                         const dayStr = format(day, 'yyyy-MM-dd');
                         return (
@@ -298,12 +307,12 @@ const CalendarContent: React.FC = () => {
                                 }}
                               >
                                 <div className="flex flex-col items-center gap-1 p-1">
-                                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 shadow-sm transition-transform group-hover:scale-105" style={{ borderColor: p.color }}>
+                                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 shadow-sm transition-transform group-hover:scale-105" style={{ borderColor: p.color }}>
                                     <Image 
                                       src={getAvatarUrl(p.id)} 
                                       alt={p.name} 
-                                      width={64} 
-                                      height={64} 
+                                      width={48} 
+                                      height={48} 
                                       className={cn(
                                         "object-cover", 
                                         p.id === 'person3' && "scale-110 -translate-y-4",
@@ -314,7 +323,7 @@ const CalendarContent: React.FC = () => {
                                       data-ai-hint="person headshot"
                                     />
                                   </div>
-                                  <span className="text-[9px] font-black">{getPersonName(p, settings.language)}</span>
+                                  <span className="text-[8px] font-black">{getPersonName(p, settings.language)}</span>
                                 </div>
                               </div>
                             )}
@@ -334,7 +343,7 @@ const CalendarContent: React.FC = () => {
                                     <EventBlock
                                       occurrence={occ}
                                       dayStart={settings.dayStartTime}
-                                      color={occ.personId === 'all' ? 'var(--primary)' : p.color}
+                                      color={occ.personId === 'all' ? 'var(--primary)' : (occ.personId === 'kids' ? '#FBBF24' : p.color)}
                                       onClick={() => handleEditEvent(occ.seriesId, occ.date)}
                                     />
                                   </div>
@@ -347,17 +356,35 @@ const CalendarContent: React.FC = () => {
 
                       {selectedPersonId === 'all' && (
                         <div className="absolute inset-0 pointer-events-none" style={{ paddingTop: `${PERSON_HEADER_HEIGHT}px` }}>
-                          {allPersonOccurrences.map((occ) => (
-                            <div key={occ.id} className="pointer-events-auto absolute left-0 right-0 z-40 px-1">
-                              <EventBlock
-                                occurrence={occ}
-                                dayStart={settings.dayStartTime}
-                                color="#454545" 
-                                onClick={() => handleEditEvent(occ.seriesId, occ.date)}
-                                isFullWidth
-                              />
-                            </div>
-                          ))}
+                          {/* All People Layer (Full Width) */}
+                          <div className="absolute inset-0 z-40">
+                            {allPersonOccurrences.map((occ) => (
+                              <div key={occ.id} className="pointer-events-auto absolute left-1 right-1">
+                                <EventBlock
+                                  occurrence={occ}
+                                  dayStart={settings.dayStartTime}
+                                  color="#454545" 
+                                  onClick={() => handleEditEvent(occ.seriesId, occ.date)}
+                                  isFullWidth
+                                />
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* All Kids Layer (Half Width - columns 0 and 1) */}
+                          <div className="absolute inset-0 z-40 w-1/2 left-0">
+                            {kidsPersonOccurrences.map((occ) => (
+                              <div key={occ.id} className="pointer-events-auto absolute left-1 right-1">
+                                <EventBlock
+                                  occurrence={occ}
+                                  dayStart={settings.dayStartTime}
+                                  color="#FBBF24" 
+                                  onClick={() => handleEditEvent(occ.seriesId, occ.date)}
+                                  isFullWidth
+                                />
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
