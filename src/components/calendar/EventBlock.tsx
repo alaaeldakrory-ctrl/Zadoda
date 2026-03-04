@@ -33,13 +33,15 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
   const isCompleted = occurrence.completed;
   const isImportant = occurrence.isImportant;
   const isForAll = occurrence.personId === 'all';
+  const isForKids = occurrence.personId === 'kids';
+  const isShared = isForAll || isForKids;
   
   const isShort = height <= 80;
 
   const style = !isDragging ? {
     top: `${top}px`,
     height: `${height}px`,
-    backgroundColor: isCompleted ? '#f0fdf4' : isForAll ? '#f8f9fa' : `${color}15`,
+    backgroundColor: isCompleted ? '#f0fdf4' : isShared ? '#f8f9fa' : `${color}15`,
     borderColor: isCompleted ? '#22c55e' : color,
     borderLeftWidth: isImportant ? '8px' : '6px',
     boxShadow: isImportant && !isCompleted ? `0 0 15px ${color}30` : 'none',
@@ -63,7 +65,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
         isShort ? "p-1.5" : "p-3",
         isDragging && "z-50 ring-4 ring-primary ring-offset-2 opacity-90",
         !isDragging && "hover:shadow-md hover:translate-y-[-1px]",
-        isForAll && !isCompleted && "bg-gradient-to-r from-muted/30 via-transparent to-muted/30"
+        isShared && !isCompleted && "bg-gradient-to-r from-muted/30 via-transparent to-muted/30"
       )}
       style={style}
     >
@@ -85,7 +87,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
 
         <div className="flex-1 min-w-0 flex flex-col justify-center">
           <div className="flex items-center gap-2">
-            {isForAll && !isCompleted && <Users className={cn("text-muted-foreground", isShort ? "w-3 h-3" : "w-4 h-4")} />}
+            {isShared && !isCompleted && <Users className={cn("text-muted-foreground", isShort ? "w-3 h-3" : "w-4 h-4")} />}
             <p className={cn(
               "font-black leading-tight truncate transition-all", 
               isCompleted ? "line-through text-green-700/60 italic" : "text-foreground",
@@ -122,7 +124,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
                   "rounded-full border-2 border-current opacity-30 hover:opacity-100 transition-all",
                   isShort ? "w-5 h-5" : "w-7 h-7"
                 )}
-                style={{ color: isForAll ? '#454545' : color }} 
+                style={{ color: isShared ? (isForAll ? '#454545' : '#FBBF24') : color }} 
               />
             )}
           </button>

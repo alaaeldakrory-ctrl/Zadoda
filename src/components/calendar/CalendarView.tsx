@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect, Suspense } from 'react';
@@ -301,7 +302,7 @@ const CalendarContent: React.FC = () => {
                                 className="flex items-center justify-center text-sm font-black border-b sticky z-30 transition-colors uppercase tracking-widest shrink-0" 
                                 style={{ 
                                   height: `${PERSON_HEADER_HEIGHT}px`,
-                                  top: `${DAY_HEADER_HEIGHT}px`,
+                                  top: `0px`,
                                   backgroundColor: `white`, 
                                   color: p.color, 
                                 }}
@@ -355,35 +356,37 @@ const CalendarContent: React.FC = () => {
                       })}
 
                       {selectedPersonId === 'all' && (
-                        <div className="absolute inset-0 pointer-events-none" style={{ paddingTop: `${PERSON_HEADER_HEIGHT}px` }}>
-                          {/* All People Layer (Full Width) */}
-                          <div className="absolute inset-0 z-40">
-                            {allPersonOccurrences.map((occ) => (
-                              <div key={occ.id} className="pointer-events-auto absolute left-1 right-1">
-                                <EventBlock
-                                  occurrence={occ}
-                                  dayStart={settings.dayStartTime}
-                                  color="#454545" 
-                                  onClick={() => handleEditEvent(occ.seriesId, occ.date)}
-                                  isFullWidth
-                                />
-                              </div>
-                            ))}
-                          </div>
+                        <div className="absolute inset-x-0 bottom-0 pointer-events-none" style={{ top: `${PERSON_HEADER_HEIGHT}px` }}>
+                          <div className="relative h-full w-full">
+                            {/* All People Layer (Full Width) */}
+                            <div className="absolute inset-0 z-40">
+                              {allPersonOccurrences.map((occ) => (
+                                <div key={occ.id} className="pointer-events-auto absolute left-1 right-1">
+                                  <EventBlock
+                                    occurrence={occ}
+                                    dayStart={settings.dayStartTime}
+                                    color="#454545" 
+                                    onClick={() => handleEditEvent(occ.seriesId, occ.date)}
+                                    isFullWidth
+                                  />
+                                </div>
+                              ))}
+                            </div>
 
-                          {/* All Kids Layer (Half Width - columns 0 and 1) */}
-                          <div className="absolute inset-0 z-40 w-1/2 left-0">
-                            {kidsPersonOccurrences.map((occ) => (
-                              <div key={occ.id} className="pointer-events-auto absolute left-1 right-1">
-                                <EventBlock
-                                  occurrence={occ}
-                                  dayStart={settings.dayStartTime}
-                                  color="#FBBF24" 
-                                  onClick={() => handleEditEvent(occ.seriesId, occ.date)}
-                                  isFullWidth
-                                />
-                              </div>
-                            ))}
+                            {/* All Kids Layer (Half Width - columns 0 and 1) */}
+                            <div className="absolute inset-y-0 left-0 w-1/2 z-40">
+                              {kidsPersonOccurrences.map((occ) => (
+                                <div key={occ.id} className="pointer-events-auto absolute left-1 right-1">
+                                  <EventBlock
+                                    occurrence={occ}
+                                    dayStart={settings.dayStartTime}
+                                    color="#FBBF24" 
+                                    onClick={() => handleEditEvent(occ.seriesId, occ.date)}
+                                    isFullWidth
+                                  />
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       )}
