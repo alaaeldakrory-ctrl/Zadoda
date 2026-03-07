@@ -1,7 +1,6 @@
-
 "use client"
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/ui/Layout';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
@@ -9,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Globe, Calendar, Users, Clock, Palette } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Globe, Calendar, Users, Clock, Palette, Download } from 'lucide-react';
 import Image from 'next/image';
 import { getAvatarUrl, cn, getPersonName } from '@/lib/utils';
 
@@ -17,12 +17,70 @@ export default function SettingsPage() {
   const { settings, updateSettings, persons, updatePerson } = useStore();
   const t = getTranslation(settings.language);
 
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) return;
+
+    // Show the install prompt
+    deferredPrompt.prompt();
+
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      console.log('User accepted the install prompt');
+    } else {
+      console.log('User dismissed the install prompt');
+    }
+
+    // We've used the prompt, and can't use it again, throw it away
+    setDeferredPrompt(null);
+  };
+
   return (
     <AppLayout>
       <div className="max-w-4xl mx-auto space-y-10 pb-20">
         <h1 className="text-5xl font-black tracking-tight">{t.settings}</h1>
 
         <div className="grid gap-10">
+          {deferredPrompt && (
+            <Card className="rounded-[3rem] border-2 border-primary/20 shadow-xl overflow-hidden bg-primary/5 animate-pop">
+              <CardContent className="p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-6">
+                  <div className="p-4 bg-primary rounded-3xl shadow-lg shadow-primary/20">
+                    <Download className="w-8 h-8 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black">Install Zadoda</h2>
+                    <p className="font-bold text-muted-foreground">Add to your home screen for the best experience.</p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleInstallApp}
+                  className="rounded-full h-14 px-10 font-black text-lg shadow-xl shadow-primary/30 hover:scale-105 transition-transform"
+                >
+                  Install Now
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="rounded-[3rem] border-2 shadow-xl overflow-hidden bg-white">
             <CardHeader className="bg-muted/20 pb-6">
               <div className="flex items-center gap-4">
