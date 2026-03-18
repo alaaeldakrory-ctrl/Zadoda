@@ -44,19 +44,19 @@ export const EventBlock: React.FC<EventBlockProps> = ({
   const isForKids = occurrence.personId === 'kids';
   const isShared = isForAll || isForKids;
   
-  const isShort = height <= (slotHeight15Min * 1.1); // Dynamic based on height
+  const isShort = height <= (slotHeight15Min * 1.1);
 
   const style = !isDragging ? {
     top: `${top}px`,
     height: `${height}px`,
-    backgroundColor: isCompleted ? '#f0fdf4' : isShared ? '#f8f9fa' : `${color}15`,
+    backgroundColor: isCompleted ? '#f0fdf4' : isShared ? 'rgba(248, 249, 250, 0.9)' : `${color}15`,
     borderColor: isCompleted ? '#22c55e' : color,
     borderLeftWidth: isImportant ? '8px' : '6px',
-    boxShadow: isImportant && !isCompleted ? `0 0 15px ${color}30` : 'none',
+    boxShadow: isImportant && !isCompleted ? `0 4px 12px ${color}30` : 'none',
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
   } : {
     height: `${height}px`,
-    backgroundColor: `${color}15`,
+    backgroundColor: `${color}20`,
     borderColor: color,
     borderLeftWidth: isImportant ? '8px' : '6px',
   };
@@ -67,11 +67,11 @@ export const EventBlock: React.FC<EventBlockProps> = ({
       {...attributes}
       onClick={onClick}
       className={cn(
-        "absolute rounded-xl border-2 shadow-sm cursor-pointer transition-all overflow-hidden group/event active:scale-[0.98] z-10",
-        isFullWidth ? "left-1 right-1 backdrop-blur-md" : "left-1 right-1",
+        "absolute rounded-xl border-2 shadow-sm cursor-pointer transition-all overflow-hidden group/event active:scale-[0.98] z-30",
+        isFullWidth ? "left-1 right-1 backdrop-blur-md" : "left-1.5 right-1.5",
         isImportant && !isCompleted && "border-opacity-100 ring-1 ring-primary/20",
-        isShort ? "p-1.5" : "p-3",
-        isDragging && "z-50 ring-4 ring-primary ring-offset-2 opacity-90",
+        isShort ? "p-1" : "p-3",
+        isDragging && "z-[100] ring-4 ring-primary ring-offset-2 opacity-90",
         !isDragging && "hover:shadow-md hover:translate-y-[-1px]",
         isShared && !isCompleted && "bg-gradient-to-r from-muted/30 via-transparent to-muted/30"
       )}
@@ -89,39 +89,39 @@ export const EventBlock: React.FC<EventBlockProps> = ({
             {...listeners}
             className="shrink-0 flex items-center justify-center opacity-0 group-hover/event:opacity-40 transition-opacity cursor-grab active:cursor-grabbing"
           >
-            <GripVertical className={isShort ? "w-4 h-4" : "w-5 h-5"} />
+            <GripVertical className={isShort ? "w-3 h-3" : "w-5 h-5"} />
           </div>
         )}
 
         <div className="flex-1 min-w-0 flex flex-col justify-center">
-          <div className="flex items-center gap-2">
-            {isShared && !isCompleted && <Users className={cn("text-muted-foreground", isShort ? "w-3 h-3" : "w-4 h-4")} />}
+          <div className="flex items-center gap-1.5">
+            {isShared && !isCompleted && <Users className={cn("text-muted-foreground shrink-0", isShort ? "w-3 h-3" : "w-4 h-4")} />}
             <p className={cn(
               "font-black leading-tight truncate transition-all", 
               isCompleted ? "line-through text-green-700/60 italic" : "text-foreground",
               isImportant && !isCompleted && "text-destructive font-black uppercase",
-              isShort ? "text-sm" : "text-base"
+              isShort ? "text-[11px]" : "text-sm"
             )}>
               {occurrence.title}
             </p>
           </div>
           <p className={cn(
-            "font-black uppercase tracking-tight transition-opacity",
+            "font-black uppercase tracking-tight transition-opacity shrink-0",
             isCompleted ? "text-green-600/40" : "opacity-60",
-            isShort ? "text-[8px]" : "text-[10px] mt-0.5"
+            isShort ? "text-[8px]" : "text-[9px] mt-0.5"
           )}>
             {formatTime(occurrence.startTime)} - {formatTime(occurrence.endTime)}
           </p>
         </div>
 
-        <div className="shrink-0 flex items-center justify-center relative z-20">
+        <div className="shrink-0 flex items-center justify-center relative z-40">
           <button
             type="button"
             onPointerDown={(e) => e.stopPropagation()}
             onClick={handleToggle}
             className={cn(
               "rounded-full transition-all transform hover:scale-110 active:scale-90 bg-white/80 shadow-sm border",
-              isShort ? "p-0.5" : "p-1"
+              isShort ? "p-0" : "p-0.5"
             )}
           >
             {isCompleted ? (
@@ -130,7 +130,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({
               <div 
                 className={cn(
                   "rounded-full border-2 border-current opacity-30 hover:opacity-100 transition-all",
-                  isShort ? "w-5 h-5" : "w-7 h-7"
+                  isShort ? "w-4 h-4" : "w-6 h-6"
                 )}
                 style={{ color: isShared ? (isForAll ? '#454545' : '#FBBF24') : color }} 
               />

@@ -31,7 +31,7 @@ const GridSlot: React.FC<GridSlotProps> = ({ id, onSlotClick, children }) => {
   return (
     <div 
       ref={setNodeRef}
-      className={`h-24 border-b border-muted/20 transition-colors relative ${
+      className={`h-24 border-b border-muted/30 transition-colors relative ${
         isOver ? 'bg-primary/5' : 'hover:bg-primary/5'
       }`}
       onClick={onSlotClick}
@@ -72,7 +72,6 @@ const CalendarContent: React.FC = () => {
 
   const t = getTranslation(settings.language);
   
-  // Use 30-minute intervals for the visual grid and time labels
   const timeSlots = generateTimeSlots(settings.dayStartTime, settings.dayEndTime, 30);
   
   const weekStart = startOfWeek(currentDate);
@@ -142,7 +141,7 @@ const CalendarContent: React.FC = () => {
     days.flatMap(day => getOccurrencesForDate(series, day, overrides).filter(occ => occ.id === activeDragId))[0]
     : null;
 
-  const DAY_HEADER_HEIGHT = 32;
+  const DAY_HEADER_HEIGHT = 40;
   const PERSON_HEADER_HEIGHT = selectedPersonId === 'all' ? 80 : 0;
   const TOTAL_HEADER_HEIGHT = DAY_HEADER_HEIGHT + PERSON_HEADER_HEIGHT;
   const SLOT_HEIGHT_30MIN = 96; // Matching GridSlot's h-24
@@ -259,13 +258,21 @@ const CalendarContent: React.FC = () => {
 
         <div className="flex-1 overflow-auto relative bg-white">
           <div className="flex min-w-[800px] min-h-full">
+            {/* Time Labels Column */}
             <div className="w-16 sticky left-0 z-50 bg-white/80 backdrop-blur-md border-r shrink-0">
               <div style={{ height: `${TOTAL_HEADER_HEIGHT}px` }} />
-              {timeSlots.map(slot => (
-                <div key={slot} className="h-24 text-[9px] font-black text-muted-foreground flex items-center justify-center px-1 text-center uppercase tracking-widest border-b border-muted/20">
-                  {formatTime(slot)}
-                </div>
-              ))}
+              <div className="relative">
+                {timeSlots.map(slot => (
+                  <div key={slot} className="h-24 relative">
+                    {/* Position text exactly on the top boundary of the slot */}
+                    <div className="absolute top-0 left-0 w-full flex items-center justify-center -translate-y-1/2">
+                      <span className="bg-white/90 px-1 text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none">
+                        {formatTime(slot)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="flex-1 flex min-h-full">
@@ -278,7 +285,7 @@ const CalendarContent: React.FC = () => {
                 return (
                   <div key={day.toISOString()} className="flex-1 border-r last:border-r-0 min-w-0 flex flex-col min-h-full">
                     <div 
-                      className="flex items-center justify-center text-[9px] font-black sticky top-0 z-40 bg-white/50 backdrop-blur-sm uppercase tracking-[0.2em] text-muted-foreground shrink-0 border-b"
+                      className="flex items-center justify-center text-[10px] font-black sticky top-0 z-40 bg-white/80 backdrop-blur-sm uppercase tracking-[0.2em] text-muted-foreground shrink-0 border-b border-muted/30"
                       style={{ height: `${DAY_HEADER_HEIGHT}px` }}
                     >
                       {format(day, 'EEEE d')}
@@ -301,7 +308,7 @@ const CalendarContent: React.FC = () => {
                           <div key={p.id} className="flex-1 border-r last:border-r-0 relative group min-h-full flex flex-col">
                             {selectedPersonId === 'all' && (
                               <div 
-                                className="flex items-center justify-center text-sm font-black border-b sticky z-30 transition-colors uppercase tracking-widest shrink-0" 
+                                className="flex items-center justify-center text-sm font-black border-b border-muted/30 sticky z-30 transition-colors uppercase tracking-widest shrink-0" 
                                 style={{ 
                                   height: `${PERSON_HEADER_HEIGHT}px`,
                                   top: `${DAY_HEADER_HEIGHT}px`,
@@ -332,15 +339,25 @@ const CalendarContent: React.FC = () => {
                             )}
                             
                             <div className="relative flex-1">
-                              {timeSlots.map(slot => (
-                                <GridSlot 
-                                  key={slot}
-                                  id={`${dayStr}|${p.id}|${slot}`}
-                                  onSlotClick={() => handleGridClick(day, p.id, slot)}
-                                />
-                              ))}
-
+                              {/* Background Grid Lines */}
                               <div className="absolute inset-0 pointer-events-none">
+                                {timeSlots.map(slot => (
+                                  <div key={slot} className="h-24 border-b border-muted/30" />
+                                ))}
+                              </div>
+
+                              {/* Interactive Slots */}
+                              <div className="relative z-10">
+                                {timeSlots.map(slot => (
+                                  <GridSlot 
+                                    key={slot}
+                                    id={`${dayStr}|${p.id}|${slot}`}
+                                    onSlotClick={() => handleGridClick(day, p.id, slot)}
+                                  />
+                                ))}
+                              </div>
+
+                              <div className="absolute inset-0 pointer-events-none z-20">
                                 {displayedOccurrences.map((occ) => (
                                   <div key={occ.id} className="pointer-events-auto">
                                     <EventBlock
