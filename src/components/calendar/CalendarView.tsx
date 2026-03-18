@@ -1,9 +1,9 @@
 "use client"
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useRef } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
-import { generateTimeSlots, getOccurrencesForDate, formatTime, cn, getAvatarUrl, getPersonName } from '@/lib/utils';
+import { generateTimeSlots, getOccurrencesForDate, formatTime, cn, getAvatarUrl, getPersonName, timeToMinutes } from '@/lib/utils';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { EventBlock } from './EventBlock';
 import { EventDialog } from './EventDialog';
@@ -56,9 +56,28 @@ const CalendarContent: React.FC = () => {
   const [editingEvent, setEditingEvent] = useState<{ seriesId?: string; date: string; personId?: string; startTime?: string; templateId?: string } | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Auto-scroll to current time on mount
+  useEffect(() => {
+    if (mounted && scrollContainerRef.current && !isLoading) {
+      const now = new Date();
+      const currentMins = now.getHours() * 60 + now.getMinutes();
+      const startMins = timeToMinutes(settings.dayStartTime);
+      
+      // Calculate scroll position (96px per 30 mins)
+      if (currentMins > startMins) {
+        // Offset by ~60 mins to show a bit of the previous hour
+        const scrollMins = currentMins - startMins - 60;
+        const scrollTop = (Math.max(0, scrollMins) / 30) * 96;
+        scrollContainerRef.current.scrollTop = scrollTop;
+      }
+    }
+  }, [mounted, isLoading, settings.dayStartTime]);
 
   const personParam = searchParams.get('personId');
 
@@ -256,15 +275,17 @@ const CalendarContent: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto relative bg-white">
+        <div 
+          ref={scrollContainerRef}
+          className="flex-1 overflow-auto relative bg-white scroll-smooth"
+        >
           <div className="flex min-w-[800px] min-h-full">
             {/* Time Labels Column */}
             <div className="w-16 sticky left-0 z-50 bg-white/80 backdrop-blur-md border-r shrink-0">
-              <div style={{ height: `${TOTAL_HEADER_HEIGHT}px` }} />
+              <div style={{ height: `${TOTAL_HEADER_HEIGHT}px` }} className="border-b border-muted/30" />
               <div className="relative">
                 {timeSlots.map(slot => (
-                  <div key={slot} className="h-24 relative">
-                    {/* Position text exactly on the top boundary of the slot */}
+                  <div key={slot} className="h-24 relative border-b border-muted/30">
                     <div className="absolute top-0 left-0 w-full flex items-center justify-center -translate-y-1/2">
                       <span className="bg-white/90 px-1 text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none">
                         {formatTime(slot)}
@@ -339,7 +360,7 @@ const CalendarContent: React.FC = () => {
                             )}
                             
                             <div className="relative flex-1">
-                              {/* Background Grid Lines */}
+                              {/* Background Grid Lines (matching labels) */}
                               <div className="absolute inset-0 pointer-events-none">
                                 {timeSlots.map(slot => (
                                   <div key={slot} className="h-24 border-b border-muted/30" />
