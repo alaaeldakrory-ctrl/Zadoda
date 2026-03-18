@@ -19,7 +19,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Library,
-  UserPlus
+  UserPlus,
+  MinusCircle
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -40,7 +41,8 @@ export default function ChoresPage() {
     addChore, 
     updateChore, 
     deleteChore, 
-    updateChoreOverride 
+    updateChoreOverride,
+    deleteChoreOverride
   } = useStore();
   const t = getTranslation(settings.language);
 
@@ -90,7 +92,6 @@ export default function ChoresPage() {
   };
 
   // --- Schedule Logic ---
-  // A chore is "on the schedule" for a date if an override exists for it on that date
   const scheduledChores = chores.filter(chore => 
     choreOverrides.some(o => o.choreId === chore.id && o.date === selectedDate)
   ).map(chore => {
@@ -101,7 +102,7 @@ export default function ChoresPage() {
   const handleAddToSchedule = (choreId: string) => {
     const chore = chores.find(c => c.id === choreId);
     if (!chore) return;
-    // Initialize override for this date
+    
     updateChoreOverride(choreId, selectedDate, { 
       assignedTo: chore.defaultAssignedTo === 'random' ? undefined : chore.defaultAssignedTo,
       completed: false 
@@ -109,19 +110,15 @@ export default function ChoresPage() {
     setIsPickDialogOpen(false);
   };
 
-  const removeFromSchedule = (choreId: string) => {
-    // In a real app we might want a deleteOverride in the store, 
-    // but for now we can just assume the store might handle it or we set it to 'deleted'
-    // Since our store doesn't have a deleteOverride, we'll just ignore for this MVP 
-    // or implement a toggle logic.
+  const handleRemoveFromSchedule = (choreId: string) => {
+    deleteChoreOverride(choreId, selectedDate);
   };
 
   const handleShuffle = () => {
     if (scheduledChores.length === 0) return;
     
-    // Create a pool of persons to assign
     const pool = [...persons];
-    scheduledChores.forEach((sc, idx) => {
+    scheduledChores.forEach((sc) => {
       if (!sc.override?.completed) {
         const randomPerson = pool[Math.floor(Math.random() * pool.length)];
         updateChoreOverride(sc.id, selectedDate, { assignedTo: randomPerson.id });
@@ -242,16 +239,27 @@ export default function ChoresPage() {
                             <p className="text-sm text-muted-foreground font-medium line-clamp-1">{sc.description}</p>
                           )}
                         </div>
-                        <button 
-                          onClick={() => toggleCompletion(sc.id)} 
-                          className="shrink-0 transition-transform active:scale-90"
-                        >
-                          {isCompleted ? (
-                            <CheckCircle2 className="w-10 h-10 text-green-500 animate-pop" />
-                          ) : (
-                            <Circle className="w-10 h-10 text-muted-foreground/10 hover:text-primary/30" />
-                          )}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10" 
+                            onClick={() => handleRemoveFromSchedule(sc.id)}
+                            title="Remove from schedule"
+                          >
+                            <MinusCircle className="w-5 h-5" />
+                          </Button>
+                          <button 
+                            onClick={() => toggleCompletion(sc.id)} 
+                            className="shrink-0 transition-transform active:scale-90"
+                          >
+                            {isCompleted ? (
+                              <CheckCircle2 className="w-10 h-10 text-green-500 animate-pop" />
+                            ) : (
+                              <Circle className="w-10 h-10 text-muted-foreground/10 hover:text-primary/30" />
+                            )}
+                          </button>
+                        </div>
                       </div>
 
                       <div className="flex items-center justify-between pt-4 border-t border-dashed">
@@ -360,7 +368,7 @@ export default function ChoresPage() {
                 <button
                   key={chore.id}
                   onClick={() => handleAddToSchedule(chore.id)}
-                  className="w-full text-left p-5 rounded-3xl bg-muted/40 hover:bg-primary/10 transition-all group flex items-center justify-between"
+                  className="w-full text-left p-5 rounded-3xl bg-muted/40 hover:bg-primary/10 transition-all group flex items-center justify-between border-2 border-transparent hover:border-primary/20"
                 >
                   <div className="min-w-0 pr-4">
                     <h4 className="font-black text-lg group-hover:text-primary transition-colors">{chore.title}</h4>

@@ -45,6 +45,7 @@ interface StoreContextValue {
   updateChore: (id: string, updates: Partial<Chore>) => void;
   deleteChore: (id: string) => void;
   updateChoreOverride: (choreId: string, date: string, updates: Partial<ChoreOverride>) => void;
+  deleteChoreOverride: (choreId: string, date: string) => void;
   toggleCompletion: (seriesId: string, date: string) => void;
   updateOccurrence: (seriesId: string, date: string, updates: Partial<CalendarEventOccurrenceOverride>) => void;
   moveEvent: (seriesId: string, date: string, newStartTime: string, newPersonId: string) => void;
@@ -212,7 +213,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const updateChoreOverride = (choreId: string, date: string, updates: Partial<ChoreOverride>) => {
     const overrideId = `${choreId}_${date}`;
     const overrideRef = doc(db, 'chores', choreId, 'overrides', overrideId);
-    setDocumentNonBlocking(overrideRef, { ...updates, choreId, date, id: overrideId }, { merge: true });
+    // Ensure we don't pass undefined for assignedTo
+    const cleanUpdates = { ...updates };
+    if (cleanUpdates.assignedTo === undefined) {
+      delete cleanUpdates.assignedTo;
+    }
+    setDocumentNonBlocking(overrideRef, { ...cleanUpdates, choreId, date, id: overrideId }, { merge: true });
+  };
+
+  const deleteChoreOverride = (choreId: string, date: string) => {
+    const overrideId = `${choreId}_${date}`;
+    const overrideRef = doc(db, 'chores', choreId, 'overrides', overrideId);
+    deleteDocumentNonBlocking(overrideRef);
   };
 
   const toggleCompletion = (seriesId: string, date: string) => {
@@ -279,6 +291,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     updateChore,
     deleteChore,
     updateChoreOverride,
+    deleteChoreOverride,
     toggleCompletion,
     updateOccurrence,
     moveEvent
