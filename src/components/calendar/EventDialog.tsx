@@ -25,7 +25,7 @@ interface EventDialogProps {
 export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, initialDate, eventToEdit }) => {
   const { settings, persons, series, templates, addSeries, updateSeries, deleteSeries } = useStore();
   const t = getTranslation(settings.language);
-  const timeSlots = generateTimeSlots(settings.dayStartTime, settings.dayEndTime);
+  const timeSlots = generateTimeSlots(settings.dayStartTime, settings.dayEndTime, 15);
 
   const [formData, setFormData] = useState<Partial<CalendarEventSeries>>({
     title: '',

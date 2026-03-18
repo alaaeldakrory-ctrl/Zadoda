@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, Suspense } from 'react';
@@ -32,7 +31,7 @@ const GridSlot: React.FC<GridSlotProps> = ({ id, onSlotClick, children }) => {
   return (
     <div 
       ref={setNodeRef}
-      className={`h-20 border-b border-muted transition-colors relative ${
+      className={`h-24 border-b border-muted transition-colors relative ${
         isOver ? 'bg-primary/10 ring-2 ring-primary ring-inset z-20' : 'hover:bg-primary/5'
       }`}
       onClick={onSlotClick}
@@ -72,7 +71,7 @@ const CalendarContent: React.FC = () => {
   }, [personParam, persons]);
 
   const t = getTranslation(settings.language);
-  const timeSlots = generateTimeSlots(settings.dayStartTime, settings.dayEndTime);
+  const timeSlots = generateTimeSlots(settings.dayStartTime, settings.dayEndTime, 30);
   const weekStart = startOfWeek(currentDate);
   const days = viewMode === 'day' ? [currentDate] : Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
@@ -143,6 +142,8 @@ const CalendarContent: React.FC = () => {
   const DAY_HEADER_HEIGHT = 32;
   const PERSON_HEADER_HEIGHT = selectedPersonId === 'all' ? 100 : 0;
   const TOTAL_HEADER_HEIGHT = DAY_HEADER_HEIGHT + PERSON_HEADER_HEIGHT;
+  const SLOT_HEIGHT_30MIN = 96; // Matching h-24
+  const SLOT_HEIGHT_15MIN = SLOT_HEIGHT_30MIN / 2; // 48px
 
   if (!mounted || isLoading) {
     return (
@@ -258,7 +259,7 @@ const CalendarContent: React.FC = () => {
             <div className="w-16 sticky left-0 z-50 bg-white/80 backdrop-blur-md border-r shrink-0">
               <div style={{ height: `${TOTAL_HEADER_HEIGHT}px` }} />
               {timeSlots.map(slot => (
-                <div key={slot} className="h-20 text-[9px] font-black text-muted-foreground flex items-center justify-center px-1 text-center uppercase tracking-widest">
+                <div key={slot} className="h-24 text-[9px] font-black text-muted-foreground flex items-center justify-center px-1 text-center uppercase tracking-widest">
                   {formatTime(slot)}
                 </div>
               ))}
@@ -283,8 +284,6 @@ const CalendarContent: React.FC = () => {
                     <div className="flex-1 flex relative min-h-full">
                       {filteredPersons.map(p => {
                         const personOccurrences = individualOccurrences.filter(occ => occ.personId === p.id);
-                        
-                        // Check if this person should see shared events
                         const isKid = p.id === 'person1' || p.id === 'person4';
                         const displayedOccurrences = selectedPersonId === 'all' 
                           ? personOccurrences 
@@ -344,7 +343,8 @@ const CalendarContent: React.FC = () => {
                                     <EventBlock
                                       occurrence={occ}
                                       dayStart={settings.dayStartTime}
-                                      color={occ.personId === 'all' ? 'var(--primary)' : (occ.personId === 'kids' ? '#FBBF24' : p.color)}
+                                      color={occ.personId === 'all' ? '#454545' : (occ.personId === 'kids' ? '#FBBF24' : p.color)}
+                                      slotHeight15Min={SLOT_HEIGHT_15MIN}
                                       onClick={() => handleEditEvent(occ.seriesId, occ.date)}
                                     />
                                   </div>
@@ -358,7 +358,6 @@ const CalendarContent: React.FC = () => {
                       {selectedPersonId === 'all' && (
                         <div className="absolute inset-x-0 bottom-0 pointer-events-none" style={{ top: `${PERSON_HEADER_HEIGHT}px` }}>
                           <div className="relative h-full w-full">
-                            {/* All People Layer (Full Width) */}
                             <div className="absolute inset-0 z-40">
                               {allPersonOccurrences.map((occ) => (
                                 <div key={occ.id} className="pointer-events-auto absolute left-1 right-1">
@@ -366,6 +365,7 @@ const CalendarContent: React.FC = () => {
                                     occurrence={occ}
                                     dayStart={settings.dayStartTime}
                                     color="#454545" 
+                                    slotHeight15Min={SLOT_HEIGHT_15MIN}
                                     onClick={() => handleEditEvent(occ.seriesId, occ.date)}
                                     isFullWidth
                                   />
@@ -373,7 +373,6 @@ const CalendarContent: React.FC = () => {
                               ))}
                             </div>
 
-                            {/* All Kids Layer (Half Width - columns 0 and 1) */}
                             <div className="absolute inset-y-0 left-0 w-1/2 z-40">
                               {kidsPersonOccurrences.map((occ) => (
                                 <div key={occ.id} className="pointer-events-auto absolute left-1 right-1">
@@ -381,6 +380,7 @@ const CalendarContent: React.FC = () => {
                                     occurrence={occ}
                                     dayStart={settings.dayStartTime}
                                     color="#FBBF24" 
+                                    slotHeight15Min={SLOT_HEIGHT_15MIN}
                                     onClick={() => handleEditEvent(occ.seriesId, occ.date)}
                                     isFullWidth
                                   />
@@ -405,6 +405,7 @@ const CalendarContent: React.FC = () => {
                 occurrence={activeDragOccurrence}
                 dayStart={settings.dayStartTime}
                 color={activeDragOccurrence.personId === 'all' ? '#454545' : persons.find(p => p.id === activeDragOccurrence.personId)?.color || '#000'}
+                slotHeight15Min={SLOT_HEIGHT_15MIN}
                 onClick={() => {}}
                 isDragging
               />

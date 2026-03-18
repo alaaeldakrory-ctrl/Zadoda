@@ -52,7 +52,7 @@ export function formatTime(time24h: string): string {
   }
 }
 
-export function generateTimeSlots(start: string, end: string) {
+export function generateTimeSlots(start: string, end: string, interval: number = 30) {
   const slots: string[] = [];
   try {
     let current = parse(start, 'HH:mm', new Date());
@@ -60,7 +60,7 @@ export function generateTimeSlots(start: string, end: string) {
 
     while (current <= stop) {
       slots.push(format(current, 'HH:mm'));
-      current = addMinutes(current, 15);
+      current = addMinutes(current, interval);
     }
   } catch (e) {
     console.error("Error generating time slots", e);
@@ -117,7 +117,8 @@ export function getOccurrencesForDate(series: CalendarEventSeries[], date: Date,
       notes: override?.notes || s.notes,
       completed: !!override?.completed,
       isImportant: override?.isImportant ?? s.isImportant,
-      isForAll: s.personId === 'all' || override?.personId === 'all'
+      isForAll: s.personId === 'all' || override?.personId === 'all',
+      isForKids: s.personId === 'kids' || override?.personId === 'kids'
     };
   });
 }
@@ -135,13 +136,13 @@ export function minutesToTime(mins: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-export function getGridPosition(startTime: string, endTime: string, dayStart: string, slotHeight: number = 40) {
+export function getGridPosition(startTime: string, endTime: string, dayStart: string, slotHeight15Min: number = 40) {
   const startMins = timeToMinutes(startTime);
   const endMins = timeToMinutes(endTime);
   const dayStartMins = timeToMinutes(dayStart);
 
-  const top = ((startMins - dayStartMins) / 15) * slotHeight;
-  const height = ((endMins - startMins) / 15) * slotHeight;
+  const top = ((startMins - dayStartMins) / 15) * slotHeight15Min;
+  const height = ((endMins - startMins) / 15) * slotHeight15Min;
 
   return { top, height };
 }

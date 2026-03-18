@@ -1,4 +1,3 @@
-
 "use client"
 
 import React from 'react';
@@ -14,11 +13,20 @@ interface EventBlockProps {
   onClick: () => void;
   isDragging?: boolean;
   isFullWidth?: boolean;
+  slotHeight15Min?: number;
 }
 
-export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, color, onClick, isDragging, isFullWidth }) => {
+export const EventBlock: React.FC<EventBlockProps> = ({ 
+  occurrence, 
+  dayStart, 
+  color, 
+  onClick, 
+  isDragging, 
+  isFullWidth,
+  slotHeight15Min = 40
+}) => {
   const { toggleCompletion } = useStore();
-  const { top, height } = getGridPosition(occurrence.startTime, occurrence.endTime, dayStart, 80);
+  const { top, height } = getGridPosition(occurrence.startTime, occurrence.endTime, dayStart, slotHeight15Min);
 
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: occurrence.id,
@@ -36,7 +44,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({ occurrence, dayStart, co
   const isForKids = occurrence.personId === 'kids';
   const isShared = isForAll || isForKids;
   
-  const isShort = height <= 80;
+  const isShort = height <= (slotHeight15Min * 1.1); // Dynamic based on height
 
   const style = !isDragging ? {
     top: `${top}px`,
