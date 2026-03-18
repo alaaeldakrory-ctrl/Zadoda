@@ -141,6 +141,7 @@ export function getGridPosition(startTime: string, endTime: string, dayStart: st
   const endMins = timeToMinutes(endTime);
   const dayStartMins = timeToMinutes(dayStart);
 
+  // Position is based on 15-minute units relative to the day start
   const top = ((startMins - dayStartMins) / 15) * slotHeight15Min;
   const height = ((endMins - startMins) / 15) * slotHeight15Min;
 

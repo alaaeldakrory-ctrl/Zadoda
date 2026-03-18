@@ -31,8 +31,8 @@ const GridSlot: React.FC<GridSlotProps> = ({ id, onSlotClick, children }) => {
   return (
     <div 
       ref={setNodeRef}
-      className={`h-24 border-b border-muted transition-colors relative ${
-        isOver ? 'bg-primary/10 ring-2 ring-primary ring-inset z-20' : 'hover:bg-primary/5'
+      className={`h-24 border-b border-muted/40 transition-colors relative ${
+        isOver ? 'bg-primary/5' : 'hover:bg-primary/5'
       }`}
       onClick={onSlotClick}
     >
@@ -71,7 +71,10 @@ const CalendarContent: React.FC = () => {
   }, [personParam, persons]);
 
   const t = getTranslation(settings.language);
+  
+  // Use 30-minute intervals for the visual grid and time labels
   const timeSlots = generateTimeSlots(settings.dayStartTime, settings.dayEndTime, 30);
+  
   const weekStart = startOfWeek(currentDate);
   const days = viewMode === 'day' ? [currentDate] : Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
@@ -259,7 +262,7 @@ const CalendarContent: React.FC = () => {
             <div className="w-16 sticky left-0 z-50 bg-white/80 backdrop-blur-md border-r shrink-0">
               <div style={{ height: `${TOTAL_HEADER_HEIGHT}px` }} />
               {timeSlots.map(slot => (
-                <div key={slot} className="h-24 text-[9px] font-black text-muted-foreground flex items-center justify-center px-1 text-center uppercase tracking-widest">
+                <div key={slot} className="h-24 text-[9px] font-black text-muted-foreground flex items-center justify-center px-1 text-center uppercase tracking-widest border-b border-muted/20">
                   {formatTime(slot)}
                 </div>
               ))}
