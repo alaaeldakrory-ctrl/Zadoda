@@ -60,7 +60,7 @@ export function generateTimeSlots(start: string, end: string) {
 
     while (current <= stop) {
       slots.push(format(current, 'HH:mm'));
-      current = addMinutes(current, 30);
+      current = addMinutes(current, 15);
     }
   } catch (e) {
     console.error("Error generating time slots", e);
@@ -140,8 +140,8 @@ export function getGridPosition(startTime: string, endTime: string, dayStart: st
   const endMins = timeToMinutes(endTime);
   const dayStartMins = timeToMinutes(dayStart);
 
-  const top = ((startMins - dayStartMins) / 30) * slotHeight;
-  const height = ((endMins - startMins) / 30) * slotHeight;
+  const top = ((startMins - dayStartMins) / 15) * slotHeight;
+  const height = ((endMins - startMins) / 15) * slotHeight;
 
   return { top, height };
 }

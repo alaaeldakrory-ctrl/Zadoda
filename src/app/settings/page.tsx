@@ -126,7 +126,7 @@ export default function SettingsPage() {
                 </Label>
                 <Input 
                   type="time" 
-                  step="1800" 
+                  step="900" 
                   value={settings.dayStartTime}
                   className="h-14 rounded-2xl border-2 font-black text-lg px-6"
                   onChange={(e) => updateSettings({ dayStartTime: e.target.value })}
@@ -139,7 +139,7 @@ export default function SettingsPage() {
                 </Label>
                 <Input 
                   type="time" 
-                  step="1800"
+                  step="900"
                   value={settings.dayEndTime}
                   className="h-14 rounded-2xl border-2 font-black text-lg px-6"
                   onChange={(e) => updateSettings({ dayEndTime: e.target.value })}

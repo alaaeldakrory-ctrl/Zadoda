@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Person": {
@@ -76,7 +75,7 @@
         },
         "defaultDurationMinutes": {
           "type": "number",
-          "description": "The default duration for an event created from this template, in minutes. Must be a multiple of 30."
+          "description": "The default duration for an event created from this template, in minutes. Must be a multiple of 15."
         },
         "defaultTime": {
           "type": "string",
