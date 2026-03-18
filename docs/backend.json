@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Person": {
@@ -58,6 +59,20 @@
         "content",
         "createdAt"
       ]
+    },
+    "Chore": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Chore",
+      "type": "object",
+      "description": "A recurring daily chore that can be assigned to a specific person or shuffled among family members.",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "assignedTo": { "type": "string", "description": "Person ID or 'random'" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["id", "title", "assignedTo"]
     },
     "FixedEventTemplate": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -254,6 +269,14 @@
           "entityName": "Memo",
           "schema": { "$ref": "#/backend/entities/Memo" },
           "description": "Personal memos/tasks."
+        }
+      },
+      {
+        "path": "/chores/{choreId}",
+        "definition": {
+          "entityName": "Chore",
+          "schema": { "$ref": "#/backend/entities/Chore" },
+          "description": "Daily chores."
         }
       },
       {

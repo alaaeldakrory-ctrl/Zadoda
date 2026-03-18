@@ -16,6 +16,14 @@ export interface Memo {
   completed?: boolean;
 }
 
+export interface Chore {
+  id: string;
+  title: string;
+  description: string;
+  assignedTo: string; // personId or 'random'
+  isActive: boolean;
+}
+
 export type RecurrenceFrequency = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY';
 
 export interface RecurrenceRule {

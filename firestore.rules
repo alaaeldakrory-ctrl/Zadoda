@@ -52,6 +52,12 @@ service cloud.firestore {
       allow update, delete: if isSignedIn() && isExisting();
     }
 
+    match /chores/{choreId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && matchesPath(request.resource.data.id, choreId);
+      allow update, delete: if isSignedIn() && isExisting();
+    }
+
     match /fixedEventTemplates/{templateId} {
       allow get, list: if isSignedIn();
       allow create: if isSignedIn() && matchesPath(request.resource.data.id, templateId);

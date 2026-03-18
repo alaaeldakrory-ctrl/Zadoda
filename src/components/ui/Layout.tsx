@@ -5,7 +5,7 @@ import React, { Suspense } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { cn, getAvatarUrl, getPersonName } from '@/lib/utils';
-import { Calendar, Layers, Settings, Globe, StickyNote, Plus, Users } from 'lucide-react';
+import { Calendar, Layers, Settings, Globe, StickyNote, Plus, Users, ClipboardList } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ const SidebarNav = () => {
 
   const navItems = [
     { label: t.calendar, icon: Calendar, href: '/' },
+    { label: t.dailyChores, icon: ClipboardList, href: '/chores' },
     { label: t.fixedEvents, icon: Layers, href: '/templates' },
     { label: t.memos, icon: StickyNote, href: '/memos' },
     { label: t.settings, icon: Settings, href: '/settings' },
@@ -157,6 +158,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
            <Suspense fallback={<div className="flex-1 flex items-center justify-center"><Skeleton className="h-8 w-32" /></div>}>
              <div className="flex w-full gap-2 items-center justify-around">
                <Link href="/" className="flex flex-col items-center"><Calendar className="w-5 h-5"/><span className="text-[10px] font-black uppercase">Calendar</span></Link>
+               <Link href="/chores" className="flex flex-col items-center"><ClipboardList className="w-5 h-5"/><span className="text-[10px] font-black uppercase">Chores</span></Link>
                <Link href="/templates" className="flex flex-col items-center"><Layers className="w-5 h-5"/><span className="text-[10px] font-black uppercase">Templates</span></Link>
                <Link href="/memos" className="flex flex-col items-center"><StickyNote className="w-5 h-5"/><span className="text-[10px] font-black uppercase">Memos</span></Link>
                <Link href="/settings" className="flex flex-col items-center"><Settings className="w-5 h-5"/><span className="text-[10px] font-black uppercase">Settings</span></Link>
