@@ -20,8 +20,16 @@ export interface Chore {
   id: string;
   title: string;
   description: string;
-  assignedTo: string; // personId or 'random'
+  defaultAssignedTo: string; // personId or 'random'
   isActive: boolean;
+}
+
+export interface ChoreOverride {
+  id: string; // choreId + date
+  choreId: string;
+  date: string; // YYYY-MM-DD
+  assignedTo?: string; // personId
+  completed?: boolean;
 }
 
 export type RecurrenceFrequency = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY';
@@ -66,7 +74,7 @@ export interface CalendarEventOccurrenceOverride {
 export interface FixedEventTemplate {
   id: string;
   name: string;
-  defaultDurationMinutes: number; // Multiple of 30
+  defaultDurationMinutes: number; // Multiple of 15
   defaultTime?: string; // HH:mm
   defaultAssigneePersonId?: string;
   notes?: string;

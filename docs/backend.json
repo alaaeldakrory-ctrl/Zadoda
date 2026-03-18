@@ -64,15 +64,29 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Chore",
       "type": "object",
-      "description": "A recurring daily chore that can be assigned to a specific person or shuffled among family members.",
+      "description": "A recurring daily chore definition.",
       "properties": {
         "id": { "type": "string" },
         "title": { "type": "string" },
         "description": { "type": "string" },
-        "assignedTo": { "type": "string", "description": "Person ID or 'random'" },
+        "defaultAssignedTo": { "type": "string", "description": "Person ID or 'random'" },
         "isActive": { "type": "boolean" }
       },
-      "required": ["id", "title", "assignedTo"]
+      "required": ["id", "title", "defaultAssignedTo"]
+    },
+    "ChoreOverride": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChoreOverride",
+      "type": "object",
+      "description": "Stores specific overrides (completion or manual assignment) for a chore on a specific date.",
+      "properties": {
+        "id": { "type": "string" },
+        "choreId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "assignedTo": { "type": "string" },
+        "completed": { "type": "boolean" }
+      },
+      "required": ["id", "choreId", "date"]
     },
     "FixedEventTemplate": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -276,7 +290,15 @@
         "definition": {
           "entityName": "Chore",
           "schema": { "$ref": "#/backend/entities/Chore" },
-          "description": "Daily chores."
+          "description": "Daily chore definitions."
+        }
+      },
+      {
+        "path": "/chores/{choreId}/overrides/{overrideId}",
+        "definition": {
+          "entityName": "ChoreOverride",
+          "schema": { "$ref": "#/backend/entities/ChoreOverride" },
+          "description": "Overrides for specific chore dates."
         }
       },
       {
@@ -304,6 +326,6 @@
         }
       }
     ],
-    "reasoning": "Standard hierarchical and flat collections for a family application."
+    "reasoning": "Extended chore system with overrides for specific dates."
   }
 }

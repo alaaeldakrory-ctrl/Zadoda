@@ -2,7 +2,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language, Memo, Chore } from './types';
+import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language, Memo, Chore, ChoreOverride } from './types';
 import { timeToMinutes, minutesToTime } from './utils';
 import { 
   useCollection, 
@@ -25,6 +25,7 @@ interface StoreContextValue {
   templates: FixedEventTemplate[];
   memos: Memo[];
   chores: Chore[];
+  choreOverrides: ChoreOverride[];
   settings: AppSettings;
   isLoading: boolean;
   setLanguage: (lang: Language) => void;
@@ -43,6 +44,7 @@ interface StoreContextValue {
   addChore: (c: Chore) => void;
   updateChore: (id: string, updates: Partial<Chore>) => void;
   deleteChore: (id: string) => void;
+  updateChoreOverride: (choreId: string, date: string, updates: Partial<ChoreOverride>) => void;
   toggleCompletion: (seriesId: string, date: string) => void;
   updateOccurrence: (seriesId: string, date: string, updates: Partial<CalendarEventOccurrenceOverride>) => void;
   moveEvent: (seriesId: string, date: string, newStartTime: string, newPersonId: string) => void;
@@ -57,7 +59,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   language: 'en',
 };
 
-// Reordered to put Kids (Lyla, Wesam) first so they are adjacent in the grid
 const INITIAL_PEOPLE: Person[] = [
   { id: 'person1', name: 'Lyla', color: '#F87171' }, 
   { id: 'person4', name: 'Wesam', color: '#FBBF24' },
@@ -97,6 +98,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const choresRef = useMemoFirebase(() => user ? collection(db, 'chores') : null, [db, user]);
   const { data: choresData, isLoading: choresLoading } = useCollection<Chore>(choresRef);
 
+  const choreOverridesRef = useMemoFirebase(() => user ? query(collectionGroup(db, 'overrides')) : null, [db, user]);
+  const { data: choreOverridesData, isLoading: choreOverridesLoading } = useCollection<ChoreOverride>(choreOverridesRef);
+
   const [hasSeeded, setHasSeeded] = useState(false);
 
   useEffect(() => {
@@ -117,9 +121,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const series = seriesData || [];
   const memos = memosData || [];
   const chores = choresData || [];
+  const choreOverrides = choreOverridesData || [];
   const overrides = overridesData || []; 
 
-  const isLoading = isUserLoading || settingsLoading || (personsLoading && !personsData) || memosLoading || overridesLoading || choresLoading;
+  const isLoading = isUserLoading || settingsLoading || (personsLoading && !personsData) || memosLoading || overridesLoading || choresLoading || choreOverridesLoading;
 
   const setLanguage = (language: Language) => {
     if (!settingsRef) return;
@@ -204,6 +209,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     deleteDocumentNonBlocking(docRef);
   };
 
+  const updateChoreOverride = (choreId: string, date: string, updates: Partial<ChoreOverride>) => {
+    const overrideId = `${choreId}_${date}`;
+    const overrideRef = doc(db, 'chores', choreId, 'overrides', overrideId);
+    setDocumentNonBlocking(overrideRef, { ...updates, choreId, date, id: overrideId }, { merge: true });
+  };
+
   const toggleCompletion = (seriesId: string, date: string) => {
     const overrideId = `${seriesId}_${date}`;
     const existing = overrides.find(o => o.id === overrideId);
@@ -248,6 +259,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     templates,
     memos,
     chores,
+    choreOverrides,
     settings,
     isLoading,
     setLanguage,
@@ -266,6 +278,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addChore,
     updateChore,
     deleteChore,
+    updateChoreOverride,
     toggleCompletion,
     updateOccurrence,
     moveEvent

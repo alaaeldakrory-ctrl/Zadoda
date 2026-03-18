@@ -5,14 +5,7 @@ service cloud.firestore {
 
     /**
      * ZADODA SCHEDULER SECURITY RULES
-     *
-     * Core Philosophy: 
-     * This ruleset implements a single-tenant, shared-access model for a household application. 
-     * Since the application is designed for a fixed group of four people within a single 
-     * household, all authenticated users are granted full access to read and write application data. 
      */
-
-    // --- Helper Functions ---
 
     function isSignedIn() {
       return request.auth != null;
@@ -26,13 +19,13 @@ service cloud.firestore {
       return field == pathValue;
     }
 
-    // --- Collection Group Rules ---
-    // Required for the 'overrides' collection group query in the store.
     match /{path=**}/eventOccurrenceOverrides/{overrideId} {
       allow get, list: if isSignedIn();
     }
 
-    // --- Collection Rules ---
+    match /{path=**}/overrides/{overrideId} {
+      allow get, list: if isSignedIn();
+    }
 
     match /appSettings/{settingsId} {
       allow get, list: if isSignedIn();
@@ -56,6 +49,12 @@ service cloud.firestore {
       allow get, list: if isSignedIn();
       allow create: if isSignedIn() && matchesPath(request.resource.data.id, choreId);
       allow update, delete: if isSignedIn() && isExisting();
+
+      match /overrides/{overrideId} {
+        allow get, list: if isSignedIn();
+        allow create: if isSignedIn() && matchesPath(request.resource.data.choreId, choreId);
+        allow update, delete: if isSignedIn() && isExisting();
+      }
     }
 
     match /fixedEventTemplates/{templateId} {
