@@ -31,7 +31,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
     title: '',
     personId: persons[0]?.id || 'person1',
     startTime: '09:00',
-    endTime: '10:00',
+    endTime: '09:30',
     startDate: format(initialDate, 'yyyy-MM-dd'),
     notes: '',
     recurrence: { frequency: 'NONE', interval: 1 },
@@ -54,7 +54,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
       } else {
         const startTime = eventToEdit?.startTime || '09:00';
         const start = parse(startTime, 'HH:mm', new Date());
-        const end = addMinutes(start, 60);
+        const end = addMinutes(start, 30);
         
         setFormData({
           title: '',
@@ -100,7 +100,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
       title: formData.title || '',
       personId: formData.personId || 'person1',
       startTime: formData.startTime || '09:00',
-      endTime: formData.endTime || '10:00',
+      endTime: formData.endTime || '09:30',
       startDate: formData.startDate || format(initialDate, 'yyyy-MM-dd'),
       recurrence: formData.recurrence || { frequency: 'NONE', interval: 1 },
       exceptions: formData.exceptions || [],
@@ -261,7 +261,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
                 value={formData.startTime}
                 onValueChange={v => {
                   const oldStartMins = timeToMinutes(formData.startTime || '09:00');
-                  const oldEndMins = timeToMinutes(formData.endTime || '10:00');
+                  const oldEndMins = timeToMinutes(formData.endTime || '09:30');
                   const duration = oldEndMins - oldStartMins;
                   const newStartMins = timeToMinutes(v);
                   setFormData(prev => ({ 

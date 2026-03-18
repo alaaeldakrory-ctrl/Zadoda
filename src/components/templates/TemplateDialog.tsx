@@ -22,7 +22,7 @@ export const TemplateDialog: React.FC<TemplateDialogProps> = ({ open, onOpenChan
 
   const [formData, setFormData] = useState<Partial<FixedEventTemplate>>({
     name: '',
-    defaultDurationMinutes: 60,
+    defaultDurationMinutes: 30,
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +38,7 @@ export const TemplateDialog: React.FC<TemplateDialogProps> = ({ open, onOpenChan
       } else {
         setFormData({
           name: '',
-          defaultDurationMinutes: 60,
+          defaultDurationMinutes: 30,
         });
       }
     }
@@ -56,7 +56,7 @@ export const TemplateDialog: React.FC<TemplateDialogProps> = ({ open, onOpenChan
       const newTemplate: FixedEventTemplate = {
         id: crypto.randomUUID(),
         name: formData.name || '',
-        defaultDurationMinutes: formData.defaultDurationMinutes || 60,
+        defaultDurationMinutes: formData.defaultDurationMinutes || 30,
       };
       addTemplate(newTemplate);
     }

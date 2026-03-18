@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState } from 'react';
@@ -70,7 +69,7 @@ export default function MemosPage() {
       title: memo.title,
       notes: memo.content,
       startTime: '09:00',
-      endTime: '10:00',
+      endTime: '09:30',
       startDate: format(new Date(), 'yyyy-MM-dd'),
       recurrence: { frequency: 'NONE', interval: 1 },
       exceptions: [],
