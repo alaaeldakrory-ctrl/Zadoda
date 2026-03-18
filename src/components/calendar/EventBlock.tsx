@@ -23,7 +23,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({
   onClick, 
   isDragging, 
   isFullWidth,
-  slotHeight15Min = 40
+  slotHeight15Min = 48
 }) => {
   const { toggleCompletion } = useStore();
   const { top, height } = getGridPosition(occurrence.startTime, occurrence.endTime, dayStart, slotHeight15Min);
@@ -100,7 +100,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({
               "font-black leading-tight truncate transition-all", 
               isCompleted ? "line-through text-green-700/60 italic" : "text-foreground",
               isImportant && !isCompleted && "text-destructive font-black uppercase",
-              isShort ? "text-sm" : "text-lg"
+              isShort ? "text-sm" : "text-base"
             )}>
               {occurrence.title}
             </p>
@@ -108,7 +108,7 @@ export const EventBlock: React.FC<EventBlockProps> = ({
           <p className={cn(
             "font-black uppercase tracking-tight transition-opacity",
             isCompleted ? "text-green-600/40" : "opacity-60",
-            isShort ? "text-[10px]" : "text-xs mt-0.5"
+            isShort ? "text-[8px]" : "text-[10px] mt-0.5"
           )}>
             {formatTime(occurrence.startTime)} - {formatTime(occurrence.endTime)}
           </p>

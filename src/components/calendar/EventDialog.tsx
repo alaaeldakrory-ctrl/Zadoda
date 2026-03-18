@@ -25,6 +25,8 @@ interface EventDialogProps {
 export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, initialDate, eventToEdit }) => {
   const { settings, persons, series, templates, addSeries, updateSeries, deleteSeries } = useStore();
   const t = getTranslation(settings.language);
+  
+  // Always use 15-minute increments for time selection
   const timeSlots = generateTimeSlots(settings.dayStartTime, settings.dayEndTime, 15);
 
   const [formData, setFormData] = useState<Partial<CalendarEventSeries>>({
@@ -274,7 +276,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
                 <SelectTrigger className="rounded-xl border-2 font-bold">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
+                <SelectContent className="rounded-xl max-h-[200px]">
                   {timeSlots.map(slot => (
                     <SelectItem key={slot} value={slot}>{formatTime(slot)}</SelectItem>
                   ))}
@@ -290,7 +292,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
                 <SelectTrigger className="rounded-xl border-2 font-bold">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
+                <SelectContent className="rounded-xl max-h-[200px]">
                   {timeSlots.map(slot => (
                     <SelectItem key={slot} value={slot}>{formatTime(slot)}</SelectItem>
                   ))}

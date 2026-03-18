@@ -99,7 +99,9 @@ export const TemplateDialog: React.FC<TemplateDialogProps> = ({ open, onOpenChan
                 <SelectItem value="30">30 {t.mins}</SelectItem>
                 <SelectItem value="45">45 {t.mins}</SelectItem>
                 <SelectItem value="60">60 {t.mins}</SelectItem>
+                <SelectItem value="75">75 {t.mins}</SelectItem>
                 <SelectItem value="90">90 {t.mins}</SelectItem>
+                <SelectItem value="105">105 {t.mins}</SelectItem>
                 <SelectItem value="120">120 {t.mins}</SelectItem>
                 <SelectItem value="180">180 {t.mins}</SelectItem>
               </SelectContent>

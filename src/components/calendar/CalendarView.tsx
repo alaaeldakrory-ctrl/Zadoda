@@ -31,7 +31,7 @@ const GridSlot: React.FC<GridSlotProps> = ({ id, onSlotClick, children }) => {
   return (
     <div 
       ref={setNodeRef}
-      className={`h-24 border-b border-muted/40 transition-colors relative ${
+      className={`h-24 border-b border-muted/20 transition-colors relative ${
         isOver ? 'bg-primary/5' : 'hover:bg-primary/5'
       }`}
       onClick={onSlotClick}
@@ -143,9 +143,9 @@ const CalendarContent: React.FC = () => {
     : null;
 
   const DAY_HEADER_HEIGHT = 32;
-  const PERSON_HEADER_HEIGHT = selectedPersonId === 'all' ? 100 : 0;
+  const PERSON_HEADER_HEIGHT = selectedPersonId === 'all' ? 80 : 0;
   const TOTAL_HEADER_HEIGHT = DAY_HEADER_HEIGHT + PERSON_HEADER_HEIGHT;
-  const SLOT_HEIGHT_30MIN = 96; // Matching h-24
+  const SLOT_HEIGHT_30MIN = 96; // Matching GridSlot's h-24
   const SLOT_HEIGHT_15MIN = SLOT_HEIGHT_30MIN / 2; // 48px
 
   if (!mounted || isLoading) {
@@ -167,8 +167,8 @@ const CalendarContent: React.FC = () => {
       onDragEnd={handleDragEnd}
     >
       <div className="flex flex-col h-full overflow-hidden bg-white rounded-[2rem] shadow-2xl shadow-black/5 ring-1 ring-black/5">
-        <div className="p-2 border-b flex flex-wrap items-center justify-between gap-2 shrink-0">
-          <div className="flex items-center gap-2">
+        <div className="p-1 border-b flex flex-wrap items-center justify-between gap-1 shrink-0">
+          <div className="flex items-center gap-1">
             <div className="flex items-center gap-1 bg-muted p-1 rounded-full">
               <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-white shadow-sm transition-all" onClick={() => setCurrentDate(addDays(currentDate, -1))}>
                 <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
@@ -180,7 +180,7 @@ const CalendarContent: React.FC = () => {
             
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="ghost" className="text-lg font-black rounded-xl flex gap-2 px-3 h-10 hover:bg-primary/10 transition-all">
+                <Button variant="ghost" className="text-base font-black rounded-xl flex gap-1 px-2 h-9 hover:bg-primary/10 transition-all">
                   <CalendarIcon className="w-4 h-4 text-primary" />
                   {format(currentDate, viewMode === 'day' ? 'MMMM d' : 'MMMM yyyy')}
                 </Button>
@@ -196,12 +196,12 @@ const CalendarContent: React.FC = () => {
             </Popover>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <div className="flex bg-muted p-1 rounded-full">
               <button 
                 onClick={() => setViewMode('day')}
                 className={cn(
-                  "px-4 py-1.5 rounded-full text-[10px] font-black transition-all",
+                  "px-3 py-1 rounded-full text-[10px] font-black transition-all",
                   viewMode === 'day' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground'
                 )}
               >
@@ -210,7 +210,7 @@ const CalendarContent: React.FC = () => {
               <button 
                 onClick={() => setViewMode('week')}
                 className={cn(
-                  "px-4 py-1.5 rounded-full text-[10px] font-black transition-all",
+                  "px-3 py-1 rounded-full text-[10px] font-black transition-all",
                   viewMode === 'week' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground'
                 )}
               >
@@ -219,7 +219,7 @@ const CalendarContent: React.FC = () => {
             </div>
 
             <Select value={selectedPersonId} onValueChange={handlePersonChange}>
-              <SelectTrigger className="w-40 rounded-full font-black border-none bg-muted h-9 px-4 text-xs">
+              <SelectTrigger className="w-32 rounded-full font-black border-none bg-muted h-8 px-3 text-[10px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-none shadow-2xl">
@@ -227,12 +227,12 @@ const CalendarContent: React.FC = () => {
                 {persons.map(p => (
                   <SelectItem key={p.id} value={p.id}>
                     <div className="flex items-center gap-2 py-1">
-                      <div className="w-6 h-6 rounded-full overflow-hidden border shadow-sm" style={{ borderColor: p.color }}>
+                      <div className="w-5 h-5 rounded-full overflow-hidden border shadow-sm" style={{ borderColor: p.color }}>
                         <Image 
                           src={getAvatarUrl(p.id)} 
                           alt={p.name} 
-                          width={24} 
-                          height={24} 
+                          width={20} 
+                          height={20} 
                           className={cn(
                             "object-cover", 
                             p.id === 'person3' && "scale-110 -translate-y-4",
@@ -243,15 +243,15 @@ const CalendarContent: React.FC = () => {
                           data-ai-hint="person headshot"
                         />
                       </div>
-                      <span className="text-xs">{getPersonName(p, settings.language)}</span>
+                      <span className="text-[10px]">{getPersonName(p, settings.language)}</span>
                     </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            <Button className="rounded-full font-black shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 h-9 px-5 text-xs" onClick={handleAddEvent}>
-              <Plus className="w-3 h-3 mr-1.5 rtl:ml-1.5 rtl:mr-0 stroke-[3px]" />
+            <Button className="rounded-full font-black shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 h-8 px-4 text-[10px]" onClick={handleAddEvent}>
+              <Plus className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0 stroke-[3px]" />
               {t.addEvent}
             </Button>
           </div>
@@ -304,12 +304,12 @@ const CalendarContent: React.FC = () => {
                                 className="flex items-center justify-center text-sm font-black border-b sticky z-30 transition-colors uppercase tracking-widest shrink-0" 
                                 style={{ 
                                   height: `${PERSON_HEADER_HEIGHT}px`,
-                                  top: `0px`,
+                                  top: `${DAY_HEADER_HEIGHT}px`,
                                   backgroundColor: `white`, 
                                   color: p.color, 
                                 }}
                               >
-                                <div className="flex flex-col items-center gap-1 p-1">
+                                <div className="flex flex-col items-center gap-0.5 p-1">
                                   <div className="w-12 h-12 rounded-full overflow-hidden border-2 shadow-sm transition-transform group-hover:scale-105" style={{ borderColor: p.color }}>
                                     <Image 
                                       src={getAvatarUrl(p.id)} 
@@ -326,7 +326,7 @@ const CalendarContent: React.FC = () => {
                                       data-ai-hint="person headshot"
                                     />
                                   </div>
-                                  <span className="text-[8px] font-black">{getPersonName(p, settings.language)}</span>
+                                  <span className="text-[7px] font-black">{getPersonName(p, settings.language)}</span>
                                 </div>
                               </div>
                             )}
@@ -359,7 +359,7 @@ const CalendarContent: React.FC = () => {
                       })}
 
                       {selectedPersonId === 'all' && (
-                        <div className="absolute inset-x-0 bottom-0 pointer-events-none" style={{ top: `${PERSON_HEADER_HEIGHT}px` }}>
+                        <div className="absolute inset-x-0 bottom-0 pointer-events-none" style={{ top: `${PERSON_HEADER_HEIGHT + DAY_HEADER_HEIGHT}px` }}>
                           <div className="relative h-full w-full">
                             <div className="absolute inset-0 z-40">
                               {allPersonOccurrences.map((occ) => (

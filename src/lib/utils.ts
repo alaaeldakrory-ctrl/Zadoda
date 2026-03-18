@@ -136,12 +136,13 @@ export function minutesToTime(mins: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-export function getGridPosition(startTime: string, endTime: string, dayStart: string, slotHeight15Min: number = 40) {
+export function getGridPosition(startTime: string, endTime: string, dayStart: string, slotHeight15Min: number = 48) {
   const startMins = timeToMinutes(startTime);
   const endMins = timeToMinutes(endTime);
   const dayStartMins = timeToMinutes(dayStart);
 
   // Position is based on 15-minute units relative to the day start
+  // Each 15-minute unit is slotHeight15Min pixels high.
   const top = ((startMins - dayStartMins) / 15) * slotHeight15Min;
   const height = ((endMins - startMins) / 15) * slotHeight15Min;
 
