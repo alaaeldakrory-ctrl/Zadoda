@@ -2,7 +2,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language, Memo, Chore, ChoreOverride } from './types';
+import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language, Memo, Chore, ChoreOverride, TaskExecutionLog, Goal, RewardRule, ParentLog } from './types';
 import { timeToMinutes, minutesToTime } from './utils';
 import { 
   useCollection, 
@@ -26,8 +26,15 @@ interface StoreContextValue {
   memos: Memo[];
   chores: Chore[];
   choreOverrides: ChoreOverride[];
+  executionLogs: TaskExecutionLog[];
+  goals: Goal[];
+  rewardRules: RewardRule[];
+  parentLogs: ParentLog[];
   settings: AppSettings;
   isLoading: boolean;
+  isParentUnlocked: boolean;
+  unlockParent: (pin: string) => boolean;
+  lockParent: () => void;
   setLanguage: (lang: Language) => void;
   updateSettings: (settings: Partial<AppSettings>) => void;
   updatePerson: (id: string, updates: Partial<Person>) => void;
@@ -44,11 +51,13 @@ interface StoreContextValue {
   addChore: (c: Chore) => void;
   updateChore: (id: string, updates: Partial<Chore>) => void;
   deleteChore: (id: string) => void;
-  updateChoreOverride: (choreId: string, date: string, updates: Partial<ChoreOverride>) => void;
+  updateChoreOverride: (choreId: string, date: string, updates: Partial<ChoreOverride>, completionType?: 'independent' | 'with_help') => void;
   deleteChoreOverride: (choreId: string, date: string) => void;
-  toggleCompletion: (seriesId: string, date: string) => void;
+  toggleCompletion: (seriesId: string, date: string, completionType?: 'independent' | 'with_help') => void;
   updateOccurrence: (seriesId: string, date: string, updates: Partial<CalendarEventOccurrenceOverride>) => void;
   moveEvent: (seriesId: string, date: string, newStartTime: string, newPersonId: string) => void;
+  addTaskExecutionLog: (log: Omit<TaskExecutionLog, 'id'>) => void;
+  addParentLog: (log: Omit<ParentLog, 'id'>) => void;
 }
 
 const StoreContext = createContext<StoreContextValue | null>(null);
@@ -102,7 +111,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const choreOverridesRef = useMemoFirebase(() => user ? query(collectionGroup(db, 'overrides')) : null, [db, user]);
   const { data: choreOverridesData, isLoading: choreOverridesLoading } = useCollection<ChoreOverride>(choreOverridesRef);
 
+  const executionLogsRef = useMemoFirebase(() => user ? collection(db, 'executionLogs') : null, [db, user]);
+  const { data: executionLogsData, isLoading: executionLogsLoading } = useCollection<TaskExecutionLog>(executionLogsRef);
+
+  const goalsRef = useMemoFirebase(() => user ? collection(db, 'goals') : null, [db, user]);
+  const { data: goalsData, isLoading: goalsLoading } = useCollection<Goal>(goalsRef);
+
+  const rewardRulesRef = useMemoFirebase(() => user ? collection(db, 'rewardRules') : null, [db, user]);
+  const { data: rewardRulesData, isLoading: rewardRulesLoading } = useCollection<RewardRule>(rewardRulesRef);
+
+  const parentLogsRef = useMemoFirebase(() => user ? collection(db, 'parentLogs') : null, [db, user]);
+  const { data: parentLogsData, isLoading: parentLogsLoading } = useCollection<ParentLog>(parentLogsRef);
+
   const [hasSeeded, setHasSeeded] = useState(false);
+  const [isParentUnlocked, setIsParentUnlocked] = useState(false);
 
   useEffect(() => {
     if (!personsLoading && personsData && db && !hasSeeded) {
@@ -124,8 +146,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const chores = choresData || [];
   const choreOverrides = choreOverridesData || [];
   const overrides = overridesData || []; 
+  const executionLogs = executionLogsData || [];
+  const goals = goalsData || [];
+  const rewardRules = rewardRulesData || [];
+  const parentLogs = parentLogsData || [];
 
-  const isLoading = isUserLoading || settingsLoading || (personsLoading && !personsData) || memosLoading || overridesLoading || choresLoading || choreOverridesLoading;
+  const isLoading = isUserLoading || settingsLoading || (personsLoading && !personsData) || memosLoading || overridesLoading || choresLoading || choreOverridesLoading || executionLogsLoading || goalsLoading || rewardRulesLoading || parentLogsLoading;
+
+  const unlockParent = (pin: string) => {
+    if (pin === '1234') {
+      setIsParentUnlocked(true);
+      return true;
+    }
+    return false;
+  };
+
+  const lockParent = () => {
+    setIsParentUnlocked(false);
+  };
 
   const setLanguage = (language: Language) => {
     if (!settingsRef) return;
@@ -210,15 +248,35 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     deleteDocumentNonBlocking(docRef);
   };
 
-  const updateChoreOverride = (choreId: string, date: string, updates: Partial<ChoreOverride>) => {
+  const updateChoreOverride = (choreId: string, date: string, updates: Partial<ChoreOverride>, completionType?: 'independent' | 'with_help') => {
     const overrideId = `${choreId}_${date}`;
     const overrideRef = doc(db, 'chores', choreId, 'overrides', overrideId);
+    
     // Ensure we don't pass undefined for assignedTo
     const cleanUpdates = { ...updates };
     if (cleanUpdates.assignedTo === undefined) {
       delete cleanUpdates.assignedTo;
     }
+    
     setDocumentNonBlocking(overrideRef, { ...cleanUpdates, choreId, date, id: overrideId }, { merge: true });
+
+    // Auto-log for Parent Planning Dashboard
+    if (updates.completed === true) {
+      const chore = chores.find(c => c.id === choreId);
+      const existingOverride = choreOverrides.find(o => o.id === overrideId);
+      const assignee = cleanUpdates.assignedTo || existingOverride?.assignedTo || chore?.defaultAssignedTo || 'unknown';
+      
+      addTaskExecutionLog({
+        childId: assignee,
+        taskId: choreId,
+        type: 'chore',
+        date: date,
+        completed: true,
+        completionType: completionType || (!isParentUnlocked ? 'independent' : 'with_help'),
+        completionTimeSeconds: 60, // Estimate 1 min for chores right now
+        expectedTimeSeconds: 300 // 5 mins expected
+      });
+    }
   };
 
   const deleteChoreOverride = (choreId: string, date: string) => {
@@ -227,18 +285,38 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     deleteDocumentNonBlocking(overrideRef);
   };
 
-  const toggleCompletion = (seriesId: string, date: string) => {
+  const toggleCompletion = (seriesId: string, date: string, completionType?: 'independent' | 'with_help') => {
     const overrideId = `${seriesId}_${date}`;
     const existing = overrides.find(o => o.id === overrideId);
     const overrideRef = doc(db, 'calendarEventSeries', seriesId, 'eventOccurrenceOverrides', overrideId);
     
+    const isNowCompleted = !existing?.completed;
+
     setDocumentNonBlocking(overrideRef, { 
       id: overrideId, 
       seriesId, 
       date, 
-      completed: !existing?.completed, 
-      completedAt: !existing?.completed ? new Date().getTime() : null
+      completed: isNowCompleted, 
+      completedAt: isNowCompleted ? new Date().getTime() : null
     }, { merge: true });
+
+    // Auto-log for Parent Planning Dashboard
+    if (isNowCompleted) {
+      const s = series.find(s => s.id === seriesId);
+      if (s) {
+        const expectedSeconds = (timeToMinutes(s.endTime) - timeToMinutes(s.startTime)) * 60;
+        addTaskExecutionLog({
+          childId: s.personId,
+          taskId: seriesId,
+          type: 'calendar',
+          date: date,
+          completed: true,
+          completionType: completionType || (!isParentUnlocked ? 'independent' : 'with_help'),
+          completionTimeSeconds: expectedSeconds, // Default to expected since we don't track start time
+          expectedTimeSeconds: expectedSeconds
+        });
+      }
+    }
   };
 
   const updateOccurrence = (seriesId: string, date: string, updates: Partial<CalendarEventOccurrenceOverride>) => {
@@ -264,6 +342,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
+  const addTaskExecutionLog = (log: Omit<TaskExecutionLog, 'id'>) => {
+    if (!db || !user) return;
+    const ref = doc(collection(db, 'executionLogs'));
+    setDocumentNonBlocking(ref, { ...log, id: ref.id });
+  };
+
+  const addParentLog = (log: Omit<ParentLog, 'id'>) => {
+    if (!db || !user) return;
+    const ref = doc(collection(db, 'parentLogs'));
+    setDocumentNonBlocking(ref, { ...log, id: ref.id });
+  };
+
   const value: StoreContextValue = {
     persons,
     series,
@@ -272,8 +362,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     memos,
     chores,
     choreOverrides,
+    executionLogs,
+    goals,
+    rewardRules,
+    parentLogs,
     settings,
     isLoading,
+    isParentUnlocked,
+    unlockParent,
+    lockParent,
     setLanguage,
     updateSettings,
     updatePerson,
@@ -294,7 +391,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     deleteChoreOverride,
     toggleCompletion,
     updateOccurrence,
-    moveEvent
+    moveEvent,
+    addTaskExecutionLog,
+    addParentLog
   };
 
   return React.createElement(

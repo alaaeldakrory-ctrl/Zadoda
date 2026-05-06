@@ -126,10 +126,10 @@ export default function ChoresPage() {
     });
   };
 
-  const toggleCompletion = (choreId: string) => {
+  const toggleCompletion = (choreId: string, completionType?: 'independent' | 'with_help') => {
     const sc = scheduledChores.find(s => s.id === choreId);
     if (!sc) return;
-    updateChoreOverride(choreId, selectedDate, { completed: !sc.override?.completed });
+    updateChoreOverride(choreId, selectedDate, { completed: !sc.override?.completed }, completionType);
   };
 
   const handleManualAssign = (choreId: string, personId: string) => {
@@ -249,16 +249,31 @@ export default function ChoresPage() {
                           >
                             <MinusCircle className="w-6 h-6" />
                           </Button>
-                          <button 
-                            onClick={() => toggleCompletion(sc.id)} 
-                            className="shrink-0 transition-transform active:scale-90"
-                          >
+                          <div className="shrink-0 flex items-center">
                             {isCompleted ? (
-                              <CheckCircle2 className="w-12 h-12 text-green-500 animate-pop" />
+                              <button 
+                                onClick={() => toggleCompletion(sc.id)}
+                                className="bg-primary/20 text-primary font-black py-2.5 px-5 rounded-2xl flex items-center gap-2 shadow-inner border-2 border-primary/30 text-sm whitespace-nowrap"
+                              >
+                                ✅ Done
+                              </button>
                             ) : (
-                              <Circle className="w-12 h-12 text-muted-foreground/10 hover:text-primary/30" />
+                              <div className="flex flex-col gap-2">
+                                <button 
+                                  onClick={() => toggleCompletion(sc.id, 'independent')}
+                                  className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-black py-2 px-3 rounded-2xl flex items-center gap-2 transition-colors border-2 border-emerald-200 shadow-sm whitespace-nowrap text-xs"
+                                >
+                                  🖐️ Alone
+                                </button>
+                                <button 
+                                  onClick={() => toggleCompletion(sc.id, 'with_help')}
+                                  className="bg-amber-100 text-amber-700 hover:bg-amber-200 font-black py-2 px-3 rounded-2xl flex items-center gap-2 transition-colors border-2 border-amber-200 shadow-sm whitespace-nowrap text-xs"
+                                >
+                                  🤝 Help
+                                </button>
+                              </div>
                             )}
-                          </button>
+                          </div>
                         </div>
                       </div>
 

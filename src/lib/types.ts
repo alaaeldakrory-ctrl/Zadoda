@@ -87,3 +87,48 @@ export interface AppSettings {
   dayEndTime: string;   // HH:mm
   language: Language;
 }
+
+export interface TaskExecutionLog {
+  id: string;
+  childId: string;
+  taskId: string;
+  routineId?: string; // Optional if it's a standalone task
+  type: 'calendar' | 'chore' | 'checklist' | 'memo';
+  date: string; // ISO_date YYYY-MM-DD
+  completed: boolean;
+  completionType: 'independent' | 'with_help' | null;
+  completionTimeSeconds: number; // For now, can be estimated or calculated from delay
+  expectedTimeSeconds: number;
+}
+
+export interface Goal {
+  id: string;
+  childId: string;
+  title: string;
+  linkedRoutineId?: string;
+  linkedTaskIds?: string[];
+  successCriteria: {
+    type: 'streak';
+    targetDays: number;
+  };
+  status: 'active' | 'completed' | 'paused';
+  createdAt: string; // ISO_date
+}
+
+export interface RewardRule {
+  id: string;
+  title: string;
+  pointsRequired: number;
+  type: 'reward' | 'penalty';
+}
+
+export interface ParentLog {
+  id: string;
+  childId: string;
+  date: string; // ISO_date YYYY-MM-DD
+  overallMood: 'good' | 'neutral' | 'bad';
+  goodItems: string[]; 
+  badItems: string[];
+  note?: string;
+}
+

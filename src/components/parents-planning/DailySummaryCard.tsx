@@ -1,0 +1,79 @@
+"use client"
+
+import React from 'react';
+import { useStore } from '@/lib/store';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { getPersonName, getAvatarUrl, cn } from '@/lib/utils';
+import { getTranslation } from '@/lib/i18n';
+import { LayoutDashboard, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import Image from 'next/image';
+
+export function DailySummaryCard() {
+  const { executionLogs, persons, settings } = useStore();
+  const t = getTranslation(settings.language);
+  const pt = t.parentsPlanningFull;
+  const kids = persons.filter(p => p.id === 'person1' || p.id === 'person2');
+
+  const today = new Date().toISOString().split('T')[0];
+
+  return (
+    <Card className="rounded-[2.5rem] border-2 shadow-xl bg-white overflow-hidden">
+      <CardHeader className="bg-primary/5 pb-4 border-b border-primary/10">
+        <CardTitle className="text-2xl font-black flex items-center gap-2 text-primary">
+          <LayoutDashboard className="w-6 h-6" />
+          {pt.dailySummary}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {kids.map(kid => {
+            const logs = executionLogs.filter(l => l.childId === kid.id && l.date === today);
+            const completed = logs.filter(l => l.completed).length;
+            const independent = logs.filter(l => l.completed && l.completionType === 'independent').length;
+            
+            const completionRate = logs.length > 0 ? completed / logs.length : 0;
+            const independenceRate = completed > 0 ? independent / completed : 0;
+
+            let totalExpected = 0;
+            let totalActual = 0;
+            logs.filter(l => l.completed).forEach(l => {
+              totalExpected += l.expectedTimeSeconds || 60;
+              totalActual += l.completionTimeSeconds || 60;
+            });
+            const avgDelayRatio = totalExpected > 0 ? totalActual / totalExpected : 1;
+
+            return (
+              <div key={kid.id} className="border-2 rounded-3xl p-6 relative overflow-hidden bg-muted/5 flex flex-col gap-6" style={{ borderColor: `${kid.color}50` }}>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-4 shadow-sm" style={{ borderColor: kid.color }}>
+                    <Image src={getAvatarUrl(kid.id)} alt={kid.name} width={64} height={64} className="object-cover w-full h-full" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black" style={{ color: kid.color }}>{getPersonName(kid, settings.language)}</h3>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white rounded-2xl p-4 border shadow-sm">
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 opacity-60">{pt.completion}</p>
+                    <p className="text-3xl font-black">{(completionRate * 100).toFixed(0)}%</p>
+                  </div>
+                  <div className="bg-white rounded-2xl p-4 border shadow-sm">
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 opacity-60">{pt.independence}</p>
+                    <p className="text-3xl font-black">{(independenceRate * 100).toFixed(0)}%</p>
+                  </div>
+                  <div className="col-span-2 bg-white rounded-2xl p-4 border shadow-sm flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 opacity-60">{pt.delayRatio}</p>
+                      <p className="text-xl font-black">{avgDelayRatio.toFixed(1)}x <span className="text-[10px] font-bold text-muted-foreground ml-2 opacity-50">({pt.ideal})</span></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

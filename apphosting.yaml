@@ -2,6 +2,8 @@
 # https://firebase.google.com/docs/app-hosting/configure
 
 runConfig:
-  # Increase this value if you'd like to automatically spin up
-  # more instances in response to increased traffic.
   maxInstances: 1
+env:
+  - variable: NEXT_PUBLIC_GEMINI_API_KEY
+    value: AIzaSyC6wx0RcsBZy2a2-XQxUulAId89j3kZx4Y
+

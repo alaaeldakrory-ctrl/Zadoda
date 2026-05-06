@@ -18,6 +18,10 @@ import { TemplateDialog } from '@/components/templates/TemplateDialog';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useSearchParams, useRouter } from 'next/navigation';
+import confetti from 'canvas-confetti';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 
 interface GridSlotProps {
   id: string;
@@ -41,14 +45,200 @@ const GridSlot: React.FC<GridSlotProps> = ({ id, onSlotClick, children }) => {
   );
 };
 
+const playDing = () => {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.3);
+  } catch (e) {
+    console.error("Audio playback failed", e);
+  }
+};
+
+const getEmojiForEvent = (title: string) => {
+  const t = title.toLowerCase();
+  if (t.includes('swim') || t.includes('سباحة')) return '🏊‍♀️';
+  if (t.includes('sleep') || t.includes('bed') || t.includes('نوم')) return '🛏️';
+  if (t.includes('school') || t.includes('مدرسة')) return '🏫';
+  if (t.includes('eat') || t.includes('food') || t.includes('lunch') || t.includes('dinner') || t.includes('غداء') || t.includes('عشاء') || t.includes('إفطار')) return '🍽️';
+  if (t.includes('play') || t.includes('لعب')) return '🧸';
+  if (t.includes('read') || t.includes('book') || t.includes('قرائة')) return '📚';
+  if (t.includes('homework') || t.includes('study') || t.includes('مذاكرة') || t.includes('واجب')) return '✏️';
+  if (t.includes('tv') || t.includes('watch') || t.includes('تلفزيون')) return '📺';
+  if (t.includes('bath') || t.includes('shower') || t.includes('استحمام') || t.includes('حمام')) return '🛁';
+  if (t.includes('quran') || t.includes('pray') || t.includes('صلاة') || t.includes('قرآن')) return '🕌';
+  if (t.includes('gym') || t.includes('sport') || t.includes('تمرين') || t.includes('رياضة') || t.includes('karate') || t.includes('كاراتيه')) return '🥋';
+  return '✨';
+};
+
+const KidsCalendarView: React.FC<{ day: Date, personId: string, series: any[], overrides: any[], toggleCompletion: any }> = ({ day, personId, series, overrides, toggleCompletion }) => {
+  const { persons, settings } = useStore();
+  const person = persons.find(p => p.id === personId);
+  const dayOccurrences = getOccurrencesForDate(series, day, overrides);
+  // Filter for the selected person, kids, or everyone
+  let displayedOccurrences = dayOccurrences;
+  if (personId !== 'all') {
+    const isKid = personId === 'person1' || personId === 'person2';
+    displayedOccurrences = dayOccurrences.filter(occ => 
+      occ.personId === personId || 
+      occ.personId === 'all' || 
+      (isKid && occ.personId === 'kids')
+    );
+  }
+
+  // Sort by start time
+  displayedOccurrences.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+
+  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  const isToday = format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+
+  // Categorize
+  const past = displayedOccurrences.filter(occ => isToday && timeToMinutes(occ.endTime) <= nowMinutes);
+  const now = displayedOccurrences.filter(occ => isToday && timeToMinutes(occ.startTime) <= nowMinutes && timeToMinutes(occ.endTime) > nowMinutes);
+  const future = displayedOccurrences.filter(occ => !isToday || timeToMinutes(occ.startTime) > nowMinutes);
+
+  const handleToggle = (seriesId: string, date: string, type?: 'independent' | 'with_help') => {
+    playDing();
+    toggleCompletion(seriesId, date, type);
+    
+    const overrideId = `${seriesId}_${date}`;
+    const existing = overrides.find(o => o.id === overrideId);
+    if (!existing?.completed) {
+      confetti({
+        particleCount: 50,
+        spread: 40,
+        origin: { y: 0.7 },
+        colors: ['#FBBF24', '#F87171', '#34D399', '#60A5FA']
+      });
+    }
+  };
+
+  const renderEventList = (title: string, events: any[], colorClass: string, bgClass: string, isNow: boolean = false) => {
+    if (events.length === 0) return null;
+    return (
+      <div className="space-y-4 mb-8">
+        <h3 className={cn("text-2xl font-black uppercase tracking-widest", colorClass)}>{title}</h3>
+        <div className="space-y-4">
+          {events.map(occ => {
+            const isCompleted = occ.completed;
+            const emoji = getEmojiForEvent(occ.title);
+            return (
+              <Card 
+                key={occ.id} 
+                className={cn(
+                  "border-4 rounded-[2rem] overflow-hidden transition-all duration-300",
+                  isCompleted ? "bg-muted/30 border-muted/50 scale-[0.98] opacity-70" : bgClass,
+                  isNow && !isCompleted ? "border-primary shadow-xl scale-[1.02]" : ""
+                )}
+              >
+                <div className="flex items-center p-6 gap-6">
+                  <div className="text-6xl">{emoji}</div>
+                  <div className="flex-1">
+                    <div className="text-sm font-black text-muted-foreground uppercase tracking-widest mb-1">
+                      {formatTime(occ.startTime)} - {formatTime(occ.endTime)}
+                    </div>
+                    <div className={cn(
+                      "text-3xl font-black transition-all",
+                      isCompleted ? "line-through text-muted-foreground" : "text-foreground"
+                    )}>
+                      {occ.title}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center p-4">
+                    {isCompleted ? (
+                      <button 
+                        onClick={() => handleToggle(occ.seriesId, occ.date)}
+                        className="bg-primary/20 text-primary font-black py-3 px-6 rounded-2xl flex items-center gap-2 shadow-inner border-2 border-primary/30"
+                      >
+                        ✅ Done
+                      </button>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        <button 
+                          onClick={() => handleToggle(occ.seriesId, occ.date, 'independent')}
+                          className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-black py-2.5 px-4 rounded-2xl flex items-center gap-2 transition-colors border-2 border-emerald-200 shadow-sm whitespace-nowrap text-sm"
+                        >
+                          🖐️ Done Alone
+                        </button>
+                        <button 
+                          onClick={() => handleToggle(occ.seriesId, occ.date, 'with_help')}
+                          className="bg-amber-100 text-amber-700 hover:bg-amber-200 font-black py-2.5 px-4 rounded-2xl flex items-center gap-2 transition-colors border-2 border-amber-200 shadow-sm whitespace-nowrap text-sm"
+                        >
+                          🤝 With Help
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex-1 overflow-auto p-6 lg:p-12 bg-white scroll-smooth min-h-full">
+      <div className="max-w-3xl mx-auto">
+        {person && (
+          <div className="flex items-center gap-6 mb-10 bg-muted/5 p-6 rounded-[3rem] border-4 shadow-sm" style={{ borderColor: `${person.color}30` }}>
+            <div className="w-24 h-24 rounded-full overflow-hidden border-4 shadow-xl shrink-0 bg-white" style={{ borderColor: person.color }}>
+              <Image 
+                src={getAvatarUrl(person.id)} 
+                alt={person.name} 
+                width={96} 
+                height={96} 
+                className={cn(
+                  "object-cover w-full h-full", 
+                  person.id === 'person3' && "scale-110 -translate-y-2",
+                  person.id === 'person4' && "scale-105 translate-y-[-1px]",
+                  person.id === 'person2' && "scale-150 translate-y-2",
+                  person.id === 'person1' && "scale-110 translate-y-2"
+                )}
+                data-ai-hint="person headshot"
+              />
+            </div>
+            <div>
+              <h2 className="text-4xl lg:text-5xl font-black" style={{ color: person.color }}>{getPersonName(person, settings.language)}</h2>
+              <p className="text-muted-foreground font-black uppercase tracking-[0.2em] text-sm mt-1 opacity-50">My Calendar</p>
+            </div>
+          </div>
+        )}
+
+        {displayedOccurrences.length === 0 && (
+          <div className="text-center py-20 opacity-50">
+            <div className="text-8xl mb-6">🏝️</div>
+            <h2 className="text-3xl font-black text-muted-foreground">No events today!</h2>
+          </div>
+        )}
+        
+        {renderEventList("Happening Now", now, "text-primary", "bg-primary/5 border-primary/30", true)}
+        {renderEventList("Up Next", future, "text-foreground", "bg-white border-muted/30")}
+        {renderEventList("All Done", past, "text-muted-foreground", "bg-muted/10 border-muted/20")}
+      </div>
+    </div>
+  );
+};
+
 const CalendarContent: React.FC = () => {
-  const { settings, persons, series, overrides, templates, moveEvent, isLoading } = useStore();
+  const { settings, persons, series, overrides, templates, moveEvent, isLoading, toggleCompletion } = useStore();
   const searchParams = useSearchParams();
   const router = useRouter();
   
   const [mounted, setMounted] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
+  const [viewMode, setViewMode] = useState<'day' | 'week' | 'kids'>('day');
   const [selectedPersonId, setSelectedPersonId] = useState<string>('all');
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
@@ -234,6 +424,15 @@ const CalendarContent: React.FC = () => {
               >
                 {t.week}
               </button>
+              <button 
+                onClick={() => setViewMode('kids')}
+                className={cn(
+                  "px-3 py-1 rounded-full text-[10px] font-black transition-all",
+                  viewMode === 'kids' ? 'bg-primary shadow-sm text-primary-foreground' : 'text-muted-foreground'
+                )}
+              >
+                KIDS
+              </button>
             </div>
 
             <Select value={selectedPersonId} onValueChange={handlePersonChange}>
@@ -279,6 +478,15 @@ const CalendarContent: React.FC = () => {
           ref={scrollContainerRef}
           className="flex-1 overflow-auto relative bg-white scroll-smooth"
         >
+          {viewMode === 'kids' ? (
+             <KidsCalendarView 
+               day={currentDate} 
+               personId={selectedPersonId} 
+               series={series} 
+               overrides={overrides} 
+               toggleCompletion={toggleCompletion} 
+             />
+          ) : (
           <div className="flex min-w-[800px] min-h-full">
             {/* Time Labels Column */}
             <div className="w-16 sticky left-0 z-50 bg-white/80 backdrop-blur-md border-r shrink-0">
@@ -315,7 +523,7 @@ const CalendarContent: React.FC = () => {
                     <div className="flex-1 flex relative min-h-full">
                       {filteredPersons.map(p => {
                         const personOccurrences = individualOccurrences.filter(occ => occ.personId === p.id);
-                        const isKid = p.id === 'person1' || p.id === 'person4';
+                        const isKid = p.id === 'person1' || p.id === 'person2';
                         const displayedOccurrences = selectedPersonId === 'all' 
                           ? personOccurrences 
                           : [
@@ -437,6 +645,7 @@ const CalendarContent: React.FC = () => {
               })}
             </div>
           </div>
+          )}
         </div>
 
         <DragOverlay dropAnimation={null}>

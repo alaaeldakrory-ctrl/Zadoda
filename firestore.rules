@@ -75,5 +75,29 @@ service cloud.firestore {
         allow delete: if isSignedIn() && isExisting();
       }
     }
+
+    match /executionLogs/{logId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && matchesPath(request.resource.data.id, logId);
+      allow update, delete: if isSignedIn() && isExisting();
+    }
+
+    match /goals/{goalId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && matchesPath(request.resource.data.id, goalId);
+      allow update, delete: if isSignedIn() && isExisting();
+    }
+
+    match /rewardRules/{ruleId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && matchesPath(request.resource.data.id, ruleId);
+      allow update, delete: if isSignedIn() && isExisting();
+    }
+
+    match /parentLogs/{logId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && matchesPath(request.resource.data.id, logId);
+      allow update, delete: if isSignedIn() && isExisting();
+    }
   }
 }

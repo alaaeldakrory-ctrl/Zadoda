@@ -1,0 +1,21 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": {
+    "target": "main",
+    "rules": "storage.rules"
+  },
+  "apphosting": [
+    {
+      "backendId": "studio",
+      "rootDir": "./",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log"
+      ]
+    }
+  ]
+}

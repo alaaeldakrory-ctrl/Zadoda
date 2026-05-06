@@ -6,7 +6,7 @@ import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { Memo, CalendarEventSeries } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Pencil, Calendar, CheckSquare, Square } from 'lucide-react';
+import { Plus, Trash2, Pencil, Calendar, CheckSquare, Square, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -89,10 +89,105 @@ export default function MemosPage() {
           {persons.map(person => {
             const personMemos = memos
               .filter(m => m.personId === person.id)
-              .sort((a, b) => {
-                if (a.completed !== b.completed) return a.completed ? 1 : -1;
-                return b.createdAt - a.createdAt;
-              });
+              .sort((a, b) => b.createdAt - a.createdAt);
+
+            const activeMemos = personMemos.filter(m => !m.completed);
+            const completedMemos = personMemos.filter(m => m.completed);
+
+            const renderMemo = (memo: Memo) => (
+              <div 
+                key={memo.id} 
+                className={cn(
+                  "p-4 rounded-3xl border-2 transition-all group relative overflow-hidden bg-white",
+                  memo.completed ? "opacity-60 grayscale-[0.5]" : "shadow-sm hover:shadow-md"
+                )}
+                style={{ borderColor: memo.completed ? 'transparent' : `${person.color}15` }}
+              >
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => toggleMemoCompletion(memo.id)}
+                    className="shrink-0 mt-0.5"
+                    style={{ color: person.color }}
+                  >
+                    {memo.completed ? (
+                      <CheckSquare className="w-5 h-5" />
+                    ) : (
+                      <Square className="w-5 h-5 opacity-40 hover:opacity-100 transition-opacity" />
+                    )}
+                  </button>
+                  
+                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleEditMemo(memo)}>
+                    <h3 className={cn(
+                      "font-black leading-tight text-base truncate",
+                      memo.completed && "line-through text-muted-foreground"
+                    )}>
+                      {memo.title}
+                    </h3>
+                    {memo.content && (
+                      <p className="text-xs text-muted-foreground line-clamp-1 mt-1 font-medium">
+                        {memo.content}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="shrink-0 w-10 h-10 rounded-full overflow-hidden border-2 opacity-40 shadow-sm" style={{ borderColor: person.color }}>
+                    <Image 
+                      src={getAvatarUrl(person.id)} 
+                      alt={person.name} 
+                      width={40} 
+                      height={40} 
+                      className={cn(
+                        "object-cover", 
+                        person.id === 'person3' && "scale-110 -translate-y-4",
+                        person.id === 'person4' && "scale-105 translate-y-[-2px]",
+                        person.id === 'person2' && "scale-150 translate-y-3",
+                        person.id === 'person1' && "scale-110 translate-y-4"
+                      )}
+                      data-ai-hint="person headshot"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-3 flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                  {!memo.completed && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="rounded-full h-10 w-10 text-primary hover:bg-primary/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleScheduleToCalendar(memo);
+                      }}
+                      title={t.addEvent}
+                    >
+                      <Calendar className="w-5 h-5" />
+                    </Button>
+                  )}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="rounded-full h-10 w-10 text-destructive hover:bg-destructive/10" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteMemo(memo.id);
+                    }}
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="rounded-full h-10 w-10 hover:bg-muted" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditMemo(memo);
+                    }}
+                  >
+                    <Pencil className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
+            );
 
             return (
               <div key={person.id} className="flex flex-col space-y-4">
@@ -147,100 +242,21 @@ export default function MemosPage() {
                       <p className="text-xs font-bold uppercase tracking-widest">{t.none}</p>
                     </div>
                   ) : (
-                    personMemos.map(memo => (
-                      <div 
-                        key={memo.id} 
-                        className={cn(
-                          "p-4 rounded-3xl border-2 transition-all group relative overflow-hidden bg-white",
-                          memo.completed ? "opacity-60 grayscale-[0.5]" : "shadow-sm hover:shadow-md"
-                        )}
-                        style={{ borderColor: memo.completed ? 'transparent' : `${person.color}15` }}
-                      >
-                        <div className="flex gap-3">
-                          <button 
-                            onClick={() => toggleMemoCompletion(memo.id)}
-                            className="shrink-0 mt-0.5"
-                            style={{ color: person.color }}
-                          >
-                            {memo.completed ? (
-                              <CheckSquare className="w-5 h-5" />
-                            ) : (
-                              <Square className="w-5 h-5 opacity-40 hover:opacity-100 transition-opacity" />
-                            )}
-                          </button>
-                          
-                          <div className="flex-1 min-w-0" onClick={() => handleEditMemo(memo)}>
-                            <h3 className={cn(
-                              "font-black leading-tight text-base truncate",
-                              memo.completed && "line-through text-muted-foreground"
-                            )}>
-                              {memo.title}
-                            </h3>
-                            {memo.content && (
-                              <p className="text-xs text-muted-foreground line-clamp-1 mt-1 font-medium">
-                                {memo.content}
-                              </p>
-                            )}
+                    <>
+                      {activeMemos.map(renderMemo)}
+                      
+                      {completedMemos.length > 0 && (
+                        <details className="group pt-4">
+                          <summary className="flex items-center gap-2 cursor-pointer list-none font-bold text-muted-foreground text-sm uppercase tracking-wider mb-2 select-none hover:text-foreground transition-colors">
+                            <ChevronDown className="w-4 h-4 transition-transform group-open:-rotate-180" />
+                            Completed ({completedMemos.length})
+                          </summary>
+                          <div className="space-y-2 mt-2">
+                            {completedMemos.map(renderMemo)}
                           </div>
-
-                          <div className="shrink-0 w-10 h-10 rounded-full overflow-hidden border-2 opacity-40 shadow-sm" style={{ borderColor: person.color }}>
-                            <Image 
-                              src={getAvatarUrl(person.id)} 
-                              alt={person.name} 
-                              width={40} 
-                              height={40} 
-                              className={cn(
-                                "object-cover", 
-                                person.id === 'person3' && "scale-110 -translate-y-4",
-                                person.id === 'person4' && "scale-105 translate-y-[-2px]",
-                                person.id === 'person2' && "scale-150 translate-y-3",
-                                person.id === 'person1' && "scale-110 translate-y-4"
-                              )}
-                              data-ai-hint="person headshot"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="mt-3 flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                          {!memo.completed && (
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="rounded-full h-10 w-10 text-primary hover:bg-primary/10"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleScheduleToCalendar(memo);
-                              }}
-                              title={t.addEvent}
-                            >
-                              <Calendar className="w-5 h-5" />
-                            </Button>
-                          )}
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="rounded-full h-10 w-10 text-destructive hover:bg-destructive/10" 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteMemo(memo.id);
-                            }}
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="rounded-full h-10 w-10 hover:bg-muted" 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditMemo(memo);
-                            }}
-                          >
-                            <Pencil className="w-5 h-5" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
+                        </details>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
