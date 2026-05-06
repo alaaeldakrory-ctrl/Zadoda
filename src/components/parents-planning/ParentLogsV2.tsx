@@ -344,7 +344,6 @@ export function ParentLogsV2() {
             topK: 40,
             topP: 0.95,
             maxOutputTokens: 1024,
-            responseMimeType: "application/json",
           }
         })
       });
@@ -355,10 +354,11 @@ export function ParentLogsV2() {
       }
 
       const result = await response.json();
-      const text = result.candidates[0].content.parts[0].text;
-      
-      console.log("AI Response received:", text);
-      
+      const raw = result.candidates[0].content.parts[0].text;
+      console.log("AI Response received:", raw);
+
+      // Strip markdown code fences if present
+      const text = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
       const data = JSON.parse(text);
       console.log("Parsed data:", data);
       
