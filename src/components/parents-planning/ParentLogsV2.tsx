@@ -320,7 +320,7 @@ export function ParentLogsV2() {
     }
 
     setIsAnalyzing(true);
-    console.log("Starting AI analysis with Gemini 1.5 Flash (v1 API)...");
+    console.log("Starting AI analysis with gemini-2.5-flash-lite (v1beta)...");
 
     try {
       const prompt = `You are a professional behavioral assistant for parents. 
