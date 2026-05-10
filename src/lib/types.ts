@@ -132,3 +132,14 @@ export interface ParentLog {
   note?: string;
 }
 
+// ── Parent self-reflection journal (Mohamed & Wesam reflect on their own parenting) ──
+export interface ParentSelfLog {
+  id: string;
+  parentId: string; // 'person3' = Mohamed, 'person4' = Wesam
+  date: string;     // YYYY-MM-DD
+  overallFeeling: 'good' | 'neutral' | 'needs_work';
+  goodThings: string[];    // up to 5 — things they did well as a parent
+  improveThings: string[]; // up to 5 — things to work on
+  reflection?: string;     // free-form note about parenting Lyla & Malika
+}
+

@@ -99,5 +99,11 @@ service cloud.firestore {
       allow create: if isSignedIn() && matchesPath(request.resource.data.id, logId);
       allow update, delete: if isSignedIn() && isExisting();
     }
+
+    match /parentSelfLogs/{logId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && matchesPath(request.resource.data.id, logId);
+      allow update, delete: if isSignedIn() && isExisting();
+    }
   }
 }

@@ -3,18 +3,19 @@
 import React from 'react';
 import { useStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getPersonName, getAvatarUrl, cn } from '@/lib/utils';
+import { getPersonName, getAvatarUrl } from '@/lib/utils';
 import { getTranslation } from '@/lib/i18n';
-import { LayoutDashboard, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { LayoutDashboard } from 'lucide-react';
 import Image from 'next/image';
+import { format } from 'date-fns';
 
-export function DailySummaryCard() {
+export function DailySummaryCard({ selectedDate }: { selectedDate: Date }) {
   const { executionLogs, persons, settings } = useStore();
   const t = getTranslation(settings.language);
   const pt = t.parentsPlanningFull;
   const kids = persons.filter(p => p.id === 'person1' || p.id === 'person2');
 
-  const today = new Date().toISOString().split('T')[0];
+  const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
   return (
     <Card className="rounded-[2.5rem] border-2 shadow-xl bg-white overflow-hidden">
@@ -27,10 +28,10 @@ export function DailySummaryCard() {
       <CardContent className="p-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {kids.map(kid => {
-            const logs = executionLogs.filter(l => l.childId === kid.id && l.date === today);
+            const logs = executionLogs.filter(l => l.childId === kid.id && l.date === dateStr);
             const completed = logs.filter(l => l.completed).length;
             const independent = logs.filter(l => l.completed && l.completionType === 'independent').length;
-            
+
             const completionRate = logs.length > 0 ? completed / logs.length : 0;
             const independenceRate = completed > 0 ? independent / completed : 0;
 
@@ -50,6 +51,7 @@ export function DailySummaryCard() {
                   </div>
                   <div>
                     <h3 className="text-2xl font-black" style={{ color: kid.color }}>{getPersonName(kid, settings.language)}</h3>
+                    {logs.length === 0 && <p className="text-xs font-bold text-muted-foreground opacity-50 mt-1">No activity logged</p>}
                   </div>
                 </div>
 

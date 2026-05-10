@@ -2,7 +2,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language, Memo, Chore, ChoreOverride, TaskExecutionLog, Goal, RewardRule, ParentLog } from './types';
+import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language, Memo, Chore, ChoreOverride, TaskExecutionLog, Goal, RewardRule, ParentLog, ParentSelfLog } from './types';
 import { timeToMinutes, minutesToTime } from './utils';
 import { 
   useCollection, 
@@ -30,6 +30,7 @@ interface StoreContextValue {
   goals: Goal[];
   rewardRules: RewardRule[];
   parentLogs: ParentLog[];
+  parentSelfLogs: ParentSelfLog[];
   settings: AppSettings;
   isLoading: boolean;
   isParentUnlocked: boolean;
@@ -58,6 +59,11 @@ interface StoreContextValue {
   moveEvent: (seriesId: string, date: string, newStartTime: string, newPersonId: string) => void;
   addTaskExecutionLog: (log: Omit<TaskExecutionLog, 'id'>) => void;
   addParentLog: (log: Omit<ParentLog, 'id'>) => void;
+  updateParentLog: (id: string, updates: Partial<ParentLog>) => void;
+  deleteParentLog: (id: string) => void;
+  addParentSelfLog: (log: Omit<ParentSelfLog, 'id'>) => void;
+  updateParentSelfLog: (id: string, updates: Partial<ParentSelfLog>) => void;
+  deleteParentSelfLog: (id: string) => void;
 }
 
 const StoreContext = createContext<StoreContextValue | null>(null);
@@ -123,6 +129,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const parentLogsRef = useMemoFirebase(() => user ? collection(db, 'parentLogs') : null, [db, user]);
   const { data: parentLogsData, isLoading: parentLogsLoading } = useCollection<ParentLog>(parentLogsRef);
 
+  const parentSelfLogsRef = useMemoFirebase(() => user ? collection(db, 'parentSelfLogs') : null, [db, user]);
+  const { data: parentSelfLogsData, isLoading: parentSelfLogsLoading } = useCollection<ParentSelfLog>(parentSelfLogsRef);
+
   const [hasSeeded, setHasSeeded] = useState(false);
   const [isParentUnlocked, setIsParentUnlocked] = useState(false);
 
@@ -150,8 +159,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const goals = goalsData || [];
   const rewardRules = rewardRulesData || [];
   const parentLogs = parentLogsData || [];
+  const parentSelfLogs = parentSelfLogsData || [];
 
-  const isLoading = isUserLoading || settingsLoading || (personsLoading && !personsData) || memosLoading || overridesLoading || choresLoading || choreOverridesLoading || executionLogsLoading || goalsLoading || rewardRulesLoading || parentLogsLoading;
+  const isLoading = isUserLoading || settingsLoading || (personsLoading && !personsData) || memosLoading || overridesLoading || choresLoading || choreOverridesLoading || executionLogsLoading || goalsLoading || rewardRulesLoading || parentLogsLoading || parentSelfLogsLoading;
 
   const unlockParent = (pin: string) => {
     if (pin === '1234') {
@@ -354,6 +364,36 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setDocumentNonBlocking(ref, { ...log, id: ref.id });
   };
 
+  const updateParentLog = (id: string, updates: Partial<ParentLog>) => {
+    if (!db || !user) return;
+    const ref = doc(db, 'parentLogs', id);
+    updateDocumentNonBlocking(ref, updates);
+  };
+
+  const deleteParentLog = (id: string) => {
+    if (!db || !user) return;
+    const ref = doc(db, 'parentLogs', id);
+    deleteDocumentNonBlocking(ref);
+  };
+
+  const addParentSelfLog = (log: Omit<ParentSelfLog, 'id'>) => {
+    if (!db || !user) return;
+    const ref = doc(collection(db, 'parentSelfLogs'));
+    setDocumentNonBlocking(ref, { ...log, id: ref.id });
+  };
+
+  const updateParentSelfLog = (id: string, updates: Partial<ParentSelfLog>) => {
+    if (!db || !user) return;
+    const ref = doc(db, 'parentSelfLogs', id);
+    updateDocumentNonBlocking(ref, updates);
+  };
+
+  const deleteParentSelfLog = (id: string) => {
+    if (!db || !user) return;
+    const ref = doc(db, 'parentSelfLogs', id);
+    deleteDocumentNonBlocking(ref);
+  };
+
   const value: StoreContextValue = {
     persons,
     series,
@@ -366,6 +406,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     goals,
     rewardRules,
     parentLogs,
+    parentSelfLogs,
     settings,
     isLoading,
     isParentUnlocked,
@@ -393,7 +434,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     updateOccurrence,
     moveEvent,
     addTaskExecutionLog,
-    addParentLog
+    addParentLog,
+    updateParentLog,
+    deleteParentLog,
+    addParentSelfLog,
+    updateParentSelfLog,
+    deleteParentSelfLog
   };
 
   return React.createElement(

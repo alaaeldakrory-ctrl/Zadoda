@@ -9,15 +9,14 @@ import Image from 'next/image';
 import { TrendingUp, TrendingDown, Minus, Sparkles, AlertCircle } from 'lucide-react';
 import { addDays } from 'date-fns';
 
-export function WeeklyDashboard() {
+export function WeeklyDashboard({ selectedDate }: { selectedDate: Date }) {
   const { executionLogs, parentLogs, persons, settings } = useStore();
   const t = getTranslation(settings.language);
   const pt = t.parentsPlanningFull;
   const kids = persons.filter(p => p.id === 'person1' || p.id === 'person2');
 
-  const now = new Date();
-  const last7DaysStart = addDays(now, -7);
-  const previous7DaysStart = addDays(now, -14);
+  const last7DaysStart = addDays(selectedDate, -7);
+  const previous7DaysStart = addDays(selectedDate, -14);
 
   const calculateStats = (childId: string, startDate: Date, endDate: Date) => {
     const logs = executionLogs.filter(l => 
@@ -49,7 +48,8 @@ export function WeeklyDashboard() {
   const aggregateParentItems = (childId: string) => {
     const last7DaysLogs = parentLogs.filter(l => 
       l.childId === childId && 
-      new Date(l.date) >= last7DaysStart
+      new Date(l.date) >= last7DaysStart &&
+      new Date(l.date) <= selectedDate
     );
 
     const goodCounts: Record<string, number> = {};
@@ -87,7 +87,7 @@ export function WeeklyDashboard() {
       <CardContent className="p-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {kids.map(kid => {
-            const currentStats = calculateStats(kid.id, last7DaysStart, now);
+            const currentStats = calculateStats(kid.id, last7DaysStart, selectedDate);
             const prevStats = calculateStats(kid.id, previous7DaysStart, last7DaysStart);
             const insights = aggregateParentItems(kid.id);
 

@@ -136,6 +136,22 @@ export function minutesToTime(mins: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
+export function getEmojiForEvent(title: string): string {
+  const t = title.toLowerCase();
+  if (t.includes('swim') || t.includes('سباحة')) return '🏊‍♀️';
+  if (t.includes('sleep') || t.includes('bed') || t.includes('نوم')) return '🛏️';
+  if (t.includes('school') || t.includes('مدرسة')) return '🏫';
+  if (t.includes('eat') || t.includes('food') || t.includes('lunch') || t.includes('dinner') || t.includes('غداء') || t.includes('عشاء') || t.includes('إفطار')) return '🍽️';
+  if (t.includes('play') || t.includes('لعب')) return '🧸';
+  if (t.includes('read') || t.includes('book') || t.includes('قرائة')) return '📚';
+  if (t.includes('homework') || t.includes('study') || t.includes('مذاكرة') || t.includes('واجب')) return '✏️';
+  if (t.includes('tv') || t.includes('watch') || t.includes('تلفزيون')) return '📺';
+  if (t.includes('bath') || t.includes('shower') || t.includes('استحمام') || t.includes('حمام')) return '🛁';
+  if (t.includes('quran') || t.includes('pray') || t.includes('صلاة') || t.includes('قرآن')) return '🕌';
+  if (t.includes('gym') || t.includes('sport') || t.includes('تمرين') || t.includes('رياضة') || t.includes('karate') || t.includes('كاراتيه')) return '🥋';
+  return '✨';
+}
+
 export function getGridPosition(startTime: string, endTime: string, dayStart: string, slotHeight15Min: number = 48) {
   const startMins = timeToMinutes(startTime);
   const endMins = timeToMinutes(endTime);

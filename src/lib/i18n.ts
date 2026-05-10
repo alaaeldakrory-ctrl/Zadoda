@@ -105,6 +105,29 @@ const translations = {
       topBad: 'Top Focus Areas (Weekly)',
       childSelection: 'Select Child',
       overallDay: 'Overall Day'
+    },
+    parentSelfJournal: {
+      title: 'My Parenting Journal',
+      subtitle: 'Reflect on your parenting with Lyla & Malika',
+      selectParent: 'Who is journaling?',
+      addEntry: 'Add Reflection',
+      editEntry: 'Edit Reflection',
+      goodThings: '✨ Good Things I Did',
+      goodThingsHint: 'Things you did well as a parent today',
+      improveThings: '🔧 Things to Improve',
+      improveThingsHint: 'What you want to work on next time',
+      reflection: 'Free Reflection',
+      reflectionPlaceholder: 'How did parenting feel today? How did things go with Lyla and Malika?',
+      overallFeeling: 'Overall Feeling',
+      good: '😊 Felt Great',
+      neutral: '😐 It was Okay',
+      needs_work: '😔 Needs Work',
+      noEntry: 'No reflection yet',
+      noEntryHint: 'Take a moment to reflect on your parenting today',
+      saveEntry: 'Save Reflection',
+      saveChanges: 'Save Changes',
+      smartFill: 'Smart Fill',
+      deleteConfirm: 'Delete this journal entry?'
     }
   },
   ar: {
@@ -210,6 +233,29 @@ const translations = {
       topBad: 'أهم مجالات التركيز (أسبوعياً)',
       childSelection: 'اختر الطفل',
       overallDay: 'اليوم بشكل عام'
+    },
+    parentSelfJournal: {
+      title: 'يومياتي كوالد',
+      subtitle: 'تأمّل في تربيتك لليلى ومليكة',
+      selectParent: 'من يكتب اليوميات؟',
+      addEntry: 'إضافة تأمل',
+      editEntry: 'تعديل التأمل',
+      goodThings: '✨ أشياء فعلتها بشكل جيد',
+      goodThingsHint: 'ما قمت به بشكل جيد كوالد اليوم',
+      improveThings: '🔧 أشياء أريد تحسينها',
+      improveThingsHint: 'ما تريد العمل عليه في المرة القادمة',
+      reflection: 'تأمل حر',
+      reflectionPlaceholder: 'كيف شعرت بالتربية اليوم؟ كيف سارت الأمور مع ليلى ومليكة؟',
+      overallFeeling: 'الشعور العام',
+      good: '😊 شعرت رائعاً',
+      neutral: '😐 كان مقبولاً',
+      needs_work: '😔 يحتاج عمل',
+      noEntry: 'لا يوجد تأمل بعد',
+      noEntryHint: 'خذ لحظة للتأمل في تربيتك اليوم',
+      saveEntry: 'حفظ التأمل',
+      saveChanges: 'حفظ التغييرات',
+      smartFill: 'تعبئة ذكية',
+      deleteConfirm: 'هل تريد حذف هذا التأمل؟'
     }
   }
 };

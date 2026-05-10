@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense, useRef } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
-import { generateTimeSlots, getOccurrencesForDate, formatTime, cn, getAvatarUrl, getPersonName, timeToMinutes } from '@/lib/utils';
+import { generateTimeSlots, getOccurrencesForDate, formatTime, cn, getAvatarUrl, getPersonName, timeToMinutes, getEmojiForEvent } from '@/lib/utils';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { EventBlock } from './EventBlock';
 import { EventDialog } from './EventDialog';
@@ -33,10 +33,10 @@ const GridSlot: React.FC<GridSlotProps> = ({ id, onSlotClick, children }) => {
   const { setNodeRef, isOver } = useDroppable({ id });
   
   return (
-    <div 
+    <div
       ref={setNodeRef}
-      className={`h-24 border-b border-muted/30 transition-colors relative ${
-        isOver ? 'bg-primary/5' : 'hover:bg-primary/5'
+      className={`h-24 transition-colors relative ${
+        isOver ? 'bg-primary/10' : 'hover:bg-primary/5'
       }`}
       onClick={onSlotClick}
     >
@@ -65,21 +65,6 @@ const playDing = () => {
   }
 };
 
-const getEmojiForEvent = (title: string) => {
-  const t = title.toLowerCase();
-  if (t.includes('swim') || t.includes('سباحة')) return '🏊‍♀️';
-  if (t.includes('sleep') || t.includes('bed') || t.includes('نوم')) return '🛏️';
-  if (t.includes('school') || t.includes('مدرسة')) return '🏫';
-  if (t.includes('eat') || t.includes('food') || t.includes('lunch') || t.includes('dinner') || t.includes('غداء') || t.includes('عشاء') || t.includes('إفطار')) return '🍽️';
-  if (t.includes('play') || t.includes('لعب')) return '🧸';
-  if (t.includes('read') || t.includes('book') || t.includes('قرائة')) return '📚';
-  if (t.includes('homework') || t.includes('study') || t.includes('مذاكرة') || t.includes('واجب')) return '✏️';
-  if (t.includes('tv') || t.includes('watch') || t.includes('تلفزيون')) return '📺';
-  if (t.includes('bath') || t.includes('shower') || t.includes('استحمام') || t.includes('حمام')) return '🛁';
-  if (t.includes('quran') || t.includes('pray') || t.includes('صلاة') || t.includes('قرآن')) return '🕌';
-  if (t.includes('gym') || t.includes('sport') || t.includes('تمرين') || t.includes('رياضة') || t.includes('karate') || t.includes('كاراتيه')) return '🥋';
-  return '✨';
-};
 
 const KidsCalendarView: React.FC<{ day: Date, personId: string, series: any[], overrides: any[], toggleCompletion: any }> = ({ day, personId, series, overrides, toggleCompletion }) => {
   const { persons, settings } = useStore();
@@ -189,7 +174,7 @@ const KidsCalendarView: React.FC<{ day: Date, personId: string, series: any[], o
   };
 
   return (
-    <div className="flex-1 overflow-auto p-6 lg:p-12 bg-white scroll-smooth min-h-full">
+    <div className="flex-1 overflow-auto p-6 lg:p-12 bg-[#fdfaf5] scroll-smooth min-h-full">
       <div className="max-w-3xl mx-auto">
         {person && (
           <div className="flex items-center gap-6 mb-10 bg-muted/5 p-6 rounded-[3rem] border-4 shadow-sm" style={{ borderColor: `${person.color}30` }}>
@@ -245,11 +230,17 @@ const CalendarContent: React.FC = () => {
   const [isCreateTemplateOpen, setIsCreateTemplateOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<{ seriesId?: string; date: string; personId?: string; startTime?: string; templateId?: string } | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [nowTime, setNowTime] = useState(new Date());
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => setNowTime(new Date()), 60000);
+    return () => clearInterval(interval);
   }, []);
 
   // Auto-scroll to current time on mount
@@ -358,7 +349,7 @@ const CalendarContent: React.FC = () => {
 
   if (!mounted || isLoading) {
     return (
-      <div className="flex flex-col h-full overflow-hidden bg-white rounded-[2rem] shadow-2xl animate-pulse">
+      <div className="flex flex-col h-full overflow-hidden bg-[#fdfaf5] rounded-[2rem] shadow-2xl animate-pulse">
         <div className="p-2 border-b flex justify-between gap-4 shrink-0">
           <div className="w-48 h-8 bg-muted rounded-xl" />
           <div className="w-32 h-8 bg-muted rounded-full" />
@@ -374,7 +365,7 @@ const CalendarContent: React.FC = () => {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col h-full overflow-hidden bg-white rounded-[2rem] shadow-2xl shadow-black/5 ring-1 ring-black/5">
+      <div className="flex flex-col h-full overflow-hidden bg-[#fdfaf5] rounded-[2rem] shadow-2xl shadow-black/5 ring-1 ring-black/5">
         <div className="p-1 border-b flex flex-wrap items-center justify-between gap-1 shrink-0">
           <div className="flex items-center gap-1">
             <div className="flex items-center gap-1 bg-muted p-1 rounded-full">
@@ -476,7 +467,7 @@ const CalendarContent: React.FC = () => {
 
         <div 
           ref={scrollContainerRef}
-          className="flex-1 overflow-auto relative bg-white scroll-smooth"
+          className="flex-1 overflow-auto relative bg-[#fdfaf5] scroll-smooth"
         >
           {viewMode === 'kids' ? (
              <KidsCalendarView 
@@ -489,16 +480,18 @@ const CalendarContent: React.FC = () => {
           ) : (
           <div className="flex min-w-[800px] min-h-full">
             {/* Time Labels Column */}
-            <div className="w-16 sticky left-0 z-50 bg-white/80 backdrop-blur-md border-r shrink-0">
-              <div style={{ height: `${TOTAL_HEADER_HEIGHT}px` }} className="border-b border-muted/30" />
+            <div className="w-16 sticky left-0 z-50 bg-[#fdfaf5]/90 backdrop-blur-md border-r border-muted/15 shrink-0">
+              <div style={{ height: `${TOTAL_HEADER_HEIGHT}px` }} className="border-b border-muted/15" />
               <div className="relative">
                 {timeSlots.map(slot => (
-                  <div key={slot} className="h-24 relative border-b border-muted/30">
-                    <div className="absolute top-0 left-0 w-full flex items-center justify-center -translate-y-1/2">
-                      <span className="bg-white/90 px-1 text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none">
-                        {formatTime(slot)}
-                      </span>
-                    </div>
+                  <div key={slot} className="h-24 relative">
+                    {slot.endsWith(':00') && (
+                      <div className="absolute top-0 left-0 w-full flex items-center justify-center -translate-y-1/2">
+                        <span className="text-[9px] font-medium text-muted-foreground/50 leading-none">
+                          {formatTime(slot).replace(':00', '')}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -513,12 +506,27 @@ const CalendarContent: React.FC = () => {
 
                 return (
                   <div key={day.toISOString()} className="flex-1 border-r last:border-r-0 min-w-0 flex flex-col min-h-full">
-                    <div 
-                      className="flex items-center justify-center text-[10px] font-black sticky top-0 z-40 bg-white/80 backdrop-blur-sm uppercase tracking-[0.2em] text-muted-foreground shrink-0 border-b border-muted/30"
-                      style={{ height: `${DAY_HEADER_HEIGHT}px` }}
-                    >
-                      {format(day, 'EEEE d')}
-                    </div>
+                    {(() => {
+                      const isToday = format(day, 'yyyy-MM-dd') === format(nowTime, 'yyyy-MM-dd');
+                      return (
+                        <div
+                          className="flex items-center justify-center sticky top-0 z-40 bg-[#fdfaf5]/90 backdrop-blur-sm shrink-0 border-b border-muted/15"
+                          style={{ height: `${DAY_HEADER_HEIGHT}px` }}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <span className={cn("text-[9px] font-medium uppercase tracking-wider", isToday ? "text-primary" : "text-muted-foreground/50")}>
+                              {format(day, 'EEE')}
+                            </span>
+                            <span className={cn(
+                              "w-6 h-6 flex items-center justify-center rounded-full text-[11px] font-black transition-colors",
+                              isToday ? "bg-primary text-white shadow-sm" : "text-muted-foreground/70"
+                            )}>
+                              {format(day, 'd')}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     <div className="flex-1 flex relative min-h-full">
                       {filteredPersons.map(p => {
@@ -537,12 +545,12 @@ const CalendarContent: React.FC = () => {
                           <div key={p.id} className="flex-1 border-r last:border-r-0 relative group min-h-full flex flex-col">
                             {selectedPersonId === 'all' && (
                               <div 
-                                className="flex items-center justify-center text-sm font-black border-b border-muted/30 sticky z-30 transition-colors uppercase tracking-widest shrink-0" 
-                                style={{ 
+                                className="flex items-center justify-center text-sm font-black border-b border-muted/15 sticky z-30 transition-colors uppercase tracking-widest shrink-0"
+                                style={{
                                   height: `${PERSON_HEADER_HEIGHT}px`,
                                   top: `${DAY_HEADER_HEIGHT}px`,
-                                  backgroundColor: `white`, 
-                                  color: p.color, 
+                                  backgroundColor: '#fdfaf5',
+                                  color: p.color,
                                 }}
                               >
                                 <div className="flex flex-col items-center gap-0.5 p-1">
@@ -570,8 +578,15 @@ const CalendarContent: React.FC = () => {
                             <div className="relative flex-1">
                               {/* Background Grid Lines (matching labels) */}
                               <div className="absolute inset-0 pointer-events-none">
-                                {timeSlots.map(slot => (
-                                  <div key={slot} className="h-24 border-b border-muted/30" />
+                                {timeSlots.map((slot, idx) => (
+                                  <div
+                                    key={slot}
+                                    className={cn(
+                                      "h-24",
+                                      slot.endsWith(':00') ? "border-b border-muted/20" : "border-b border-dashed border-muted/10",
+                                      Math.floor(idx / 2) % 2 !== 0 && "bg-amber-50/30"
+                                    )}
+                                  />
                                 ))}
                               </div>
 
@@ -603,6 +618,23 @@ const CalendarContent: React.FC = () => {
                           </div>
                         )
                       })}
+
+                      {/* Current time indicator */}
+                      {format(day, 'yyyy-MM-dd') === format(nowTime, 'yyyy-MM-dd') && (() => {
+                        const nowMins = nowTime.getHours() * 60 + nowTime.getMinutes();
+                        const startMins = timeToMinutes(settings.dayStartTime);
+                        const topPx = PERSON_HEADER_HEIGHT + ((nowMins - startMins) / 15) * SLOT_HEIGHT_15MIN;
+                        if (topPx < PERSON_HEADER_HEIGHT) return null;
+                        return (
+                          <div
+                            className="absolute left-0 right-0 z-50 pointer-events-none flex items-center"
+                            style={{ top: `${topPx}px` }}
+                          >
+                            <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm shrink-0 -translate-x-1" />
+                            <div className="flex-1 h-px bg-rose-400/70" />
+                          </div>
+                        );
+                      })()}
 
                       {selectedPersonId === 'all' && (
                         <div className="absolute inset-x-0 bottom-0 pointer-events-none" style={{ top: `${PERSON_HEADER_HEIGHT + DAY_HEADER_HEIGHT}px` }}>
