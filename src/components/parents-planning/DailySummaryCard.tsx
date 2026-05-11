@@ -30,10 +30,8 @@ export function DailySummaryCard({ selectedDate }: { selectedDate: Date }) {
           {kids.map(kid => {
             const logs = executionLogs.filter(l => l.childId === kid.id && l.date === dateStr);
             const completed = logs.filter(l => l.completed).length;
-            const independent = logs.filter(l => l.completed && l.completionType === 'independent').length;
 
             const completionRate = logs.length > 0 ? completed / logs.length : 0;
-            const independenceRate = completed > 0 ? independent / completed : 0;
 
             let totalExpected = 0;
             let totalActual = 0;
@@ -56,13 +54,9 @@ export function DailySummaryCard({ selectedDate }: { selectedDate: Date }) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white rounded-2xl p-4 border shadow-sm">
+                  <div className="bg-white rounded-2xl p-4 border shadow-sm col-span-2">
                     <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 opacity-60">{pt.completion}</p>
                     <p className="text-3xl font-black">{(completionRate * 100).toFixed(0)}%</p>
-                  </div>
-                  <div className="bg-white rounded-2xl p-4 border shadow-sm">
-                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 opacity-60">{pt.independence}</p>
-                    <p className="text-3xl font-black">{(independenceRate * 100).toFixed(0)}%</p>
                   </div>
                   <div className="col-span-2 bg-white rounded-2xl p-4 border shadow-sm flex items-center justify-between">
                     <div>

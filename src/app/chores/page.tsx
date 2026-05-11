@@ -126,10 +126,10 @@ export default function ChoresPage() {
     });
   };
 
-  const toggleCompletion = (choreId: string, completionType?: 'independent' | 'with_help') => {
+  const toggleCompletion = (choreId: string) => {
     const sc = scheduledChores.find(s => s.id === choreId);
     if (!sc) return;
-    updateChoreOverride(choreId, selectedDate, { completed: !sc.override?.completed }, completionType);
+    updateChoreOverride(choreId, selectedDate, { completed: !sc.override?.completed });
   };
 
   const handleManualAssign = (choreId: string, personId: string) => {
@@ -258,20 +258,12 @@ export default function ChoresPage() {
                                 ✅ Done
                               </button>
                             ) : (
-                              <div className="flex flex-col gap-2">
-                                <button 
-                                  onClick={() => toggleCompletion(sc.id, 'independent')}
-                                  className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-black py-2 px-3 rounded-2xl flex items-center gap-2 transition-colors border-2 border-emerald-200 shadow-sm whitespace-nowrap text-xs"
-                                >
-                                  🖐️ Alone
-                                </button>
-                                <button 
-                                  onClick={() => toggleCompletion(sc.id, 'with_help')}
-                                  className="bg-amber-100 text-amber-700 hover:bg-amber-200 font-black py-2 px-3 rounded-2xl flex items-center gap-2 transition-colors border-2 border-amber-200 shadow-sm whitespace-nowrap text-xs"
-                                >
-                                  🤝 Help
-                                </button>
-                              </div>
+                              <button
+                                onClick={() => toggleCompletion(sc.id)}
+                                className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-black py-2 px-3 rounded-2xl flex items-center gap-2 transition-colors border-2 border-emerald-200 shadow-sm whitespace-nowrap text-xs"
+                              >
+                                ☑️ Mark Done
+                              </button>
                             )}
                           </div>
                         </div>

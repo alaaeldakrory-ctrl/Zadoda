@@ -25,11 +25,10 @@ export function WeeklyDashboard({ selectedDate }: { selectedDate: Date }) {
       new Date(l.date) <= endDate
     );
 
-    if (logs.length === 0) return { completionRate: 0, independenceRate: 0, avgDelayRatio: 1, totalTasks: 0 };
+    if (logs.length === 0) return { completionRate: 0, avgDelayRatio: 1, totalTasks: 0 };
 
     const completed = logs.filter(l => l.completed).length;
-    const independent = logs.filter(l => l.completed && l.completionType === 'independent').length;
-    
+
     let totalExpected = 0;
     let totalActual = 0;
     logs.filter(l => l.completed).forEach(l => {
@@ -39,7 +38,6 @@ export function WeeklyDashboard({ selectedDate }: { selectedDate: Date }) {
 
     return {
       completionRate: logs.length > 0 ? completed / logs.length : 0,
-      independenceRate: completed > 0 ? independent / completed : 0,
       avgDelayRatio: totalExpected > 0 ? totalActual / totalExpected : 1,
       totalTasks: logs.length
     };
@@ -119,13 +117,9 @@ export function WeeklyDashboard({ selectedDate }: { selectedDate: Date }) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white rounded-3xl p-6 border shadow-sm flex flex-col justify-center">
+                  <div className="col-span-2 bg-white rounded-3xl p-6 border shadow-sm flex flex-col justify-center">
                     <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2 opacity-50">{pt.completion}</p>
                     <p className="text-4xl font-black">{(currentStats.completionRate * 100).toFixed(0)}%</p>
-                  </div>
-                  <div className="bg-white rounded-3xl p-6 border shadow-sm flex flex-col justify-center">
-                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2 opacity-50">{pt.independence}</p>
-                    <p className="text-4xl font-black">{(currentStats.independenceRate * 100).toFixed(0)}%</p>
                   </div>
                   <div className="col-span-2 bg-white rounded-3xl p-6 border shadow-sm flex items-center justify-between">
                     <div>

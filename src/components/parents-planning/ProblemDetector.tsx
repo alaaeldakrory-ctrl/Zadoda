@@ -41,10 +41,8 @@ export function ProblemDetector() {
       if (recentLogs.length === 0) return;
 
       const completed = recentLogs.filter(l => l.completed).length;
-      const independent = recentLogs.filter(l => l.completed && l.completionType === 'independent').length;
-      
+
       const completionRate = completed / recentLogs.length;
-      const independenceRate = completed > 0 ? independent / completed : 0;
 
       let totalExpected = 0;
       let totalActual = 0;
@@ -66,22 +64,6 @@ export function ProblemDetector() {
             severity: 'high',
             actions: [
               { label: 'Simplify Routine', onClick: () => alert('Opening Routine Editor... (Suggested: remove tasks)') }
-            ]
-          });
-        }
-
-        if (independenceRate < 0.5 && completed > 0) {
-          problems.push({
-            id: `${kid.id}-independence`,
-            childId: kid.id,
-            type: 'low_independence',
-            title: 'High Dependency',
-            message: 'Needs help on most tasks.',
-            severity: 'medium',
-            actions: [
-              { label: 'Simplify Routine', onClick: () => alert('Opening Routine Editor...') },
-              { label: 'Reduce Steps', onClick: () => alert('Auto-suggesting removal of lowest priority tasks...') },
-              { label: 'Reward Independence', onClick: () => alert('Opening Reward Settings to add independence bonus...') }
             ]
           });
         }

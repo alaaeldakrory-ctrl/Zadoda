@@ -96,7 +96,6 @@ export interface TaskExecutionLog {
   type: 'calendar' | 'chore' | 'checklist' | 'memo';
   date: string; // ISO_date YYYY-MM-DD
   completed: boolean;
-  completionType: 'independent' | 'with_help' | null;
   completionTimeSeconds: number; // For now, can be estimated or calculated from delay
   expectedTimeSeconds: number;
 }

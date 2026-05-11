@@ -92,9 +92,9 @@ const KidsCalendarView: React.FC<{ day: Date, personId: string, series: any[], o
   const now = displayedOccurrences.filter(occ => isToday && timeToMinutes(occ.startTime) <= nowMinutes && timeToMinutes(occ.endTime) > nowMinutes);
   const future = displayedOccurrences.filter(occ => !isToday || timeToMinutes(occ.startTime) > nowMinutes);
 
-  const handleToggle = (seriesId: string, date: string, type?: 'independent' | 'with_help') => {
+  const handleToggle = (seriesId: string, date: string) => {
     playDing();
-    toggleCompletion(seriesId, date, type);
+    toggleCompletion(seriesId, date);
     
     const overrideId = `${seriesId}_${date}`;
     const existing = overrides.find(o => o.id === overrideId);
@@ -140,29 +140,17 @@ const KidsCalendarView: React.FC<{ day: Date, personId: string, series: any[], o
                     </div>
                   </div>
                   <div className="flex items-center justify-center p-4">
-                    {isCompleted ? (
-                      <button 
-                        onClick={() => handleToggle(occ.seriesId, occ.date)}
-                        className="bg-primary/20 text-primary font-black py-3 px-6 rounded-2xl flex items-center gap-2 shadow-inner border-2 border-primary/30"
-                      >
-                        ✅ Done
-                      </button>
-                    ) : (
-                      <div className="flex flex-col gap-2">
-                        <button 
-                          onClick={() => handleToggle(occ.seriesId, occ.date, 'independent')}
-                          className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-black py-2.5 px-4 rounded-2xl flex items-center gap-2 transition-colors border-2 border-emerald-200 shadow-sm whitespace-nowrap text-sm"
-                        >
-                          🖐️ Done Alone
-                        </button>
-                        <button 
-                          onClick={() => handleToggle(occ.seriesId, occ.date, 'with_help')}
-                          className="bg-amber-100 text-amber-700 hover:bg-amber-200 font-black py-2.5 px-4 rounded-2xl flex items-center gap-2 transition-colors border-2 border-amber-200 shadow-sm whitespace-nowrap text-sm"
-                        >
-                          🤝 With Help
-                        </button>
-                      </div>
-                    )}
+                    <button
+                      onClick={() => handleToggle(occ.seriesId, occ.date)}
+                      className={cn(
+                        "font-black py-3 px-6 rounded-2xl flex items-center gap-2 border-2 transition-all",
+                        isCompleted
+                          ? "bg-primary/20 text-primary shadow-inner border-primary/30"
+                          : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200 shadow-sm"
+                      )}
+                    >
+                      {isCompleted ? "✅ Done" : "☑️ Mark Done"}
+                    </button>
                   </div>
                 </div>
               </Card>

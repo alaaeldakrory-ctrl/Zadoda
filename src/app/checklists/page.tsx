@@ -129,7 +129,7 @@ export default function CheckListsPage() {
 
   const dateKey = format(currentDate, 'yyyy-MM-dd');
 
-  const toggleItem = (list: any, itemIndex: number, completionType: 'independent' | 'with_help' = 'independent') => {
+  const toggleItem = (list: any, itemIndex: number) => {
     const key = `${dateKey}-${selectedPersonId}-${list.id}-${itemIndex}`;
     const willBeChecked = !checkedItems[key];
     
@@ -145,7 +145,6 @@ export default function CheckListsPage() {
           type: 'checklist',
           date: dateKey,
           completed: true,
-          completionType: completionType,
           completionTimeSeconds: 30,
           expectedTimeSeconds: 60
         });
@@ -309,20 +308,12 @@ export default function CheckListsPage() {
                                   ✅ Done
                                 </button>
                               ) : (
-                                <div className="flex flex-col gap-2">
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); toggleItem(list, index, 'independent'); }}
-                                    className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-black py-2 px-3 rounded-xl flex items-center gap-2 transition-colors border-2 border-emerald-200 shadow-sm whitespace-nowrap text-xs"
-                                  >
-                                    🖐️ Alone
-                                  </button>
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); toggleItem(list, index, 'with_help'); }}
-                                    className="bg-amber-100 text-amber-700 hover:bg-amber-200 font-black py-2 px-3 rounded-xl flex items-center gap-2 transition-colors border-2 border-amber-200 shadow-sm whitespace-nowrap text-xs"
-                                  >
-                                    🤝 Help
-                                  </button>
-                                </div>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); toggleItem(list, index); }}
+                                  className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-black py-2 px-3 rounded-xl flex items-center gap-2 transition-colors border-2 border-emerald-200 shadow-sm whitespace-nowrap text-xs"
+                                >
+                                  ☑️ Mark Done
+                                </button>
                               )}
                             </div>
                             <span 

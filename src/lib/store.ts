@@ -52,9 +52,9 @@ interface StoreContextValue {
   addChore: (c: Chore) => void;
   updateChore: (id: string, updates: Partial<Chore>) => void;
   deleteChore: (id: string) => void;
-  updateChoreOverride: (choreId: string, date: string, updates: Partial<ChoreOverride>, completionType?: 'independent' | 'with_help') => void;
+  updateChoreOverride: (choreId: string, date: string, updates: Partial<ChoreOverride>) => void;
   deleteChoreOverride: (choreId: string, date: string) => void;
-  toggleCompletion: (seriesId: string, date: string, completionType?: 'independent' | 'with_help') => void;
+  toggleCompletion: (seriesId: string, date: string) => void;
   updateOccurrence: (seriesId: string, date: string, updates: Partial<CalendarEventOccurrenceOverride>) => void;
   moveEvent: (seriesId: string, date: string, newStartTime: string, newPersonId: string) => void;
   addTaskExecutionLog: (log: Omit<TaskExecutionLog, 'id'>) => void;
@@ -258,7 +258,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     deleteDocumentNonBlocking(docRef);
   };
 
-  const updateChoreOverride = (choreId: string, date: string, updates: Partial<ChoreOverride>, completionType?: 'independent' | 'with_help') => {
+  const updateChoreOverride = (choreId: string, date: string, updates: Partial<ChoreOverride>) => {
     const overrideId = `${choreId}_${date}`;
     const overrideRef = doc(db, 'chores', choreId, 'overrides', overrideId);
     
@@ -282,7 +282,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         type: 'chore',
         date: date,
         completed: true,
-        completionType: completionType || (!isParentUnlocked ? 'independent' : 'with_help'),
         completionTimeSeconds: 60, // Estimate 1 min for chores right now
         expectedTimeSeconds: 300 // 5 mins expected
       });
@@ -295,7 +294,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     deleteDocumentNonBlocking(overrideRef);
   };
 
-  const toggleCompletion = (seriesId: string, date: string, completionType?: 'independent' | 'with_help') => {
+  const toggleCompletion = (seriesId: string, date: string) => {
     const overrideId = `${seriesId}_${date}`;
     const existing = overrides.find(o => o.id === overrideId);
     const overrideRef = doc(db, 'calendarEventSeries', seriesId, 'eventOccurrenceOverrides', overrideId);
@@ -321,7 +320,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           type: 'calendar',
           date: date,
           completed: true,
-          completionType: completionType || (!isParentUnlocked ? 'independent' : 'with_help'),
           completionTimeSeconds: expectedSeconds, // Default to expected since we don't track start time
           expectedTimeSeconds: expectedSeconds
         });
