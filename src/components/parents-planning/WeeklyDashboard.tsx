@@ -76,7 +76,7 @@ export function WeeklyDashboard({ selectedDate }: { selectedDate: Date }) {
   };
 
   return (
-    <Card className="rounded-[2.5rem] border-2 shadow-xl bg-white overflow-hidden">
+    <Card className="rounded-[2.5rem] border shadow-sm bg-card overflow-hidden">
       <CardHeader className="bg-muted/10 pb-4 border-b">
         <CardTitle className="text-2xl font-black flex items-center gap-2">
           {pt.weeklyDashboard}
@@ -117,11 +117,11 @@ export function WeeklyDashboard({ selectedDate }: { selectedDate: Date }) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2 bg-white rounded-3xl p-6 border shadow-sm flex flex-col justify-center">
+                  <div className="col-span-2 bg-muted/30 rounded-3xl p-6 border flex flex-col justify-center">
                     <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2 opacity-50">{pt.completion}</p>
                     <p className="text-4xl font-black">{(currentStats.completionRate * 100).toFixed(0)}%</p>
                   </div>
-                  <div className="col-span-2 bg-white rounded-3xl p-6 border shadow-sm flex items-center justify-between">
+                  <div className="col-span-2 bg-muted/30 rounded-3xl p-6 border flex items-center justify-between">
                     <div>
                       <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2 opacity-50">{pt.delayRatio}</p>
                       <p className="text-2xl font-black">{currentStats.avgDelayRatio.toFixed(1)}x <span className="text-xs font-bold text-muted-foreground ml-2 opacity-60">({pt.ideal})</span></p>

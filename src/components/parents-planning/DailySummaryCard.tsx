@@ -18,7 +18,7 @@ export function DailySummaryCard({ selectedDate }: { selectedDate: Date }) {
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
   return (
-    <Card className="rounded-[2.5rem] border-2 shadow-xl bg-white overflow-hidden">
+    <Card className="rounded-[2.5rem] border shadow-sm bg-card overflow-hidden">
       <CardHeader className="bg-primary/5 pb-4 border-b border-primary/10">
         <CardTitle className="text-2xl font-black flex items-center gap-2 text-primary">
           <LayoutDashboard className="w-6 h-6" />
@@ -54,11 +54,11 @@ export function DailySummaryCard({ selectedDate }: { selectedDate: Date }) {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white rounded-2xl p-4 border shadow-sm col-span-2">
+                  <div className="bg-muted/30 rounded-2xl p-4 border col-span-2">
                     <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 opacity-60">{pt.completion}</p>
                     <p className="text-3xl font-black">{(completionRate * 100).toFixed(0)}%</p>
                   </div>
-                  <div className="col-span-2 bg-white rounded-2xl p-4 border shadow-sm flex items-center justify-between">
+                  <div className="col-span-2 bg-muted/30 rounded-2xl p-4 border flex items-center justify-between">
                     <div>
                       <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 opacity-60">{pt.delayRatio}</p>
                       <p className="text-xl font-black">{avgDelayRatio.toFixed(1)}x <span className="text-[10px] font-bold text-muted-foreground ml-2 opacity-50">({pt.ideal})</span></p>

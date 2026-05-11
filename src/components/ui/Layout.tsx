@@ -5,7 +5,7 @@ import React, { Suspense } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { cn, getAvatarUrl, getPersonName } from '@/lib/utils';
-import { Calendar, Layers, Settings, Globe, StickyNote, Plus, Users, ClipboardList, CheckSquare, Lock, Unlock } from 'lucide-react';
+import { Calendar, Layers, Settings, Globe, StickyNote, Plus, Users, ClipboardList, CheckSquare, Lock, Unlock, Tv2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -161,7 +161,7 @@ const MobileBottomNav = () => {
   };
 
   return (
-    <nav className="border-t flex lg:hidden bg-white/95 backdrop-blur-xl sticky bottom-0 z-30 px-2 pb-[env(safe-area-inset-bottom)] pt-2 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)]">
+    <nav className="border-t flex lg:hidden bg-card/95 backdrop-blur-xl sticky bottom-0 z-30 px-2 pb-[env(safe-area-inset-bottom)] pt-2 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.08)]">
       <div className="flex w-full justify-around items-center">
         {navItems.map(item => {
           const isActive = pathname === item.href;
@@ -208,7 +208,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
 
   return (
     <div className="flex h-screen bg-background overflow-hidden selection:bg-primary selection:text-primary-foreground">
-      <aside className="w-80 border-r flex flex-col hidden lg:flex bg-white relative z-20">
+      <aside className="w-80 border-r flex flex-col hidden lg:flex bg-card relative z-20">
         <div className="pt-4 pb-8 flex flex-col items-center text-center">
           <Link href="/" className="flex flex-col items-center gap-6 group">
             <div className="w-32 h-32 rounded-full overflow-hidden shadow-2xl shadow-primary/30 border-4 border-primary/20 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-primary/40 group-hover:border-primary/40">
@@ -240,9 +240,16 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           </Suspense>
         </nav>
 
-        <div className="p-8 border-t bg-muted/5">
-          <Button 
-            variant="ghost" 
+        <div className="p-8 border-t bg-muted/5 flex flex-col gap-2">
+          <Link
+            href="/tv"
+            className="flex items-center gap-4 px-6 py-3 rounded-2xl font-bold text-muted-foreground hover:bg-white hover:text-foreground hover:shadow-sm transition-all group"
+          >
+            <Tv2 className="w-5 h-5 group-hover:text-primary transition-colors" />
+            <span className="text-base">Wall / TV Mode</span>
+          </Link>
+          <Button
+            variant="ghost"
             className="w-full justify-start gap-4 h-14 rounded-2xl font-bold hover:bg-white hover:shadow-sm transition-all"
             onClick={() => setLanguage(settings.language === 'en' ? 'ar' : 'en')}
           >
@@ -252,7 +259,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col min-w-0 bg-[#F9F9F9] relative overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 bg-background relative overflow-hidden">
         <div className="flex-1 p-2 lg:p-4 overflow-y-auto relative h-full">
           {children}
         </div>

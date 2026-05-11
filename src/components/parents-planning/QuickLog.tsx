@@ -39,7 +39,7 @@ export function QuickLog() {
   };
 
   return (
-    <Card className="rounded-[2.5rem] border-2 shadow-xl bg-white overflow-hidden">
+    <Card className="rounded-[2.5rem] border shadow-sm bg-card overflow-hidden">
       <CardHeader className="bg-purple-50/50 pb-4 border-b border-purple-100">
         <CardTitle className="text-2xl font-black flex items-center gap-2 text-purple-600">
           <MessageSquare className="w-6 h-6" />

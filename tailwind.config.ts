@@ -11,8 +11,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Inter', 'sans-serif'],
+        body: ['DM Sans', 'system-ui', 'sans-serif'],
+        headline: ['Playfair Display', 'Georgia', 'serif'],
         code: ['monospace'],
       },
       colors: {

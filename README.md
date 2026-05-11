@@ -17,3 +17,4 @@ Zadoda Scheduler is a premium, family-first organization tool designed for moder
 - **Styling:** Tailwind CSS & ShadCN UI
 - **Typography:** Outfit (Bold & Professional)
 - **Icons:** Lucide React
+Hey do you hear me

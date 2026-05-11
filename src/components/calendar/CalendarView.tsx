@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense, useRef } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
-import { generateTimeSlots, getOccurrencesForDate, formatTime, cn, getAvatarUrl, getPersonName, timeToMinutes, getEmojiForEvent } from '@/lib/utils';
+import { generateTimeSlots, getOccurrencesForDate, formatTime, cn, getAvatarUrl, getPersonName, timeToMinutes, getEmojiForEvent, calculateStreak } from '@/lib/utils';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { EventBlock } from './EventBlock';
 import { EventDialog } from './EventDialog';
@@ -67,8 +67,14 @@ const playDing = () => {
 
 
 const KidsCalendarView: React.FC<{ day: Date, personId: string, series: any[], overrides: any[], toggleCompletion: any }> = ({ day, personId, series, overrides, toggleCompletion }) => {
-  const { persons, settings } = useStore();
+  const { persons, settings, executionLogs } = useStore();
   const person = persons.find(p => p.id === personId);
+  const streak = person ? calculateStreak(person.id, executionLogs) : 0;
+  const todayStr = format(day, 'yyyy-MM-dd');
+  const todayPoints = person
+    ? executionLogs.filter(l => l.childId === person.id && l.date === todayStr && l.completed).length * 10
+      + (streak > 1 ? (streak - 1) * 2 : 0)
+    : 0;
   const dayOccurrences = getOccurrencesForDate(series, day, overrides);
   // Filter for the selected person, kids, or everyone
   let displayedOccurrences = dayOccurrences;
@@ -184,7 +190,21 @@ const KidsCalendarView: React.FC<{ day: Date, personId: string, series: any[], o
             </div>
             <div>
               <h2 className="text-4xl lg:text-5xl font-black" style={{ color: person.color }}>{getPersonName(person, settings.language)}</h2>
-              <p className="text-muted-foreground font-black uppercase tracking-[0.2em] text-sm mt-1 opacity-50">My Calendar</p>
+              <div className="flex items-center gap-3 mt-1">
+                <p className="text-muted-foreground font-black uppercase tracking-[0.2em] text-sm opacity-50">My Calendar</p>
+                {streak > 0 && (
+                  <div className="flex items-center gap-1.5 bg-amber-50 border-2 border-amber-200 rounded-full px-3 py-0.5">
+                    <span className="text-base">🔥</span>
+                    <span className="text-sm font-black text-amber-600">{streak} day{streak !== 1 ? 's' : ''}</span>
+                  </div>
+                )}
+                {todayPoints > 0 && (
+                  <div className="flex items-center gap-1.5 bg-yellow-50 border-2 border-yellow-200 rounded-full px-3 py-0.5">
+                    <span className="text-base">⭐</span>
+                    <span className="text-sm font-black text-yellow-600">{todayPoints} pts</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

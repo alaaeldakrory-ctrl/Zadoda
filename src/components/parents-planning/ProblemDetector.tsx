@@ -5,7 +5,7 @@ import { useStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getPersonName, getAvatarUrl } from '@/lib/utils';
 import { getTranslation } from '@/lib/i18n';
-import { AlertTriangle, Info, Clock, CheckCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
 import { addDays } from 'date-fns';
 
@@ -27,7 +27,7 @@ export function ProblemDetector() {
   const kids = persons.filter(p => p.id === 'person1' || p.id === 'person2');
 
   const now = new Date();
-  const last3Days = addDays(now, -3);
+  const last3Days = addDays(now, -14);
 
   const generateProblems = (): Problem[] => {
     const problems: Problem[] = [];
@@ -53,7 +53,7 @@ export function ProblemDetector() {
       const avgDelayRatio = totalExpected > 0 ? totalActual / totalExpected : 1;
 
       // Only trigger if there is enough data
-      if (recentLogs.length >= 3) {
+      if (recentLogs.length >= 5) {
         if (completionRate < 0.6) {
           problems.push({
             id: `${kid.id}-completion`,
@@ -91,7 +91,7 @@ export function ProblemDetector() {
   const problems = generateProblems();
 
   return (
-    <Card className="rounded-[2.5rem] border-2 shadow-xl bg-white overflow-hidden">
+    <Card className="rounded-[2.5rem] border shadow-sm bg-card overflow-hidden">
       <CardHeader className="bg-amber-50/50 pb-4 border-b border-amber-100">
         <CardTitle className="text-2xl font-black flex items-center gap-2 text-amber-600">
           <AlertTriangle className="w-6 h-6" />

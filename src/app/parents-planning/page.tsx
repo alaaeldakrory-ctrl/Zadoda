@@ -11,9 +11,11 @@ import { ProblemDetector } from '@/components/parents-planning/ProblemDetector';
 import { ParentLogsV2 } from '@/components/parents-planning/ParentLogsV2';
 import { DailySummaryCard } from '@/components/parents-planning/DailySummaryCard';
 import { ParentSelfJournal } from '@/components/parents-planning/ParentSelfJournal';
+import { PointsEngine } from '@/components/parents-planning/PointsEngine';
+import { DayOfWeekInsights } from '@/components/parents-planning/DayOfWeekInsights';
+import { RoutineCoach } from '@/components/parents-planning/RoutineCoach';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format, addDays, isSameDay } from 'date-fns';
-import { cn } from '@/lib/utils';
 
 export default function ParentsPlanningPage() {
   const { settings, isParentUnlocked } = useStore();
@@ -28,7 +30,6 @@ export default function ParentsPlanningPage() {
   if (!isParentUnlocked) return null;
 
   const isToday = isSameDay(selectedDate, new Date());
-  const isFuture = selectedDate > new Date();
 
   return (
     <AppLayout>
@@ -39,11 +40,11 @@ export default function ParentsPlanningPage() {
           <div className="p-3 bg-primary/10 rounded-2xl text-primary">
             <Layers className="w-8 h-8" />
           </div>
-          <h1 className="text-4xl font-black tracking-tight">{t.parentsPlanningFull.parentsPlanning}</h1>
+          <h1 className="text-4xl font-black tracking-tight">{t.parentsPlanning}</h1>
         </div>
 
         {/* ── Global Date Navigator ── */}
-        <div className="flex items-center justify-between bg-white border-2 rounded-[2rem] px-6 py-4 shadow-sm">
+        <div className="flex items-center justify-between bg-card border rounded-[2rem] px-6 py-4 shadow-sm">
           <button
             onClick={() => setSelectedDate(d => addDays(d, -1))}
             className="p-2 hover:bg-muted/30 rounded-xl transition-all"
@@ -85,15 +86,21 @@ export default function ParentsPlanningPage() {
         {/* Daily stats */}
         <DailySummaryCard selectedDate={selectedDate} />
 
+        {/* Points & streaks */}
+        <PointsEngine />
+
         {/* Problem zones */}
         <ProblemDetector />
 
         {/* Weekly overview */}
         <WeeklyDashboard selectedDate={selectedDate} />
 
+        {/* Day-of-week patterns */}
+        <DayOfWeekInsights />
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-8">
-            <Card className="rounded-[2.5rem] border-2 shadow-xl bg-white overflow-hidden h-full">
+            <Card className="rounded-[2.5rem] border shadow-sm bg-card overflow-hidden h-full">
               <CardHeader className="bg-blue-50/50 pb-4 border-b border-blue-100">
                 <CardTitle className="text-2xl font-black flex items-center gap-2 text-blue-600">
                   <Target className="w-6 h-6" />
@@ -114,6 +121,9 @@ export default function ParentsPlanningPage() {
             <ParentLogsV2 selectedDate={selectedDate} />
           </div>
         </div>
+
+        {/* AI Routine Coach */}
+        <RoutineCoach />
 
         {/* ── Parent Self-Reflection Journal ── */}
         <div className="space-y-4">

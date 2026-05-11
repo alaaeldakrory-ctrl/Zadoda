@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { format, addMinutes, parse, isSameDay, startOfWeek, addDays, getDay } from 'date-fns';
-import { CalendarEventSeries, CalendarEventOccurrenceOverride, RecurrenceRule, Person, Language } from './types';
+import { format, addMinutes, parse, isSameDay, startOfWeek, addDays, getDay, subDays } from 'date-fns';
+import { CalendarEventSeries, CalendarEventOccurrenceOverride, RecurrenceRule, Person, Language, TaskExecutionLog } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 import { getTranslation } from './i18n';
 
@@ -134,6 +134,27 @@ export function minutesToTime(mins: number): string {
   const h = Math.floor(cappedMins / 60);
   const m = cappedMins % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+export function calculateStreak(childId: string, logs: TaskExecutionLog[]): number {
+  const completedDates = new Set(
+    logs.filter(l => l.childId === childId && l.completed).map(l => l.date)
+  );
+
+  let streak = 0;
+  let checkDate = new Date();
+
+  // If today has no completions yet, start counting from yesterday
+  if (!completedDates.has(format(checkDate, 'yyyy-MM-dd'))) {
+    checkDate = subDays(checkDate, 1);
+  }
+
+  while (completedDates.has(format(checkDate, 'yyyy-MM-dd'))) {
+    streak++;
+    checkDate = subDays(checkDate, 1);
+  }
+
+  return streak;
 }
 
 export function getEmojiForEvent(title: string): string {

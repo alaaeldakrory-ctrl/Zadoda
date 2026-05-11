@@ -120,10 +120,23 @@ export default function CheckListsPage() {
       title: 'Sleep Routine',
       items: []
     },
-    { 
-      id: 'leaving-home', 
+    {
+      id: 'leaving-home',
       title: 'Leaving Home Routine',
-      items: []
+      items: [
+        '🧴 مزيل عرق',
+        '👕 لبس مريح + شراب',
+        '🥞 وجبة خفيفة قبل التحرك',
+        '⌚ ساعة',
+        '🍎 سناكس',
+        '💧 زجاجة ماء',
+        '🧥 جاكيت + كاب + نظارة شمس',
+        '🚲 العجلة / الـ Skate / ألعاب',
+        '💇‍♀️ تسريح الشعر',
+        '👟 تجهيز الحذاء',
+        '🎒 شنطة الظهر',
+        '🤲 دعاء الخروج / الركوب',
+      ]
     },
   ];
 
