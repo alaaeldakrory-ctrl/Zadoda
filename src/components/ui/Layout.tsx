@@ -201,7 +201,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
   // Redirect to login when not authenticated
   React.useEffect(() => {
     if (!isAuthLoading && (!currentUser || currentUser.isAnonymous)) {
-      router.replace('/login');
+      router.replace('/');
     }
   }, [isAuthLoading, currentUser, router]);
   const t = getTranslation(settings.language);
