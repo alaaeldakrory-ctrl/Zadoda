@@ -178,13 +178,17 @@ export const LandingPage = () => {
   const auth = useAuth();
   const router = useRouter();
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
 
   const handleGoogle = async () => {
     setGoogleLoading(true);
+    setGoogleError(null);
     try {
       await signInWithGoogle(auth);
       router.push('/');
-    } catch {
+    } catch (err: any) {
+      console.error('Google sign-in error:', err);
+      setGoogleError(err?.code || err?.message || 'Sign-in failed');
       setGoogleLoading(false);
     }
   };
@@ -232,6 +236,11 @@ export const LandingPage = () => {
             <p className="text-xl text-gray-500 max-w-lg leading-relaxed font-medium">
               The premium family scheduler that brings peace to your daily routine. Shared calendars, chore tracking, and parenting tools — beautifully designed.
             </p>
+            {googleError && (
+              <p className="text-sm font-bold text-red-500 bg-red-50 border border-red-200 rounded-2xl px-4 py-2">
+                Error: {googleError}
+              </p>
+            )}
             <div className="flex flex-col sm:flex-row gap-4">
               <button onClick={handleGoogle} disabled={googleLoading}
                 className="flex items-center justify-center gap-3 h-14 px-7 rounded-2xl border-2 border-gray-200 bg-white font-bold text-base hover:border-[#6C5CE7]/40 hover:bg-[#6C5CE7]/5 transition-all shadow-sm disabled:opacity-50">
