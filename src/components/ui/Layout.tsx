@@ -277,7 +277,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 bg-background relative overflow-hidden">
-        <div className="flex-1 p-2 lg:p-4 overflow-y-auto relative h-full">
+        <div className="flex-1 p-2 lg:p-4 pt-[max(0.5rem,env(safe-area-inset-top))] lg:pt-4 overflow-y-auto relative h-full">
           {children}
         </div>
 

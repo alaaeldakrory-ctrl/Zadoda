@@ -82,6 +82,20 @@
   100% { transform: scale(1); }
 }
 
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Prevent pull-to-refresh jank on iOS */
+body {
+  overscroll-behavior-y: contain;
+}
+
 .animate-pop {
   animation: pop 0.2s ease-out;
 }

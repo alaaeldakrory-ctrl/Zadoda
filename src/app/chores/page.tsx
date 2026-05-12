@@ -138,7 +138,7 @@ export default function ChoresPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto space-y-10 pb-20 px-4">
+      <div className="max-w-6xl mx-auto space-y-6 sm:space-y-10 pb-24 px-3 sm:px-4">
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8">
           <div className="space-y-2">
@@ -227,7 +227,7 @@ export default function ChoresPage() {
 
                   return (
                     <div key={sc.id} className={cn(
-                      "group p-10 min-h-[240px] bg-white rounded-[3.5rem] border-2 transition-all relative overflow-hidden flex flex-col justify-between",
+                      "group p-5 sm:p-10 min-h-[200px] sm:min-h-[240px] bg-white rounded-[2.5rem] sm:rounded-[3.5rem] border-2 transition-all relative overflow-hidden flex flex-col justify-between",
                       isCompleted ? "border-green-500/20 bg-green-50/10 grayscale-[0.3]" : "hover:shadow-2xl hover:-translate-y-1 border-muted shadow-sm"
                     )}>
                       <div className="flex justify-between items-start mb-8 gap-6">
@@ -364,8 +364,8 @@ export default function ChoresPage() {
       {/* Dialog: Pick from Library */}
       <Dialog open={isPickDialogOpen} onOpenChange={setIsPickDialogOpen}>
         <DialogContent className="rounded-[3rem] sm:max-w-[550px] border-2 shadow-2xl p-0 overflow-hidden">
-          <DialogHeader className="p-10 pb-4">
-            <DialogTitle className="text-3xl font-black tracking-tight">Pick from Library</DialogTitle>
+          <DialogHeader className="p-6 sm:p-10 pb-4">
+            <DialogTitle className="text-2xl sm:text-3xl font-black tracking-tight">Pick from Library</DialogTitle>
           </DialogHeader>
           <div className="px-10 pb-10 space-y-4 max-h-[60vh] overflow-y-auto">
             {chores.length === 0 ? (

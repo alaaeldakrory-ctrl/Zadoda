@@ -118,7 +118,7 @@ const KidsCalendarView: React.FC<{ day: Date, personId: string, series: any[], o
     if (events.length === 0) return null;
     return (
       <div className="space-y-4 mb-8">
-        <h3 className={cn("text-2xl font-black uppercase tracking-widest", colorClass)}>{title}</h3>
+        <h3 className={cn("text-lg sm:text-2xl font-black uppercase tracking-widest", colorClass)}>{title}</h3>
         <div className="space-y-4">
           {events.map(occ => {
             const isCompleted = occ.completed;
@@ -132,30 +132,31 @@ const KidsCalendarView: React.FC<{ day: Date, personId: string, series: any[], o
                   isNow && !isCompleted ? "border-primary shadow-xl scale-[1.02]" : ""
                 )}
               >
-                <div className="flex items-center p-6 gap-6">
-                  <div className="text-6xl">{emoji}</div>
-                  <div className="flex-1">
-                    <div className="text-sm font-black text-muted-foreground uppercase tracking-widest mb-1">
+                <div className="flex items-center p-3 sm:p-6 gap-3 sm:gap-6">
+                  <div className="text-4xl sm:text-6xl shrink-0">{emoji}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs sm:text-sm font-black text-muted-foreground uppercase tracking-widest mb-1">
                       {formatTime(occ.startTime)} - {formatTime(occ.endTime)}
                     </div>
                     <div className={cn(
-                      "text-3xl font-black transition-all",
+                      "text-xl sm:text-3xl font-black transition-all truncate",
                       isCompleted ? "line-through text-muted-foreground" : "text-foreground"
                     )}>
                       {occ.title}
                     </div>
                   </div>
-                  <div className="flex items-center justify-center p-4">
+                  <div className="flex items-center justify-center shrink-0">
                     <button
                       onClick={() => handleToggle(occ.seriesId, occ.date)}
                       className={cn(
-                        "font-black py-3 px-6 rounded-2xl flex items-center gap-2 border-2 transition-all",
+                        "font-black py-2 px-3 sm:py-3 sm:px-6 rounded-2xl flex items-center gap-1 sm:gap-2 border-2 transition-all text-sm sm:text-base",
                         isCompleted
                           ? "bg-primary/20 text-primary shadow-inner border-primary/30"
                           : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200 shadow-sm"
                       )}
                     >
-                      {isCompleted ? "✅ Done" : "☑️ Mark Done"}
+                      <span className="hidden sm:inline">{isCompleted ? "✅ Done" : "☑️ Mark Done"}</span>
+                      <span className="sm:hidden">{isCompleted ? "✅" : "☑️"}</span>
                     </button>
                   </div>
                 </div>
@@ -168,28 +169,22 @@ const KidsCalendarView: React.FC<{ day: Date, personId: string, series: any[], o
   };
 
   return (
-    <div className="flex-1 overflow-auto p-6 lg:p-12 bg-[#fdfaf5] scroll-smooth min-h-full">
+    <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-12 bg-[#fdfaf5] scroll-smooth min-h-full">
       <div className="max-w-3xl mx-auto">
         {person && (
-          <div className="flex items-center gap-6 mb-10 bg-muted/5 p-6 rounded-[3rem] border-4 shadow-sm" style={{ borderColor: `${person.color}30` }}>
-            <div className="w-24 h-24 rounded-full overflow-hidden border-4 shadow-xl shrink-0 bg-white" style={{ borderColor: person.color }}>
-              <Image 
-                src={getAvatarUrl(person.id)} 
-                alt={person.name} 
-                width={96} 
-                height={96} 
-                className={cn(
-                  "object-cover w-full h-full", 
-                  person.id === 'person3' && "scale-110 -translate-y-2",
-                  person.id === 'person4' && "scale-105 translate-y-[-1px]",
-                  person.id === 'person2' && "scale-150 translate-y-2",
-                  person.id === 'person1' && "scale-110 translate-y-2"
-                )}
+          <div className="flex items-center gap-4 sm:gap-6 mb-6 sm:mb-10 bg-muted/5 p-4 sm:p-6 rounded-[2rem] sm:rounded-[3rem] border-4 shadow-sm" style={{ borderColor: `${person.color}30` }}>
+            <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full overflow-hidden border-4 shadow-xl shrink-0 bg-white" style={{ borderColor: person.color }}>
+              <Image
+                src={getAvatarUrl(person.id, person.avatarUrl)}
+                alt={person.name}
+                width={96}
+                height={96}
+                className="object-cover w-full h-full"
                 data-ai-hint="person headshot"
               />
             </div>
             <div>
-              <h2 className="text-4xl lg:text-5xl font-black" style={{ color: person.color }}>{getPersonName(person, settings.language)}</h2>
+              <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black" style={{ color: person.color }}>{getPersonName(person, settings.language)}</h2>
               <div className="flex items-center gap-3 mt-1">
                 <p className="text-muted-foreground font-black uppercase tracking-[0.2em] text-sm opacity-50">My Calendar</p>
                 {streak > 0 && (
@@ -350,7 +345,7 @@ const CalendarContent: React.FC = () => {
     : null;
 
   const DAY_HEADER_HEIGHT = 40;
-  const PERSON_HEADER_HEIGHT = selectedPersonId === 'all' ? 80 : 0;
+  const PERSON_HEADER_HEIGHT = selectedPersonId === 'all' ? 60 : 0;
   const TOTAL_HEADER_HEIGHT = DAY_HEADER_HEIGHT + PERSON_HEADER_HEIGHT;
   const SLOT_HEIGHT_30MIN = 96; // Matching GridSlot's h-24
   const SLOT_HEIGHT_15MIN = SLOT_HEIGHT_30MIN / 2; // 48px
@@ -435,7 +430,7 @@ const CalendarContent: React.FC = () => {
             </div>
 
             <Select value={selectedPersonId} onValueChange={handlePersonChange}>
-              <SelectTrigger className="w-32 rounded-full font-black border-none bg-muted h-8 px-3 text-[10px]">
+              <SelectTrigger className="w-auto sm:w-28 rounded-full font-black border-none bg-muted h-8 px-2 sm:px-3 text-[10px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-none shadow-2xl">
@@ -444,18 +439,12 @@ const CalendarContent: React.FC = () => {
                   <SelectItem key={p.id} value={p.id}>
                     <div className="flex items-center gap-2 py-1">
                       <div className="w-5 h-5 rounded-full overflow-hidden border shadow-sm" style={{ borderColor: p.color }}>
-                        <Image 
-                          src={getAvatarUrl(p.id)} 
-                          alt={p.name} 
-                          width={20} 
-                          height={20} 
-                          className={cn(
-                            "object-cover", 
-                            p.id === 'person3' && "scale-110 -translate-y-4",
-                            p.id === 'person4' && "scale-105 translate-y-[-2px]",
-                            p.id === 'person2' && "scale-150 translate-y-3",
-                            p.id === 'person1' && "scale-110 translate-y-4"
-                          )}
+                        <Image
+                          src={getAvatarUrl(p.id, p.avatarUrl)}
+                          alt={p.name}
+                          width={20}
+                          height={20}
+                          className="object-cover w-full h-full"
                           data-ai-hint="person headshot"
                         />
                       </div>
@@ -466,9 +455,9 @@ const CalendarContent: React.FC = () => {
               </SelectContent>
             </Select>
 
-            <Button className="rounded-full font-black shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 h-8 px-4 text-[10px]" onClick={handleAddEvent}>
-              <Plus className="w-3 h-3 mr-1 rtl:ml-1 rtl:mr-0 stroke-[3px]" />
-              {t.addEvent}
+            <Button className="rounded-full font-black shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 h-8 w-8 sm:w-auto sm:px-4 text-[10px] p-0 sm:p-auto" onClick={handleAddEvent}>
+              <Plus className="w-3.5 h-3.5 sm:mr-1 stroke-[3px]" />
+              <span className="hidden sm:inline">{t.addEvent}</span>
             </Button>
           </div>
         </div>
@@ -486,16 +475,16 @@ const CalendarContent: React.FC = () => {
                toggleCompletion={toggleCompletion} 
              />
           ) : (
-          <div className="flex min-w-[800px] min-h-full">
+          <div className="flex min-h-full">
             {/* Time Labels Column */}
-            <div className="w-16 sticky left-0 z-50 bg-[#fdfaf5]/90 backdrop-blur-md border-r border-muted/15 shrink-0">
+            <div className="w-8 sm:w-14 sticky left-0 z-50 bg-[#fdfaf5]/90 backdrop-blur-md border-r border-muted/15 shrink-0">
               <div style={{ height: `${TOTAL_HEADER_HEIGHT}px` }} className="border-b border-muted/15" />
               <div className="relative">
                 {timeSlots.map(slot => (
                   <div key={slot} className="h-24 relative">
                     {slot.endsWith(':00') && (
                       <div className="absolute top-0 left-0 w-full flex items-center justify-center -translate-y-1/2">
-                        <span className="text-[9px] font-medium text-muted-foreground/50 leading-none">
+                        <span className="text-[8px] sm:text-[9px] font-medium text-muted-foreground/50 leading-none">
                           {formatTime(slot).replace(':00', '')}
                         </span>
                       </div>
@@ -513,7 +502,7 @@ const CalendarContent: React.FC = () => {
                 const individualOccurrences = dayOccurrences.filter(occ => occ.personId !== 'all' && occ.personId !== 'kids');
 
                 return (
-                  <div key={day.toISOString()} className="flex-1 border-r last:border-r-0 min-w-0 flex flex-col min-h-full">
+                  <div key={day.toISOString()} className="flex-1 border-r last:border-r-0 min-w-[60px] flex flex-col min-h-full">
                     {(() => {
                       const isToday = format(day, 'yyyy-MM-dd') === format(nowTime, 'yyyy-MM-dd');
                       return (
@@ -550,9 +539,9 @@ const CalendarContent: React.FC = () => {
                         
                         const dayStr = format(day, 'yyyy-MM-dd');
                         return (
-                          <div key={p.id} className="flex-1 border-r last:border-r-0 relative group min-h-full flex flex-col">
+                          <div key={p.id} className="flex-1 border-r last:border-r-0 relative group min-h-full flex flex-col min-w-[45px]">
                             {selectedPersonId === 'all' && (
-                              <div 
+                              <div
                                 className="flex items-center justify-center text-sm font-black border-b border-muted/15 sticky z-30 transition-colors uppercase tracking-widest shrink-0"
                                 style={{
                                   height: `${PERSON_HEADER_HEIGHT}px`,
@@ -561,24 +550,18 @@ const CalendarContent: React.FC = () => {
                                   color: p.color,
                                 }}
                               >
-                                <div className="flex flex-col items-center gap-0.5 p-1">
-                                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 shadow-sm transition-transform group-hover:scale-105" style={{ borderColor: p.color }}>
-                                    <Image 
-                                      src={getAvatarUrl(p.id)} 
-                                      alt={p.name} 
-                                      width={48} 
-                                      height={48} 
-                                      className={cn(
-                                        "object-cover", 
-                                        p.id === 'person3' && "scale-110 -translate-y-4",
-                                        p.id === 'person4' && "scale-105 translate-y-[-2px]",
-                                        p.id === 'person2' && "scale-150 translate-y-3",
-                                        p.id === 'person1' && "scale-110 translate-y-4"
-                                      )}
+                                <div className="flex flex-col items-center gap-0.5 p-0.5">
+                                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 shadow-sm transition-transform group-hover:scale-105" style={{ borderColor: p.color }}>
+                                    <Image
+                                      src={getAvatarUrl(p.id, p.avatarUrl)}
+                                      alt={p.name}
+                                      width={40}
+                                      height={40}
+                                      className="object-cover w-full h-full"
                                       data-ai-hint="person headshot"
                                     />
                                   </div>
-                                  <span className="text-[7px] font-black">{getPersonName(p, settings.language)}</span>
+                                  <span className="text-[6px] sm:text-[7px] font-black truncate max-w-full px-0.5">{getPersonName(p, settings.language)}</span>
                                 </div>
                               </div>
                             )}

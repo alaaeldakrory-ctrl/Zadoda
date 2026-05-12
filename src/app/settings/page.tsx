@@ -86,17 +86,17 @@ export default function SettingsPage() {
         </div>
 
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="w-full justify-start h-14 p-1 bg-muted/50 rounded-2xl overflow-x-auto flex-nowrap">
-            <TabsTrigger value="general" className="h-full px-8 rounded-xl font-bold text-base whitespace-nowrap data-[state=active]:bg-card data-[state=active]:shadow-sm">
+          <TabsList className="w-full justify-start h-12 sm:h-14 p-1 bg-muted/50 rounded-2xl overflow-x-auto flex-nowrap scrollbar-none">
+            <TabsTrigger value="general" className="h-full px-4 sm:px-8 rounded-xl font-bold text-sm sm:text-base whitespace-nowrap data-[state=active]:bg-card data-[state=active]:shadow-sm">
               General
             </TabsTrigger>
-            <TabsTrigger value="people" className="h-full px-8 rounded-xl font-bold text-base whitespace-nowrap data-[state=active]:bg-card data-[state=active]:shadow-sm">
-              Family Members
+            <TabsTrigger value="people" className="h-full px-4 sm:px-8 rounded-xl font-bold text-sm sm:text-base whitespace-nowrap data-[state=active]:bg-card data-[state=active]:shadow-sm">
+              Family
             </TabsTrigger>
-            <TabsTrigger value="security" className="h-full px-8 rounded-xl font-bold text-base whitespace-nowrap data-[state=active]:bg-card data-[state=active]:shadow-sm">
+            <TabsTrigger value="security" className="h-full px-4 sm:px-8 rounded-xl font-bold text-sm sm:text-base whitespace-nowrap data-[state=active]:bg-card data-[state=active]:shadow-sm">
               Security
             </TabsTrigger>
-            <TabsTrigger value="fixed-events" className="h-full px-8 rounded-xl font-bold text-base whitespace-nowrap data-[state=active]:bg-card data-[state=active]:shadow-sm">
+            <TabsTrigger value="fixed-events" className="h-full px-4 sm:px-8 rounded-xl font-bold text-sm sm:text-base whitespace-nowrap data-[state=active]:bg-card data-[state=active]:shadow-sm">
               {t.fixedEvents}
             </TabsTrigger>
           </TabsList>
