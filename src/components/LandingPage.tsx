@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
   Calendar, CheckCircle2, Heart, ArrowRight, Shield,
@@ -12,6 +13,9 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/firebase';
 import { signInWithGoogle } from '@/firebase/non-blocking-login';
 import { Loader2 } from 'lucide-react';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+
+const APP_LOGO = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl ?? null;
 
 // ── Mini app preview ──────────────────────────────────────────────────────────
 const PREVIEW_EVENTS = [
@@ -192,8 +196,12 @@ export const LandingPage = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#6C5CE7] rounded-xl flex items-center justify-center shadow-lg shadow-[#6C5CE7]/30">
-              <Calendar className="text-white w-6 h-6" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-[#6C5CE7]/30 bg-[#6C5CE7] flex-shrink-0">
+              {APP_LOGO ? (
+                <Image src={APP_LOGO} alt="Zadoda Logo" width={40} height={40} className="object-cover w-full h-full scale-95 -translate-y-1" priority />
+              ) : (
+                <Calendar className="text-white w-6 h-6 m-auto mt-2" />
+              )}
             </div>
             <span className="text-2xl font-black tracking-tighter">zadoda</span>
           </div>
@@ -467,8 +475,12 @@ export const LandingPage = () => {
       <footer className="py-14 border-t border-gray-100 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#6C5CE7] rounded-lg flex items-center justify-center">
-              <Calendar className="text-white w-4 h-4" />
+            <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#6C5CE7] flex-shrink-0">
+              {APP_LOGO ? (
+                <Image src={APP_LOGO} alt="Zadoda Logo" width={32} height={32} className="object-cover w-full h-full scale-95 -translate-y-1" />
+              ) : (
+                <Calendar className="text-white w-4 h-4 m-auto mt-2" />
+              )}
             </div>
             <span className="text-xl font-black tracking-tighter">zadoda</span>
           </div>
