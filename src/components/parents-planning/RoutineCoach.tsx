@@ -29,7 +29,7 @@ const PRIORITY_BADGE: Record<string, string> = {
 
 export function RoutineCoach() {
   const { executionLogs, persons, settings } = useStore();
-  const kids = persons.filter(p => p.id === 'person1' || p.id === 'person2');
+  const kids = persons.filter(p => p.role === 'child');
   const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);

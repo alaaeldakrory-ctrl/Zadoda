@@ -13,7 +13,7 @@ export function WeeklyDashboard({ selectedDate }: { selectedDate: Date }) {
   const { executionLogs, parentLogs, persons, settings } = useStore();
   const t = getTranslation(settings.language);
   const pt = t.parentsPlanningFull;
-  const kids = persons.filter(p => p.id === 'person1' || p.id === 'person2');
+  const kids = persons.filter(p => p.role === 'child');
 
   const last7DaysStart = addDays(selectedDate, -7);
   const previous7DaysStart = addDays(selectedDate, -14);

@@ -24,7 +24,7 @@ export function ProblemDetector() {
   const t = getTranslation(settings.language);
   const pt = t.parentsPlanningFull;
   
-  const kids = persons.filter(p => p.id === 'person1' || p.id === 'person2');
+  const kids = persons.filter(p => p.role === 'child');
 
   const now = new Date();
   const last3Days = addDays(now, -14);

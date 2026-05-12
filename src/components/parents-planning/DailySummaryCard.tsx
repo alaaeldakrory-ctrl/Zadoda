@@ -13,7 +13,7 @@ export function DailySummaryCard({ selectedDate }: { selectedDate: Date }) {
   const { executionLogs, persons, settings } = useStore();
   const t = getTranslation(settings.language);
   const pt = t.parentsPlanningFull;
-  const kids = persons.filter(p => p.id === 'person1' || p.id === 'person2');
+  const kids = persons.filter(p => p.role === 'child');
 
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
 

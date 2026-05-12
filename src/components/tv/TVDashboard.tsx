@@ -28,7 +28,7 @@ export const TVDashboard: React.FC = () => {
 
   const today = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const kids = persons.filter(p => p.id === 'person1' || p.id === 'person2');
+  const kids = persons.filter(p => p.role === 'child');
 
   if (isLoading) {
     return (
@@ -94,15 +94,11 @@ export const TVDashboard: React.FC = () => {
                   style={{ borderColor: person.color }}
                 >
                   <Image
-                    src={getAvatarUrl(person.id)}
+                    src={getAvatarUrl(person.id, person.avatarUrl)}
                     alt={person.name}
                     width={80}
                     height={80}
-                    className={cn(
-                      'object-cover w-full h-full',
-                      person.id === 'person1' && 'scale-110 translate-y-2',
-                      person.id === 'person2' && 'scale-150 translate-y-2'
-                    )}
+                    className="object-cover w-full h-full"
                   />
                 </div>
                 <div className="flex-1 min-w-0">

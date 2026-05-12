@@ -79,10 +79,10 @@ const KidsCalendarView: React.FC<{ day: Date, personId: string, series: any[], o
   // Filter for the selected person, kids, or everyone
   let displayedOccurrences = dayOccurrences;
   if (personId !== 'all') {
-    const isKid = personId === 'person1' || personId === 'person2';
-    displayedOccurrences = dayOccurrences.filter(occ => 
-      occ.personId === personId || 
-      occ.personId === 'all' || 
+    const isKid = persons.find(p => p.id === personId)?.role === 'child';
+    displayedOccurrences = dayOccurrences.filter(occ =>
+      occ.personId === personId ||
+      occ.personId === 'all' ||
       (isKid && occ.personId === 'kids')
     );
   }
@@ -539,7 +539,7 @@ const CalendarContent: React.FC = () => {
                     <div className="flex-1 flex relative min-h-full">
                       {filteredPersons.map(p => {
                         const personOccurrences = individualOccurrences.filter(occ => occ.personId === p.id);
-                        const isKid = p.id === 'person1' || p.id === 'person2';
+                        const isKid = p.role === 'child';
                         const displayedOccurrences = selectedPersonId === 'all' 
                           ? personOccurrences 
                           : [

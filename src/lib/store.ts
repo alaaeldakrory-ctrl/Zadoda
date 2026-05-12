@@ -2,21 +2,22 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language, Memo, Chore, ChoreOverride, TaskExecutionLog, Goal, RewardRule, ParentLog, ParentSelfLog } from './types';
+import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language, Memo, Chore, ChoreOverride, TaskExecutionLog, Goal, RewardRule, ParentLog, ParentSelfLog, Checklist, ChecklistCompletion } from './types';
 import { timeToMinutes, minutesToTime } from './utils';
-import { 
-  useCollection, 
-  useDoc, 
-  useUser, 
-  useFirestore, 
+import {
+  useCollection,
+  useDoc,
+  useUser,
+  useFirestore,
   useAuth,
   useMemoFirebase,
   setDocumentNonBlocking,
   updateDocumentNonBlocking,
   deleteDocumentNonBlocking,
-  initiateAnonymousSignIn
+  signOutUser,
 } from '@/firebase';
-import { collection, doc, collectionGroup, query } from 'firebase/firestore';
+import { collection, doc, query } from 'firebase/firestore';
+import { User } from 'firebase/auth';
 
 interface StoreContextValue {
   persons: Person[];
@@ -31,14 +32,21 @@ interface StoreContextValue {
   rewardRules: RewardRule[];
   parentLogs: ParentLog[];
   parentSelfLogs: ParentSelfLog[];
+  checklists: Checklist[];
+  checklistCompletions: ChecklistCompletion[];
   settings: AppSettings;
   isLoading: boolean;
   isParentUnlocked: boolean;
+  currentUser: User | null;
+  isAuthLoading: boolean;
   unlockParent: (pin: string) => boolean;
   lockParent: () => void;
+  signOut: () => Promise<void>;
   setLanguage: (lang: Language) => void;
   updateSettings: (settings: Partial<AppSettings>) => void;
   updatePerson: (id: string, updates: Partial<Person>) => void;
+  addPerson: (person: Omit<Person, 'id'>) => void;
+  deletePerson: (id: string) => void;
   addSeries: (s: CalendarEventSeries) => void;
   updateSeries: (id: string, updates: Partial<CalendarEventSeries>) => void;
   deleteSeries: (id: string) => void;
@@ -64,6 +72,10 @@ interface StoreContextValue {
   addParentSelfLog: (log: Omit<ParentSelfLog, 'id'>) => void;
   updateParentSelfLog: (id: string, updates: Partial<ParentSelfLog>) => void;
   deleteParentSelfLog: (id: string) => void;
+  addChecklist: (c: Omit<Checklist, 'id' | 'createdAt'>) => void;
+  updateChecklist: (id: string, updates: Partial<Checklist>) => void;
+  deleteChecklist: (id: string) => void;
+  setChecklistItemDone: (checklistId: string, personId: string, date: string, itemIndex: number, done: boolean) => void;
 }
 
 const StoreContext = createContext<StoreContextValue | null>(null);
@@ -75,105 +87,127 @@ const DEFAULT_SETTINGS: AppSettings = {
   language: 'en',
 };
 
-const INITIAL_PEOPLE: Person[] = [
-  { id: 'person1', name: 'Lyla', color: '#F87171' }, 
-  { id: 'person4', name: 'Wesam', color: '#FBBF24' },
-  { id: 'person2', name: 'Malika', color: '#60A5FA' }, 
-  { id: 'person3', name: 'Mohamed', color: '#34D399' }, 
-];
-
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const db = useFirestore();
 
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      initiateAnonymousSignIn(auth);
-    }
-  }, [user, isUserLoading, auth]);
+  // Only load family data for authenticated, non-anonymous users
+  const familyId = (user && !user.isAnonymous) ? user.uid : null;
 
-  const settingsRef = useMemoFirebase(() => user ? doc(db, 'appSettings', 'global') : null, [db, user]);
+  const settingsRef = useMemoFirebase(() => familyId ? doc(db, 'families', familyId, 'settings', 'global') : null, [db, familyId]);
   const { data: settingsData, isLoading: settingsLoading } = useDoc<AppSettings>(settingsRef);
 
-  const peopleRef = useMemoFirebase(() => user ? collection(db, 'people') : null, [db, user]);
+  const peopleRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'people') : null, [db, familyId]);
   const { data: personsData, isLoading: personsLoading } = useCollection<Person>(peopleRef);
 
-  const templatesRef = useMemoFirebase(() => user ? collection(db, 'fixedEventTemplates') : null, [db, user]);
+  const templatesRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'fixedEventTemplates') : null, [db, familyId]);
   const { data: templatesData, isLoading: templatesLoading } = useCollection<FixedEventTemplate>(templatesRef);
 
-  const seriesRef = useMemoFirebase(() => user ? collection(db, 'calendarEventSeries') : null, [db, user]);
+  const seriesRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'calendarEventSeries') : null, [db, familyId]);
   const { data: seriesData, isLoading: seriesLoading } = useCollection<CalendarEventSeries>(seriesRef);
 
-  const overridesRef = useMemoFirebase(() => user ? query(collectionGroup(db, 'eventOccurrenceOverrides')) : null, [db, user]);
+  const overridesRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'eventOccurrenceOverrides') : null, [db, familyId]);
   const { data: overridesData, isLoading: overridesLoading } = useCollection<CalendarEventOccurrenceOverride>(overridesRef);
 
-  const memosRef = useMemoFirebase(() => user ? collection(db, 'memos') : null, [db, user]);
+  const memosRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'memos') : null, [db, familyId]);
   const { data: memosData, isLoading: memosLoading } = useCollection<Memo>(memosRef);
 
-  const choresRef = useMemoFirebase(() => user ? collection(db, 'chores') : null, [db, user]);
+  const choresRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'chores') : null, [db, familyId]);
   const { data: choresData, isLoading: choresLoading } = useCollection<Chore>(choresRef);
 
-  const choreOverridesRef = useMemoFirebase(() => user ? query(collectionGroup(db, 'overrides')) : null, [db, user]);
+  const choreOverridesRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'choreOverrides') : null, [db, familyId]);
   const { data: choreOverridesData, isLoading: choreOverridesLoading } = useCollection<ChoreOverride>(choreOverridesRef);
 
-  const executionLogsRef = useMemoFirebase(() => user ? collection(db, 'executionLogs') : null, [db, user]);
+  const executionLogsRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'executionLogs') : null, [db, familyId]);
   const { data: executionLogsData, isLoading: executionLogsLoading } = useCollection<TaskExecutionLog>(executionLogsRef);
 
-  const goalsRef = useMemoFirebase(() => user ? collection(db, 'goals') : null, [db, user]);
+  const goalsRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'goals') : null, [db, familyId]);
   const { data: goalsData, isLoading: goalsLoading } = useCollection<Goal>(goalsRef);
 
-  const rewardRulesRef = useMemoFirebase(() => user ? collection(db, 'rewardRules') : null, [db, user]);
+  const rewardRulesRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'rewardRules') : null, [db, familyId]);
   const { data: rewardRulesData, isLoading: rewardRulesLoading } = useCollection<RewardRule>(rewardRulesRef);
 
-  const parentLogsRef = useMemoFirebase(() => user ? collection(db, 'parentLogs') : null, [db, user]);
+  const parentLogsRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'parentLogs') : null, [db, familyId]);
   const { data: parentLogsData, isLoading: parentLogsLoading } = useCollection<ParentLog>(parentLogsRef);
 
-  const parentSelfLogsRef = useMemoFirebase(() => user ? collection(db, 'parentSelfLogs') : null, [db, user]);
+  const parentSelfLogsRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'parentSelfLogs') : null, [db, familyId]);
   const { data: parentSelfLogsData, isLoading: parentSelfLogsLoading } = useCollection<ParentSelfLog>(parentSelfLogsRef);
 
-  const [hasSeeded, setHasSeeded] = useState(false);
+  const checklistsRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'checklists') : null, [db, familyId]);
+  const { data: checklistsData } = useCollection<Checklist>(checklistsRef);
+
+  const checklistCompletionsRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'checklistCompletions') : null, [db, familyId]);
+  const { data: checklistCompletionsData } = useCollection<ChecklistCompletion>(checklistCompletionsRef);
+
   const [isParentUnlocked, setIsParentUnlocked] = useState(false);
 
+  // Lock parent section when user changes
   useEffect(() => {
-    if (!personsLoading && personsData && db && !hasSeeded) {
-      if (personsData.length === 0) {
-        INITIAL_PEOPLE.forEach(p => {
-          const pRef = doc(db, 'people', p.id);
-          setDocumentNonBlocking(pRef, p, { merge: true });
-        });
-        setHasSeeded(true);
-      }
-    }
-  }, [personsLoading, personsData, db, hasSeeded]);
+    setIsParentUnlocked(false);
+  }, [familyId]);
 
   const settings = settingsData || DEFAULT_SETTINGS;
-  const persons = (personsData && personsData.length > 0) ? personsData : INITIAL_PEOPLE;
+  const persons = personsData || [];
   const templates = templatesData || [];
   const series = seriesData || [];
   const memos = memosData || [];
   const chores = choresData || [];
   const choreOverrides = choreOverridesData || [];
-  const overrides = overridesData || []; 
+  const overrides = overridesData || [];
   const executionLogs = executionLogsData || [];
   const goals = goalsData || [];
   const rewardRules = rewardRulesData || [];
   const parentLogs = parentLogsData || [];
   const parentSelfLogs = parentSelfLogsData || [];
+  const checklists = checklistsData || [];
+  const checklistCompletions = checklistCompletionsData || [];
 
-  const isLoading = isUserLoading || settingsLoading || (personsLoading && !personsData) || memosLoading || overridesLoading || choresLoading || choreOverridesLoading || executionLogsLoading || goalsLoading || rewardRulesLoading || parentLogsLoading || parentSelfLogsLoading;
+  const isLoading = isUserLoading || (!!familyId && (
+    settingsLoading ||
+    (personsLoading && !personsData) ||
+    memosLoading ||
+    overridesLoading ||
+    choresLoading ||
+    choreOverridesLoading ||
+    executionLogsLoading ||
+    goalsLoading ||
+    rewardRulesLoading ||
+    parentLogsLoading ||
+    parentSelfLogsLoading
+  ));
+
+  // ─── Helpers ────────────────────────────────────────────────────────────────
+
+  const fCol = (path: string) => {
+    if (!familyId) throw new Error('No authenticated family');
+    return collection(db, 'families', familyId, path);
+  };
+
+  const fDoc = (path: string, id: string) => {
+    if (!familyId) throw new Error('No authenticated family');
+    return doc(db, 'families', familyId, path, id);
+  };
+
+  // ─── Auth ────────────────────────────────────────────────────────────────────
 
   const unlockParent = (pin: string) => {
-    if (pin === '1234') {
+    const correctPin = settings.pin || '1234';
+    if (pin === correctPin) {
       setIsParentUnlocked(true);
       return true;
     }
     return false;
   };
 
-  const lockParent = () => {
+  const lockParent = () => setIsParentUnlocked(false);
+
+  const signOut = async () => {
     setIsParentUnlocked(false);
+    await signOutUser(auth);
   };
+
+  // ─── Settings ────────────────────────────────────────────────────────────────
 
   const setLanguage = (language: Language) => {
     if (!settingsRef) return;
@@ -185,131 +219,130 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setDocumentNonBlocking(settingsRef, { ...settings, ...updates, id: 'global' }, { merge: true });
   };
 
+  // ─── Persons ─────────────────────────────────────────────────────────────────
+
   const updatePerson = (id: string, updates: Partial<Person>) => {
-    const personRef = doc(db, 'people', id);
+    const personRef = fDoc('people', id);
     setDocumentNonBlocking(personRef, { ...updates, id }, { merge: true });
   };
 
+  const addPerson = (person: Omit<Person, 'id'>) => {
+    const id = `person_${Date.now()}`;
+    const personRef = fDoc('people', id);
+    setDocumentNonBlocking(personRef, { ...person, id }, { merge: true });
+  };
+
+  const deletePerson = (id: string) => {
+    deleteDocumentNonBlocking(fDoc('people', id));
+  };
+
+  // ─── Series ──────────────────────────────────────────────────────────────────
+
   const addSeries = (s: CalendarEventSeries) => {
-    const docRef = doc(db, 'calendarEventSeries', s.id);
-    setDocumentNonBlocking(docRef, s, { merge: true });
+    setDocumentNonBlocking(fDoc('calendarEventSeries', s.id), s, { merge: true });
   };
 
   const updateSeries = (id: string, updates: Partial<CalendarEventSeries>) => {
-    const docRef = doc(db, 'calendarEventSeries', id);
-    updateDocumentNonBlocking(docRef, updates);
+    updateDocumentNonBlocking(fDoc('calendarEventSeries', id), updates);
   };
 
   const deleteSeries = (id: string) => {
-    const docRef = doc(db, 'calendarEventSeries', id);
-    deleteDocumentNonBlocking(docRef);
+    deleteDocumentNonBlocking(fDoc('calendarEventSeries', id));
   };
 
+  // ─── Templates ───────────────────────────────────────────────────────────────
+
   const addTemplate = (t: FixedEventTemplate) => {
-    const docRef = doc(db, 'fixedEventTemplates', t.id);
-    setDocumentNonBlocking(docRef, t, { merge: true });
+    setDocumentNonBlocking(fDoc('fixedEventTemplates', t.id), t, { merge: true });
   };
 
   const updateTemplate = (id: string, updates: Partial<FixedEventTemplate>) => {
-    const docRef = doc(db, 'fixedEventTemplates', id);
-    updateDocumentNonBlocking(docRef, updates);
+    updateDocumentNonBlocking(fDoc('fixedEventTemplates', id), updates);
   };
 
   const deleteTemplate = (id: string) => {
-    const docRef = doc(db, 'fixedEventTemplates', id);
-    deleteDocumentNonBlocking(docRef);
+    deleteDocumentNonBlocking(fDoc('fixedEventTemplates', id));
   };
 
+  // ─── Memos ───────────────────────────────────────────────────────────────────
+
   const addMemo = (m: Memo) => {
-    const docRef = doc(db, 'memos', m.id);
-    setDocumentNonBlocking(docRef, m, { merge: true });
+    setDocumentNonBlocking(fDoc('memos', m.id), m, { merge: true });
   };
 
   const updateMemo = (id: string, updates: Partial<Memo>) => {
-    const docRef = doc(db, 'memos', id);
     const { id: _, ...cleanUpdates } = updates as any;
-    updateDocumentNonBlocking(docRef, cleanUpdates);
+    updateDocumentNonBlocking(fDoc('memos', id), cleanUpdates);
   };
 
   const deleteMemo = (id: string) => {
-    const docRef = doc(db, 'memos', id);
-    deleteDocumentNonBlocking(docRef);
+    deleteDocumentNonBlocking(fDoc('memos', id));
   };
 
   const toggleMemoCompletion = (id: string) => {
     const memo = memos.find(m => m.id === id);
     if (!memo) return;
-    const docRef = doc(db, 'memos', id);
-    updateDocumentNonBlocking(docRef, { completed: !memo.completed });
+    updateDocumentNonBlocking(fDoc('memos', id), { completed: !memo.completed });
   };
 
+  // ─── Chores ──────────────────────────────────────────────────────────────────
+
   const addChore = (c: Chore) => {
-    const docRef = doc(db, 'chores', c.id);
-    setDocumentNonBlocking(docRef, c, { merge: true });
+    setDocumentNonBlocking(fDoc('chores', c.id), c, { merge: true });
   };
 
   const updateChore = (id: string, updates: Partial<Chore>) => {
-    const docRef = doc(db, 'chores', id);
-    updateDocumentNonBlocking(docRef, updates);
+    updateDocumentNonBlocking(fDoc('chores', id), updates);
   };
 
   const deleteChore = (id: string) => {
-    const docRef = doc(db, 'chores', id);
-    deleteDocumentNonBlocking(docRef);
+    deleteDocumentNonBlocking(fDoc('chores', id));
   };
 
   const updateChoreOverride = (choreId: string, date: string, updates: Partial<ChoreOverride>) => {
     const overrideId = `${choreId}_${date}`;
-    const overrideRef = doc(db, 'chores', choreId, 'overrides', overrideId);
-    
-    // Ensure we don't pass undefined for assignedTo
     const cleanUpdates = { ...updates };
-    if (cleanUpdates.assignedTo === undefined) {
-      delete cleanUpdates.assignedTo;
-    }
-    
-    setDocumentNonBlocking(overrideRef, { ...cleanUpdates, choreId, date, id: overrideId }, { merge: true });
+    if (cleanUpdates.assignedTo === undefined) delete cleanUpdates.assignedTo;
 
-    // Auto-log for Parent Planning Dashboard
+    setDocumentNonBlocking(
+      fDoc('choreOverrides', overrideId),
+      { ...cleanUpdates, choreId, date, id: overrideId },
+      { merge: true }
+    );
+
     if (updates.completed === true) {
       const chore = chores.find(c => c.id === choreId);
       const existingOverride = choreOverrides.find(o => o.id === overrideId);
       const assignee = cleanUpdates.assignedTo || existingOverride?.assignedTo || chore?.defaultAssignedTo || 'unknown';
-      
       addTaskExecutionLog({
         childId: assignee,
         taskId: choreId,
         type: 'chore',
-        date: date,
+        date,
         completed: true,
-        completionTimeSeconds: 60, // Estimate 1 min for chores right now
-        expectedTimeSeconds: 300 // 5 mins expected
+        completionTimeSeconds: 60,
+        expectedTimeSeconds: 300,
       });
     }
   };
 
   const deleteChoreOverride = (choreId: string, date: string) => {
-    const overrideId = `${choreId}_${date}`;
-    const overrideRef = doc(db, 'chores', choreId, 'overrides', overrideId);
-    deleteDocumentNonBlocking(overrideRef);
+    deleteDocumentNonBlocking(fDoc('choreOverrides', `${choreId}_${date}`));
   };
+
+  // ─── Calendar overrides ──────────────────────────────────────────────────────
 
   const toggleCompletion = (seriesId: string, date: string) => {
     const overrideId = `${seriesId}_${date}`;
     const existing = overrides.find(o => o.id === overrideId);
-    const overrideRef = doc(db, 'calendarEventSeries', seriesId, 'eventOccurrenceOverrides', overrideId);
-    
     const isNowCompleted = !existing?.completed;
 
-    setDocumentNonBlocking(overrideRef, { 
-      id: overrideId, 
-      seriesId, 
-      date, 
-      completed: isNowCompleted, 
-      completedAt: isNowCompleted ? new Date().getTime() : null
-    }, { merge: true });
+    setDocumentNonBlocking(
+      fDoc('eventOccurrenceOverrides', overrideId),
+      { id: overrideId, seriesId, date, completed: isNowCompleted, completedAt: isNowCompleted ? Date.now() : null },
+      { merge: true }
+    );
 
-    // Auto-log for Parent Planning Dashboard
     if (isNowCompleted) {
       const s = series.find(s => s.id === seriesId);
       if (s) {
@@ -318,10 +351,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           childId: s.personId,
           taskId: seriesId,
           type: 'calendar',
-          date: date,
+          date,
           completed: true,
-          completionTimeSeconds: expectedSeconds, // Default to expected since we don't track start time
-          expectedTimeSeconds: expectedSeconds
+          completionTimeSeconds: expectedSeconds,
+          expectedTimeSeconds: expectedSeconds,
         });
       }
     }
@@ -329,67 +362,102 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateOccurrence = (seriesId: string, date: string, updates: Partial<CalendarEventOccurrenceOverride>) => {
     const overrideId = `${seriesId}_${date}`;
-    const overrideRef = doc(db, 'calendarEventSeries', seriesId, 'eventOccurrenceOverrides', overrideId);
-    setDocumentNonBlocking(overrideRef, { ...updates, seriesId, date, id: overrideId }, { merge: true });
+    setDocumentNonBlocking(
+      fDoc('eventOccurrenceOverrides', overrideId),
+      { ...updates, seriesId, date, id: overrideId },
+      { merge: true }
+    );
   };
 
   const moveEvent = (seriesId: string, date: string, newStartTime: string, newPersonId: string) => {
     const targetSeries = series.find(s => s.id === seriesId);
     if (!targetSeries) return;
-
     const durationMins = timeToMinutes(targetSeries.endTime) - timeToMinutes(targetSeries.startTime);
-    const newStartMins = timeToMinutes(newStartTime);
-    const newEndTime = minutesToTime(newStartMins + durationMins);
-
-    const docRef = doc(db, 'calendarEventSeries', seriesId);
-    updateDocumentNonBlocking(docRef, { 
-      startTime: newStartTime, 
-      endTime: newEndTime, 
-      personId: newPersonId, 
-      startDate: date 
+    const newEndTime = minutesToTime(timeToMinutes(newStartTime) + durationMins);
+    updateDocumentNonBlocking(fDoc('calendarEventSeries', seriesId), {
+      startTime: newStartTime,
+      endTime: newEndTime,
+      personId: newPersonId,
+      startDate: date,
     });
   };
 
+  // ─── Execution logs ──────────────────────────────────────────────────────────
+
   const addTaskExecutionLog = (log: Omit<TaskExecutionLog, 'id'>) => {
-    if (!db || !user) return;
-    const ref = doc(collection(db, 'executionLogs'));
+    if (!familyId) return;
+    const ref = doc(fCol('executionLogs'));
     setDocumentNonBlocking(ref, { ...log, id: ref.id });
   };
 
+  // ─── Parent logs ─────────────────────────────────────────────────────────────
+
   const addParentLog = (log: Omit<ParentLog, 'id'>) => {
-    if (!db || !user) return;
-    const ref = doc(collection(db, 'parentLogs'));
+    if (!familyId) return;
+    const ref = doc(fCol('parentLogs'));
     setDocumentNonBlocking(ref, { ...log, id: ref.id });
   };
 
   const updateParentLog = (id: string, updates: Partial<ParentLog>) => {
-    if (!db || !user) return;
-    const ref = doc(db, 'parentLogs', id);
-    updateDocumentNonBlocking(ref, updates);
+    if (!familyId) return;
+    updateDocumentNonBlocking(fDoc('parentLogs', id), updates);
   };
 
   const deleteParentLog = (id: string) => {
-    if (!db || !user) return;
-    const ref = doc(db, 'parentLogs', id);
-    deleteDocumentNonBlocking(ref);
+    if (!familyId) return;
+    deleteDocumentNonBlocking(fDoc('parentLogs', id));
   };
 
+  // ─── Checklists ──────────────────────────────────────────────────────────────
+
+  const addChecklist = (c: Omit<Checklist, 'id' | 'createdAt'>) => {
+    const id = `checklist_${Date.now()}`;
+    setDocumentNonBlocking(fDoc('checklists', id), { ...c, id, createdAt: Date.now() }, { merge: true });
+  };
+
+  const updateChecklist = (id: string, updates: Partial<Checklist>) => {
+    updateDocumentNonBlocking(fDoc('checklists', id), updates);
+  };
+
+  const deleteChecklist = (id: string) => {
+    deleteDocumentNonBlocking(fDoc('checklists', id));
+  };
+
+  const setChecklistItemDone = (checklistId: string, personId: string, date: string, itemIndex: number, done: boolean) => {
+    const completionId = `${date}_${personId}_${checklistId}_${itemIndex}`;
+    setDocumentNonBlocking(fDoc('checklistCompletions', completionId), {
+      id: completionId, checklistId, personId, date, itemIndex, completed: done,
+    }, { merge: true });
+    if (done) {
+      addTaskExecutionLog({
+        childId: personId,
+        taskId: `${checklistId}-${itemIndex}`,
+        routineId: checklistId,
+        type: 'checklist',
+        date,
+        completed: true,
+        completionTimeSeconds: 30,
+        expectedTimeSeconds: 60,
+      });
+    }
+  };
+
+  // ─── Parent self logs ─────────────────────────────────────────────────────────
+
   const addParentSelfLog = (log: Omit<ParentSelfLog, 'id'>) => {
-    if (!db || !user) return;
-    const ref = doc(collection(db, 'parentSelfLogs'));
+    if (!familyId) return;
+    const ref = doc(fCol('parentSelfLogs'));
     setDocumentNonBlocking(ref, { ...log, id: ref.id });
   };
 
   const updateParentSelfLog = (id: string, updates: Partial<ParentSelfLog>) => {
-    if (!db || !user) return;
-    const ref = doc(db, 'parentSelfLogs', id);
-    updateDocumentNonBlocking(ref, updates);
+    if (!familyId) return;
+    updateDocumentNonBlocking(fDoc('parentSelfLogs', id), updates);
   };
 
   const deleteParentSelfLog = (id: string) => {
-    if (!db || !user) return;
-    const ref = doc(db, 'parentSelfLogs', id);
-    deleteDocumentNonBlocking(ref);
+    if (!familyId) return;
+    deleteDocumentNonBlocking(fDoc('parentSelfLogs', id));
   };
 
   const value: StoreContextValue = {
@@ -405,14 +473,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     rewardRules,
     parentLogs,
     parentSelfLogs,
+    checklists,
+    checklistCompletions,
     settings,
     isLoading,
     isParentUnlocked,
+    currentUser: user,
+    isAuthLoading: isUserLoading,
     unlockParent,
     lockParent,
+    signOut,
     setLanguage,
     updateSettings,
     updatePerson,
+    addPerson,
+    deletePerson,
     addSeries,
     updateSeries,
     deleteSeries,
@@ -437,7 +512,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     deleteParentLog,
     addParentSelfLog,
     updateParentSelfLog,
-    deleteParentSelfLog
+    deleteParentSelfLog,
+    addChecklist,
+    updateChecklist,
+    deleteChecklist,
+    setChecklistItemDone,
   };
 
   return React.createElement(
@@ -453,6 +532,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
 export const useStore = () => {
   const context = useContext(StoreContext);
-  if (!context) throw new Error("useStore must be used within StoreProvider");
+  if (!context) throw new Error('useStore must be used within StoreProvider');
   return context;
 };

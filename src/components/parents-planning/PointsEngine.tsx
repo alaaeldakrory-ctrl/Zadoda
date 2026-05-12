@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 
 export function PointsEngine() {
   const { executionLogs, persons, settings } = useStore();
-  const kids = persons.filter(p => p.id === 'person1' || p.id === 'person2');
+  const kids = persons.filter(p => p.role === 'child');
   const today = format(new Date(), 'yyyy-MM-dd');
 
   return (

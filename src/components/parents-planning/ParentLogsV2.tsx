@@ -317,7 +317,7 @@ export function ParentLogsV2({ selectedDate }: { selectedDate: Date }) {
   const { persons, settings, parentLogs, addParentLog, updateParentLog, deleteParentLog } = useStore();
   const t = getTranslation(settings.language);
   const pt = t.parentsPlanningFull;
-  const kids = persons.filter(p => p.id === 'person1' || p.id === 'person2');
+  const kids = persons.filter(p => p.role === 'child');
 
   const [selectedKid, setSelectedKid] = useState(kids[0]?.id || '');
   // editing: undefined = view mode, 'new' = new log, logId = editing that log

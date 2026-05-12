@@ -17,18 +17,19 @@ export function getPersonName(person: Person, lang: Language): string {
   return translatedName || person.name;
 }
 
-export function getAvatarUrl(personIdOrName: string): string {
-  if (!personIdOrName) return 'https://picsum.photos/seed/default/100/100';
-  
+export function getAvatarUrl(personIdOrName: string, customAvatarUrl?: string): string {
+  if (customAvatarUrl) return customAvatarUrl;
+  if (!personIdOrName) return `https://api.dicebear.com/7.x/thumbs/svg?seed=default`;
+
   const cleanKey = personIdOrName.toLowerCase().trim();
-  
-  // Try ID first (most robust)
+
+  // Hardcoded family members — keep existing assets
   if (cleanKey.startsWith('person')) {
     const idMap: Record<string, string> = {
       person1: 'lyla',
       person2: 'malika',
       person3: 'mohamed',
-      person4: 'wesam'
+      person4: 'wesam',
     };
     const nameKey = idMap[cleanKey];
     if (nameKey) {
@@ -37,9 +38,12 @@ export function getAvatarUrl(personIdOrName: string): string {
     }
   }
 
-  // Fallback to name-based lookup
+  // Name-based lookup for any other pre-seeded assets
   const avatar = PlaceHolderImages.find(img => img.id === `avatar-${cleanKey}`);
-  return avatar?.imageUrl || `https://picsum.photos/seed/${cleanKey}/100/100`;
+  if (avatar) return avatar.imageUrl;
+
+  // Dynamically created persons — generated avatar
+  return `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(cleanKey)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
 }
 
 export function formatTime(time24h: string): string {

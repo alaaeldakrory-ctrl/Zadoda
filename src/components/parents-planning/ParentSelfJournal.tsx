@@ -333,10 +333,9 @@ export function ParentSelfJournal({ selectedDate }: { selectedDate: Date }) {
   const t = getTranslation(settings.language);
   const jt = t.parentSelfJournal;
 
-  // Only Mohamed (person3) and Wesam (person4)
-  const parents = persons.filter(p => p.id === 'person3' || p.id === 'person4');
+  const parents = persons.filter(p => p.role === 'parent');
 
-  const [selectedParent, setSelectedParent] = useState(parents[0]?.id || 'person3');
+  const [selectedParent, setSelectedParent] = useState(parents[0]?.id || '');
   const [editing, setEditing] = useState<string | 'new' | undefined>(undefined);
 
   const dateStr = format(selectedDate, 'yyyy-MM-dd');

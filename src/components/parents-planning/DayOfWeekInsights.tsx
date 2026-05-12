@@ -13,7 +13,7 @@ const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function DayOfWeekInsights() {
   const { executionLogs, persons, settings } = useStore();
-  const kids = persons.filter(p => p.id === 'person1' || p.id === 'person2');
+  const kids = persons.filter(p => p.role === 'child');
 
   // Last 28 days
   const past28 = Array.from({ length: 28 }, (_, i) => subDays(new Date(), i + 1));

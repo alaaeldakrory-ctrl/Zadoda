@@ -5,7 +5,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
   title: 'Zadoda Scheduler - Effortless Family Scheduling',
-  description: 'Organize your family life with Zadoda Scheduler. A shared calendar for Lyla, Malika, Mohamed, and Wesam.',
+  description: 'Organize your family life with Zadoda Scheduler. A shared calendar and task manager for the whole family.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,

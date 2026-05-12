@@ -1,365 +1,447 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { AppLayout } from '@/components/ui/Layout';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Progress } from '@/components/ui/progress';
-import { CheckSquare, Calendar as CalendarIcon, ChevronLeft, ChevronRight, User } from 'lucide-react';
-import { format, addDays } from 'date-fns';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { Button } from '@/components/ui/button';
 import { useStore } from '@/lib/store';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import Image from 'next/image';
+import { format, addDays } from 'date-fns';
+import { CheckSquare, Plus, Trash2, ChevronLeft, ChevronRight, Check, X, Pencil, ListPlus } from 'lucide-react';
 import { getAvatarUrl, getPersonName, cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
+import Image from 'next/image';
+import { Checklist } from '@/lib/types';
 import confetti from 'canvas-confetti';
+
+// ── Audio helpers ─────────────────────────────────────────────────────────────
 
 const playDing = () => {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+    osc.connect(gain); gain.connect(ctx.destination);
     osc.type = 'sine';
     osc.frequency.setValueAtTime(800, ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
     gain.gain.setValueAtTime(0, ctx.currentTime);
     gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.05);
     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.3);
-  } catch (e) {
-    console.error("Audio playback failed", e);
-  }
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.3);
+  } catch {}
 };
 
 const playTada = () => {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const playNote = (freq: number, startTime: number, duration: number) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'triangle';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0, startTime);
-      gain.gain.linearRampToValueAtTime(0.2, startTime + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
-      osc.start(startTime);
-      osc.stop(startTime + duration);
+    const note = (freq: number, t: number, dur: number) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'triangle'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.2, t + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.01, t + dur);
+      o.start(t); o.stop(t + dur);
     };
-    const now = ctx.currentTime;
-    playNote(440, now, 0.15);     
-    playNote(554.37, now + 0.15, 0.15); 
-    playNote(659.25, now + 0.3, 0.4);  
-  } catch (e) {
-    console.error("Audio playback failed", e);
-  }
+    const n = ctx.currentTime;
+    note(440, n, 0.15); note(554, n + 0.15, 0.15); note(659, n + 0.3, 0.4);
+  } catch {}
 };
 
+// ── Main page ─────────────────────────────────────────────────────────────────
+
 export default function CheckListsPage() {
-  const { persons, settings, addTaskExecutionLog } = useStore();
+  const {
+    persons, settings,
+    checklists, checklistCompletions,
+    addChecklist, updateChecklist, deleteChecklist, setChecklistItemDone,
+    isParentUnlocked,
+  } = useStore();
+
+  const allPersons = persons;
+  const defaultPerson = persons.find(p => p.role === 'child') || persons[0];
+
+  const [selectedPersonId, setSelectedPersonId] = useState(defaultPerson?.id || '');
   const [currentDate, setCurrentDate] = useState(new Date());
-  
-  const checklistPersons = persons.filter(p => p.id === 'person1' || p.id === 'person2');
-  const [selectedPersonId, setSelectedPersonId] = useState<string>('person1');
-  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    const saved = localStorage.getItem('checklistState');
-    if (saved) {
-      try {
-        setCheckedItems(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to parse checklist state', e);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('checklistState', JSON.stringify(checkedItems));
-  }, [checkedItems]);
-
-  const checklists = [
-    { 
-      id: 'school', 
-      title: 'Going to School Routine',
-      items: [
-        '🛏️ ترتيب السرير',
-        '🧴 مزيل عرق + بانتي',
-        '🛁 حمام + وش + أسنان',
-        '👕 لبس + شراب',
-        '🥞 إفطار',
-        '⌚ ساعة',
-        '💇‍♀️ تسريح',
-        '🍱 لانش بوكس + ماء',
-        '🧥 جاكيت + Hat + جوانتي + شمسية',
-        '🎒 جزمة + شنطة + دعاء'
-      ]
-    },
-    { 
-      id: 'back-home', 
-      title: 'Back Home Routine',
-      items: [
-        '🎒 الشنطة مكانها',
-        '👟 الجزمة مكانها',
-        '🧥 جاكيت / Hat / جوانتي',
-        '🧼 غسيل يد و وجه',
-        '👕 تغيير هدوم',
-        '🧺 الهدوم في الغسيل',
-        '🍱 لانش بوكس',
-        '🕌 صلاة'
-      ]
-    },
-    { 
-      id: 'sleep', 
-      title: 'Sleep Routine',
-      items: []
-    },
-    {
-      id: 'leaving-home',
-      title: 'Leaving Home Routine',
-      items: [
-        '🧴 مزيل عرق',
-        '👕 لبس مريح + شراب',
-        '🥞 وجبة خفيفة قبل التحرك',
-        '⌚ ساعة',
-        '🍎 سناكس',
-        '💧 زجاجة ماء',
-        '🧥 جاكيت + كاب + نظارة شمس',
-        '🚲 العجلة / الـ Skate / ألعاب',
-        '💇‍♀️ تسريح الشعر',
-        '👟 تجهيز الحذاء',
-        '🎒 شنطة الظهر',
-        '🤲 دعاء الخروج / الركوب',
-      ]
-    },
-  ];
-
   const dateKey = format(currentDate, 'yyyy-MM-dd');
 
-  const toggleItem = (list: any, itemIndex: number) => {
-    const key = `${dateKey}-${selectedPersonId}-${list.id}-${itemIndex}`;
-    const willBeChecked = !checkedItems[key];
-    
-    setCheckedItems(prev => {
-      const newState = { ...prev, [key]: willBeChecked };
-      
-      if (willBeChecked) {
-        playDing();
-        addTaskExecutionLog({
-          childId: selectedPersonId,
-          taskId: `${list.id}-${itemIndex}`,
-          routineId: list.id,
-          type: 'checklist',
-          date: dateKey,
-          completed: true,
-          completionTimeSeconds: 30,
-          expectedTimeSeconds: 60
-        });
-        
-        // Check if this was the last item to be checked off in the list
-        const listCompletedCount = list.items.filter((_: any, idx: number) => 
-          idx === itemIndex ? true : newState[`${dateKey}-${selectedPersonId}-${list.id}-${idx}`]
-        ).length;
-        
-        if (listCompletedCount === list.items.length) {
-          playTada();
-          confetti({
-            particleCount: 150,
-            spread: 70,
-            origin: { y: 0.6 },
-            colors: ['#FBBF24', '#F87171', '#34D399', '#60A5FA']
-          });
-        }
-      }
-      return newState;
-    });
+  const selectedPerson = persons.find(p => p.id === selectedPersonId);
+
+  // Sync default when persons load
+  useEffect(() => {
+    if (!selectedPersonId && persons.length > 0) {
+      const first = persons.find(p => p.role === 'child') || persons[0];
+      setSelectedPersonId(first.id);
+    }
+  }, [persons, selectedPersonId]);
+
+  // New checklist form
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newAssignedTo, setNewAssignedTo] = useState('all');
+
+  // Inline item addition
+  const [addingItemTo, setAddingItemTo] = useState<string | null>(null);
+  const [newItemText, setNewItemText] = useState('');
+  const newItemRef = useRef<HTMLInputElement>(null);
+
+  // Inline title editing
+  const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
+  const [editingTitleText, setEditingTitleText] = useState('');
+
+  useEffect(() => {
+    if (addingItemTo && newItemRef.current) newItemRef.current.focus();
+  }, [addingItemTo]);
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  const isItemDone = (checklistId: string, itemIndex: number): boolean => {
+    const key = `${dateKey}_${selectedPersonId}_${checklistId}_${itemIndex}`;
+    return checklistCompletions.find(c => c.id === key)?.completed ?? false;
   };
+
+  const getProgress = (cl: Checklist) => {
+    const done = cl.items.filter((_, i) => isItemDone(cl.id, i)).length;
+    return { done, total: cl.items.length };
+  };
+
+  const visibleChecklists = checklists
+    .filter(cl => {
+      if (cl.assignedTo === 'all') return true;
+      if (cl.assignedTo === 'kids' && selectedPerson?.role === 'child') return true;
+      return cl.assignedTo === selectedPersonId;
+    })
+    .sort((a, b) => a.createdAt - b.createdAt);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────────
+
+  const handleToggle = (cl: Checklist, itemIndex: number) => {
+    const wasDone = isItemDone(cl.id, itemIndex);
+    setChecklistItemDone(cl.id, selectedPersonId, dateKey, itemIndex, !wasDone);
+    if (!wasDone) {
+      playDing();
+      const willBeAllDone = cl.items.every((_, i) =>
+        i === itemIndex ? true : isItemDone(cl.id, i)
+      );
+      if (willBeAllDone) {
+        playTada();
+        confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 }, colors: ['#2D6A4F', '#F87171', '#60A5FA', '#FBBF24'] });
+      }
+    }
+  };
+
+  const handleCreateChecklist = () => {
+    if (!newTitle.trim()) return;
+    addChecklist({ title: newTitle.trim(), items: [], assignedTo: newAssignedTo });
+    setNewTitle('');
+    setNewAssignedTo('all');
+    setShowNewForm(false);
+  };
+
+  const handleAddItem = (cl: Checklist) => {
+    if (!newItemText.trim()) return;
+    updateChecklist(cl.id, { items: [...cl.items, newItemText.trim()] });
+    setNewItemText('');
+    // keep focus for rapid entry
+    setTimeout(() => newItemRef.current?.focus(), 50);
+  };
+
+  const handleDeleteItem = (cl: Checklist, idx: number) => {
+    updateChecklist(cl.id, { items: cl.items.filter((_, i) => i !== idx) });
+  };
+
+  const handleSaveTitle = (cl: Checklist) => {
+    if (editingTitleText.trim()) updateChecklist(cl.id, { title: editingTitleText.trim() });
+    setEditingTitleId(null);
+  };
+
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <AppLayout>
-      <div className="flex flex-col h-full space-y-8 lg:p-4 pb-24">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-4 lg:px-0 mt-6 lg:mt-0">
-          <div className="flex items-center gap-4">
-            <div className="p-4 bg-primary/10 rounded-3xl text-primary shadow-sm">
-              <CheckSquare className="w-10 h-10" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-black tracking-tighter text-foreground">Check Lists</h1>
-              <p className="text-muted-foreground font-bold text-lg">Daily routine checklists</p>
-            </div>
+      <div className="max-w-[1400px] mx-auto space-y-8 pb-28 lg:pb-8">
+
+        {/* Page header */}
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+            <CheckSquare className="w-8 h-8" />
           </div>
-          
-          <div className="flex flex-wrap items-center gap-3">
-            <Select value={selectedPersonId} onValueChange={setSelectedPersonId}>
-              <SelectTrigger className="w-auto h-14 rounded-3xl font-black border-2 bg-white shadow-sm px-6 text-lg hover:border-primary/50 transition-colors">
-                <SelectValue placeholder="Select user" />
-              </SelectTrigger>
-              <SelectContent className="rounded-3xl border-none shadow-2xl p-2">
-                {checklistPersons.map(p => (
-                  <SelectItem key={p.id} value={p.id} className="rounded-2xl cursor-pointer">
-                    <div className="flex items-center gap-4 py-2 pr-4">
-                      <div className="w-10 h-10 rounded-full overflow-hidden border-4 shadow-sm" style={{ borderColor: p.color }}>
-                        <Image 
-                          src={getAvatarUrl(p.id)} 
-                          alt={p.name} 
-                          width={40} 
-                          height={40} 
-                          className={cn(
-                            "object-cover", 
-                            p.id === 'person3' && "scale-110 -translate-y-4",
-                            p.id === 'person4' && "scale-105 translate-y-[-2px]",
-                            p.id === 'person2' && "scale-150 translate-y-3",
-                            p.id === 'person1' && "scale-110 translate-y-4"
-                          )}
-                        />
-                      </div>
-                      <span className="text-xl font-black">{getPersonName(p, settings.language)}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <h1 className="text-4xl font-black tracking-tight">Checklists</h1>
+        </div>
 
-            <div className="flex items-center gap-1 bg-white p-1.5 rounded-3xl shadow-sm border-2">
-              <Button variant="ghost" size="icon" className="rounded-2xl h-11 w-11 hover:bg-muted shadow-sm transition-all" onClick={() => setCurrentDate(addDays(currentDate, -1))}>
-                <ChevronLeft className="w-6 h-6 rtl:rotate-180 text-primary" />
-              </Button>
-              
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" className="text-lg font-black rounded-2xl flex gap-2 px-6 h-11 hover:bg-primary/10 transition-all text-foreground">
-                    <CalendarIcon className="w-5 h-5 text-primary" />
-                    {format(currentDate, 'MMM d, yyyy')}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 rounded-[2.5rem] overflow-hidden shadow-2xl border-none" align="end">
-                  <Calendar
-                    mode="single"
-                    selected={currentDate}
-                    onSelect={(date) => date && setCurrentDate(date)}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+        {/* Controls row */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 
-              <Button variant="ghost" size="icon" className="rounded-2xl h-11 w-11 hover:bg-muted shadow-sm transition-all" onClick={() => setCurrentDate(addDays(currentDate, 1))}>
-                <ChevronRight className="w-6 h-6 rtl:rotate-180 text-primary" />
-              </Button>
-            </div>
-          </div>
-        </header>
-
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 px-4 lg:px-0">
-          {checklists.map((list) => {
-            const listCompletedCount = list.items.filter((_, idx) => checkedItems[`${dateKey}-${selectedPersonId}-${list.id}-${idx}`]).length;
-            const totalItems = list.items.length;
-            const isAllCompleted = totalItems > 0 && listCompletedCount === totalItems;
-            const progressPercentage = totalItems === 0 ? 0 : (listCompletedCount / totalItems) * 100;
-
-            return (
-              <Card 
-                key={list.id} 
+          {/* Person pill tabs */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {allPersons.map(p => (
+              <button
+                key={p.id}
+                onClick={() => setSelectedPersonId(p.id)}
                 className={cn(
-                  "border-[3px] shadow-lg rounded-[3rem] overflow-hidden hover:shadow-xl transition-all duration-300",
-                  isAllCompleted ? 'bg-primary/10 border-primary/40 scale-[1.01]' : 'bg-white border-muted/50'
+                  'flex items-center gap-2 h-11 px-4 rounded-2xl font-bold text-sm transition-all border',
+                  selectedPersonId === p.id
+                    ? 'text-white border-transparent shadow-md'
+                    : 'bg-card border-border text-muted-foreground hover:border-primary/30'
                 )}
+                style={selectedPersonId === p.id ? { backgroundColor: p.color, borderColor: p.color } : {}}
               >
-                <CardHeader className="bg-muted/10 pb-6 border-b px-8 pt-8">
-                  <CardTitle className="text-3xl font-black flex flex-col gap-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className={cn(
-                          "p-3 rounded-2xl shadow-inner",
-                          isAllCompleted ? "bg-primary text-primary-foreground" : "bg-white text-muted-foreground"
-                        )}>
-                          <CheckSquare className="w-8 h-8" />
-                        </div>
-                        <span className={isAllCompleted ? 'text-primary' : 'text-foreground'}>{list.title}</span>
-                      </div>
-                      {totalItems > 0 && (
-                        <div className={cn(
-                          "text-xl font-black px-5 py-2 rounded-2xl border-2 shadow-sm",
-                          isAllCompleted ? "bg-primary text-primary-foreground border-primary" : "bg-white text-muted-foreground border-muted"
-                        )}>
-                          {listCompletedCount} / {totalItems}
+                <div className="w-6 h-6 rounded-full overflow-hidden border-2 border-white/30 shrink-0">
+                  <Image src={getAvatarUrl(p.id, p.avatarUrl)} alt={p.name} width={24} height={24} className="object-cover w-full h-full" />
+                </div>
+                {getPersonName(p, settings.language)}
+              </button>
+            ))}
+          </div>
+
+          {/* Date navigator */}
+          <div className="flex items-center gap-1 bg-card border rounded-2xl p-1 shrink-0">
+            <button onClick={() => setCurrentDate(d => addDays(d, -1))} className="p-2 rounded-xl hover:bg-muted/50 transition-all">
+              <ChevronLeft className="w-5 h-5 text-muted-foreground" />
+            </button>
+            <span className="px-3 font-black text-sm min-w-[110px] text-center">
+              {format(currentDate, 'EEE, MMM d')}
+            </span>
+            <button onClick={() => setCurrentDate(d => addDays(d, 1))} className="p-2 rounded-xl hover:bg-muted/50 transition-all">
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+          </div>
+        </div>
+
+        {/* New checklist form (parents only) */}
+        {isParentUnlocked && showNewForm && (
+          <div className="bg-card border-2 border-primary/20 rounded-[2rem] p-6 space-y-4 shadow-sm">
+            <h3 className="font-black text-lg text-primary">New Checklist</h3>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                autoFocus
+                type="text"
+                placeholder="Checklist title…"
+                value={newTitle}
+                onChange={e => setNewTitle(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleCreateChecklist()}
+                className="flex-1 h-11 px-4 rounded-xl border bg-background font-bold focus:outline-none focus:border-primary transition-colors"
+              />
+              <select
+                value={newAssignedTo}
+                onChange={e => setNewAssignedTo(e.target.value)}
+                className="h-11 px-4 rounded-xl border bg-background font-bold focus:outline-none focus:border-primary transition-colors"
+              >
+                <option value="all">Everyone</option>
+                <option value="kids">All Kids</option>
+                {allPersons.map(p => (
+                  <option key={p.id} value={p.id}>{getPersonName(p, settings.language)}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setShowNewForm(false)} className="flex-1 h-11 rounded-xl border font-bold text-muted-foreground hover:bg-muted/50 transition-all">
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateChecklist}
+                disabled={!newTitle.trim()}
+                className="flex-[2] h-11 rounded-xl bg-primary text-primary-foreground font-black hover:bg-primary/90 transition-all disabled:opacity-50 shadow-md shadow-primary/20"
+              >
+                Create Checklist
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {visibleChecklists.length === 0 && (
+          <div className="text-center py-20 space-y-4">
+            <div className="text-6xl">📋</div>
+            <p className="text-xl font-black text-muted-foreground/50">No checklists yet</p>
+            {isParentUnlocked ? (
+              <button
+                onClick={() => setShowNewForm(true)}
+                className="inline-flex items-center gap-2 h-12 px-8 rounded-2xl bg-primary text-primary-foreground font-black shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all"
+              >
+                <Plus className="w-5 h-5" /> Create your first checklist
+              </button>
+            ) : (
+              <p className="text-sm font-medium text-muted-foreground">Ask a parent to add checklists.</p>
+            )}
+          </div>
+        )}
+
+        {/* Checklist grid */}
+        {visibleChecklists.length > 0 && (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {visibleChecklists.map(cl => {
+              const { done, total } = getProgress(cl);
+              const allDone = total > 0 && done === total;
+              const pct = total === 0 ? 0 : (done / total) * 100;
+              const isEditingTitle = editingTitleId === cl.id;
+              const isAddingItem = addingItemTo === cl.id;
+
+              return (
+                <div
+                  key={cl.id}
+                  className={cn(
+                    'rounded-[2.5rem] border overflow-hidden transition-all duration-300',
+                    allDone ? 'bg-primary/8 border-primary/30' : 'bg-card border-border'
+                  )}
+                >
+                  {/* Card header */}
+                  <div className={cn('px-7 pt-7 pb-5 border-b', allDone ? 'border-primary/20' : 'border-border')}>
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                      {/* Title */}
+                      {isEditingTitle ? (
+                        <input
+                          autoFocus
+                          value={editingTitleText}
+                          onChange={e => setEditingTitleText(e.target.value)}
+                          onBlur={() => handleSaveTitle(cl)}
+                          onKeyDown={e => { if (e.key === 'Enter') handleSaveTitle(cl); if (e.key === 'Escape') setEditingTitleId(null); }}
+                          className="flex-1 text-xl font-black bg-transparent border-b-2 border-primary focus:outline-none pb-1"
+                        />
+                      ) : (
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className={cn('p-2 rounded-xl shrink-0', allDone ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
+                            <CheckSquare className="w-5 h-5" />
+                          </div>
+                          <h3 className={cn('text-xl font-black truncate', allDone ? 'text-primary' : 'text-foreground')}>
+                            {cl.title}
+                          </h3>
                         </div>
                       )}
-                    </div>
-                    {totalItems > 0 && (
-                      <Progress value={progressPercentage} className="h-4 rounded-full bg-muted shadow-inner border" />
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-8 px-8 pb-8">
-                  {totalItems > 0 ? (
-                    <div className="space-y-4">
-                      {list.items.map((item, index) => {
-                        const isChecked = !!checkedItems[`${dateKey}-${selectedPersonId}-${list.id}-${index}`];
-                        return (
-                          <div 
-                            key={index}
-                            className={cn(
-                              "flex items-center gap-6 p-5 rounded-3xl transition-all duration-300 cursor-pointer border-[3px]",
-                              isChecked 
-                                ? 'bg-primary/10 border-primary/30 opacity-70 scale-[0.98]' 
-                                : 'bg-white border-muted/20 hover:border-primary/40 hover:shadow-md'
-                            )}
-                            onClick={() => toggleItem(list, index)}
-                          >
-                            <div className="shrink-0 flex items-center">
-                              {isChecked ? (
-                                <button 
-                                  onClick={(e) => { e.stopPropagation(); toggleItem(list, index); }}
-                                  className="bg-primary/20 text-primary font-black py-2 px-4 rounded-xl flex items-center gap-2 shadow-inner border-2 border-primary/30 text-sm whitespace-nowrap"
-                                >
-                                  ✅ Done
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); toggleItem(list, index); }}
-                                  className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-black py-2 px-3 rounded-xl flex items-center gap-2 transition-colors border-2 border-emerald-200 shadow-sm whitespace-nowrap text-xs"
-                                >
-                                  ☑️ Mark Done
-                                </button>
-                              )}
-                            </div>
-                            <span 
-                              className={cn(
-                                "text-2xl font-bold transition-all duration-300", 
-                                isChecked ? 'text-muted-foreground line-through decoration-primary decoration-4' : 'text-foreground'
-                              )} 
-                              dir="auto"
-                            >
-                              {item}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-16 text-center px-4 rounded-[2rem] border-4 border-dashed border-muted/30 bg-muted/5">
-                      <div className="w-24 h-24 mb-4 opacity-20">
-                        <CheckSquare className="w-full h-full" />
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        {total > 0 && (
+                          <span className={cn(
+                            'text-sm font-black px-3 py-1 rounded-xl border',
+                            allDone ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/50 text-muted-foreground border-border'
+                          )}>
+                            {done}/{total}
+                          </span>
+                        )}
+                        {isParentUnlocked && (
+                          <>
+                            <button onClick={() => { setEditingTitleId(cl.id); setEditingTitleText(cl.title); }}
+                              className="p-2 rounded-xl hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => deleteChecklist(cl.id)}
+                              className="p-2 rounded-xl hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
-                      <p className="text-2xl text-muted-foreground font-black">
-                        No items yet for {format(currentDate, 'MMM d')}.
+                    </div>
+
+                    {total > 0 && (
+                      <Progress value={pct} className="h-2 rounded-full" />
+                    )}
+                  </div>
+
+                  {/* Items */}
+                  <div className="px-5 py-4 space-y-2">
+                    {cl.items.length === 0 && !isAddingItem && (
+                      <p className="text-center text-sm font-bold text-muted-foreground/40 py-6">
+                        No items yet{isParentUnlocked ? ' — add some below' : ''}
                       </p>
-                      <p className="text-lg text-muted-foreground/60 font-bold mt-2">
-                        You can add checklist items here later.
-                      </p>
+                    )}
+
+                    {cl.items.map((item, idx) => {
+                      const done = isItemDone(cl.id, idx);
+                      return (
+                        <div
+                          key={idx}
+                          onClick={() => handleToggle(cl, idx)}
+                          className={cn(
+                            'flex items-center gap-3 p-3 rounded-2xl cursor-pointer border transition-all duration-200 group',
+                            done
+                              ? 'bg-primary/8 border-primary/20 opacity-60'
+                              : 'bg-background border-border hover:border-primary/30 hover:shadow-sm'
+                          )}
+                        >
+                          {/* Checkbox */}
+                          <div className={cn(
+                            'w-7 h-7 rounded-xl border-2 flex items-center justify-center shrink-0 transition-all',
+                            done ? 'bg-primary border-primary' : 'border-border group-hover:border-primary/50'
+                          )}>
+                            {done && <Check className="w-4 h-4 text-primary-foreground stroke-[3px]" />}
+                          </div>
+
+                          {/* Text */}
+                          <span className={cn('flex-1 font-bold text-base', done && 'line-through text-muted-foreground')} dir="auto">
+                            {item}
+                          </span>
+
+                          {/* Delete item (parents only) */}
+                          {isParentUnlocked && (
+                            <button
+                              onClick={e => { e.stopPropagation(); handleDeleteItem(cl, idx); }}
+                              className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Add item input */}
+                    {isParentUnlocked && isAddingItem && (
+                      <div className="flex items-center gap-2 p-2">
+                        <input
+                          ref={newItemRef}
+                          value={newItemText}
+                          onChange={e => setNewItemText(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleAddItem(cl);
+                            if (e.key === 'Escape') { setAddingItemTo(null); setNewItemText(''); }
+                          }}
+                          placeholder="New item…"
+                          dir="auto"
+                          className="flex-1 h-10 px-3 rounded-xl border bg-background font-bold text-sm focus:outline-none focus:border-primary transition-colors"
+                        />
+                        <button onClick={() => handleAddItem(cl)}
+                          className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-all shrink-0">
+                          <Check className="w-4 h-4 stroke-[3px]" />
+                        </button>
+                        <button onClick={() => { setAddingItemTo(null); setNewItemText(''); }}
+                          className="w-10 h-10 rounded-xl border flex items-center justify-center hover:bg-muted/50 transition-all shrink-0">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card footer */}
+                  {isParentUnlocked && (
+                    <div className="px-5 pb-5">
+                      <button
+                        onClick={() => { setAddingItemTo(isAddingItem ? null : cl.id); setNewItemText(''); }}
+                        className={cn(
+                          'w-full h-10 rounded-2xl border-2 border-dashed text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2',
+                          isAddingItem
+                            ? 'border-primary/40 text-primary bg-primary/5'
+                            : 'border-border text-muted-foreground hover:border-primary/40 hover:text-primary'
+                        )}
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Add item
+                      </button>
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
+                </div>
+              );
+            })}
+
+            {/* "New checklist" card (parents only) */}
+            {isParentUnlocked && (
+              <button
+                onClick={() => setShowNewForm(true)}
+                className="rounded-[2.5rem] border-2 border-dashed border-border hover:border-primary/40 bg-transparent hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-3 p-12 text-muted-foreground hover:text-primary min-h-[180px]"
+              >
+                <ListPlus className="w-10 h-10" />
+                <span className="font-black text-sm uppercase tracking-widest">New Checklist</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </AppLayout>
   );

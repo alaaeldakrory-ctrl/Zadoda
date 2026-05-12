@@ -2,9 +2,11 @@
 export type Language = 'en' | 'ar';
 
 export interface Person {
-  id: string; // "person1", "person2", "person3", "person4"
+  id: string;
   name: string;
   color: string;
+  role: 'parent' | 'child';
+  avatarUrl?: string;
 }
 
 export interface Memo {
@@ -86,6 +88,8 @@ export interface AppSettings {
   dayStartTime: string; // HH:mm
   dayEndTime: string;   // HH:mm
   language: Language;
+  familyName?: string;
+  pin?: string;
 }
 
 export interface TaskExecutionLog {
@@ -129,6 +133,23 @@ export interface ParentLog {
   goodItems: string[]; 
   badItems: string[];
   note?: string;
+}
+
+export interface Checklist {
+  id: string;
+  title: string;
+  items: string[];
+  assignedTo: string; // personId | 'all' | 'kids'
+  createdAt: number;
+}
+
+export interface ChecklistCompletion {
+  id: string; // `${date}_${personId}_${checklistId}_${itemIndex}`
+  checklistId: string;
+  personId: string;
+  date: string; // YYYY-MM-DD
+  itemIndex: number;
+  completed: boolean;
 }
 
 // ── Parent self-reflection journal (Mohamed & Wesam reflect on their own parenting) ──

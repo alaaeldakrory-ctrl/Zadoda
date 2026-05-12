@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 export function QuickLog() {
   const { persons, settings, parentLogs } = useStore();
   const db = useFirestore();
-  const kids = persons.filter(p => p.id === 'person1' || p.id === 'person2');
+  const kids = persons.filter(p => p.role === 'child');
 
   const [selectedKid, setSelectedKid] = useState(kids[0]?.id || '');
   const [mood, setMood] = useState<'good' | 'neutral' | 'bad'>('neutral');

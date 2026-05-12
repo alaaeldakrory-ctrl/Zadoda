@@ -5,7 +5,7 @@ import React, { Suspense } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { cn, getAvatarUrl, getPersonName } from '@/lib/utils';
-import { Calendar, Layers, Settings, Globe, StickyNote, Plus, Users, ClipboardList, CheckSquare, Lock, Unlock, Tv2 } from 'lucide-react';
+import { Calendar, Layers, Settings, Globe, StickyNote, Plus, Users, ClipboardList, CheckSquare, Lock, Unlock, Tv2, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -106,18 +106,12 @@ const SidebarNav = () => {
           >
             <div className="relative">
               <div className="w-20 h-20 rounded-full overflow-hidden border-4 transition-transform group-hover:scale-110 shadow-sm" style={{ borderColor: person.color }}>
-                <Image 
-                  src={getAvatarUrl(person.id)} 
-                  alt={person.name} 
-                  width={80} 
-                  height={80} 
-                  className={cn(
-                    "object-cover", 
-                    person.id === 'person3' && "scale-110 -translate-y-4",
-                    person.id === 'person4' && "scale-105 translate-y-[-2px]",
-                    person.id === 'person2' && "scale-150 translate-y-3",
-                    person.id === 'person1' && "scale-110 translate-y-4"
-                  )}
+                <Image
+                  src={getAvatarUrl(person.id, person.avatarUrl)}
+                  alt={person.name}
+                  width={80}
+                  height={80}
+                  className="object-cover w-full h-full"
                   data-ai-hint="person headshot"
                   priority
                 />
@@ -201,7 +195,15 @@ const MobileBottomNav = () => {
 };
 
 export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { settings, setLanguage } = useStore();
+  const { settings, setLanguage, currentUser, isAuthLoading, signOut } = useStore();
+  const router = useRouter();
+
+  // Redirect to login when not authenticated
+  React.useEffect(() => {
+    if (!isAuthLoading && (!currentUser || currentUser.isAnonymous)) {
+      router.replace('/login');
+    }
+  }, [isAuthLoading, currentUser, router]);
   const t = getTranslation(settings.language);
 
   const logoImage = PlaceHolderImages.find(img => img.id === 'app-logo')?.imageUrl;
@@ -240,22 +242,37 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           </Suspense>
         </nav>
 
-        <div className="p-8 border-t bg-muted/5 flex flex-col gap-2">
+        <div className="p-6 border-t bg-muted/5 flex flex-col gap-1">
           <Link
             href="/tv"
-            className="flex items-center gap-4 px-6 py-3 rounded-2xl font-bold text-muted-foreground hover:bg-white hover:text-foreground hover:shadow-sm transition-all group"
+            className="flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-muted-foreground hover:bg-card hover:text-foreground transition-all group"
           >
             <Tv2 className="w-5 h-5 group-hover:text-primary transition-colors" />
-            <span className="text-base">Wall / TV Mode</span>
+            <span className="text-sm">Wall / TV Mode</span>
           </Link>
           <Button
             variant="ghost"
-            className="w-full justify-start gap-4 h-14 rounded-2xl font-bold hover:bg-white hover:shadow-sm transition-all"
+            className="w-full justify-start gap-3 h-11 rounded-2xl font-bold hover:bg-card text-sm px-4"
             onClick={() => setLanguage(settings.language === 'en' ? 'ar' : 'en')}
           >
-            <Globe className="w-6 h-6 text-primary" />
-            <span className="text-lg">{settings.language === 'en' ? 'العربية' : 'English'}</span>
+            <Globe className="w-5 h-5 text-primary" />
+            {settings.language === 'en' ? 'العربية' : 'English'}
           </Button>
+          {currentUser && !currentUser.isAnonymous && (
+            <>
+              <div className="px-4 py-2">
+                <p className="text-[10px] font-bold text-muted-foreground/50 truncate">{currentUser.email || currentUser.displayName}</p>
+              </div>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 h-11 rounded-2xl font-bold hover:bg-destructive/10 hover:text-destructive text-muted-foreground text-sm px-4 transition-all"
+                onClick={signOut}
+              >
+                <LogOut className="w-5 h-5" />
+                Sign Out
+              </Button>
+            </>
+          )}
         </div>
       </aside>
 

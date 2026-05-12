@@ -3,107 +3,15 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * ZADODA SCHEDULER SECURITY RULES
-     */
-
-    function isSignedIn() {
-      return request.auth != null;
+    // All family data lives under /families/{familyId}/.
+    // Only the authenticated user whose UID matches the familyId may read or write.
+    match /families/{familyId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == familyId;
     }
 
-    function isExisting() {
-      return resource != null;
-    }
-
-    function matchesPath(field, pathValue) {
-      return field == pathValue;
-    }
-
-    match /{path=**}/eventOccurrenceOverrides/{overrideId} {
-      allow get, list: if isSignedIn();
-    }
-
-    match /{path=**}/overrides/{overrideId} {
-      allow get, list: if isSignedIn();
-    }
-
-    match /appSettings/{settingsId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && matchesPath(request.resource.data.id, settingsId);
-      allow update, delete: if isSignedIn() && isExisting();
-    }
-
-    match /people/{personId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && matchesPath(request.resource.data.id, personId);
-      allow update, delete: if isSignedIn() && isExisting();
-    }
-
-    match /memos/{memoId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && matchesPath(request.resource.data.id, memoId);
-      allow update, delete: if isSignedIn() && isExisting();
-    }
-
-    match /chores/{choreId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && matchesPath(request.resource.data.id, choreId);
-      allow update, delete: if isSignedIn() && isExisting();
-
-      match /overrides/{overrideId} {
-        allow get, list: if isSignedIn();
-        allow create: if isSignedIn() && matchesPath(request.resource.data.choreId, choreId);
-        allow update, delete: if isSignedIn() && isExisting();
-      }
-    }
-
-    match /fixedEventTemplates/{templateId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && matchesPath(request.resource.data.id, templateId);
-      allow update, delete: if isSignedIn() && isExisting();
-    }
-
-    match /calendarEventSeries/{seriesId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && matchesPath(request.resource.data.id, seriesId);
-      allow update, delete: if isSignedIn() && isExisting();
-
-      match /eventOccurrenceOverrides/{overrideId} {
-        allow get, list: if isSignedIn();
-        allow create: if isSignedIn() && matchesPath(request.resource.data.seriesId, seriesId);
-        allow update: if isSignedIn() && isExisting() && matchesPath(request.resource.data.seriesId, resource.data.seriesId);
-        allow delete: if isSignedIn() && isExisting();
-      }
-    }
-
-    match /executionLogs/{logId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && matchesPath(request.resource.data.id, logId);
-      allow update, delete: if isSignedIn() && isExisting();
-    }
-
-    match /goals/{goalId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && matchesPath(request.resource.data.id, goalId);
-      allow update, delete: if isSignedIn() && isExisting();
-    }
-
-    match /rewardRules/{ruleId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && matchesPath(request.resource.data.id, ruleId);
-      allow update, delete: if isSignedIn() && isExisting();
-    }
-
-    match /parentLogs/{logId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && matchesPath(request.resource.data.id, logId);
-      allow update, delete: if isSignedIn() && isExisting();
-    }
-
-    match /parentSelfLogs/{logId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && matchesPath(request.resource.data.id, logId);
-      allow update, delete: if isSignedIn() && isExisting();
+    // Deny everything else (old root-level collections, etc.)
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
