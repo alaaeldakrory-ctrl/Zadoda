@@ -2,8 +2,6 @@
 
 import React, { useState } from 'react';
 import { useStore } from '@/lib/store';
-import { useFirestore, setDocumentNonBlocking } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { getPersonName, getAvatarUrl } from '@/lib/utils';
@@ -12,8 +10,7 @@ import Image from 'next/image';
 import { format } from 'date-fns';
 
 export function QuickLog() {
-  const { persons, settings, parentLogs } = useStore();
-  const db = useFirestore();
+  const { persons, settings, parentLogs, addParentLog } = useStore();
   const kids = persons.filter(p => p.role === 'child');
 
   const [selectedKid, setSelectedKid] = useState(kids[0]?.id || '');
@@ -22,16 +19,15 @@ export function QuickLog() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!db || !selectedKid) return;
+    if (!selectedKid) return;
 
-    const ref = doc(collection(db, 'parentLogs'));
-    setDocumentNonBlocking(ref, {
-      id: ref.id,
+    addParentLog({
       childId: selectedKid,
       date: format(new Date(), 'yyyy-MM-dd'),
-      mood,
-      issueTags: [],
-      note
+      overallMood: mood,
+      goodItems: [],
+      badItems: [],
+      note,
     });
 
     setNote('');
@@ -57,7 +53,7 @@ export function QuickLog() {
                 className={`flex-1 rounded-2xl p-4 border-2 transition-all flex flex-col items-center gap-2 ${selectedKid === kid.id ? 'border-primary bg-primary/5 ring-4 ring-primary/10' : 'border-transparent bg-muted/20 hover:bg-muted/40'}`}
               >
                 <div className="w-12 h-12 rounded-full overflow-hidden">
-                  <Image src={getAvatarUrl(kid.id)} alt={kid.name} width={48} height={48} className="object-cover w-full h-full" />
+                  <Image src={getAvatarUrl(kid.id, kid.avatarUrl)} alt={kid.name} width={48} height={48} className="object-cover w-full h-full" />
                 </div>
                 <span className="font-bold text-sm">{getPersonName(kid, settings.language)}</span>
               </button>
@@ -99,7 +95,7 @@ export function QuickLog() {
                 <div key={log.id} className="bg-muted/10 p-4 rounded-2xl border">
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-bold text-sm" style={{ color: kid?.color }}>{kid?.name}</span>
-                    <span className="text-xs font-black uppercase tracking-widest px-2 py-1 bg-white rounded-md shadow-sm border text-muted-foreground">{log.mood}</span>
+                    <span className="text-xs font-black uppercase tracking-widest px-2 py-1 bg-white rounded-md shadow-sm border text-muted-foreground">{log.overallMood}</span>
                   </div>
                   {log.note && <p className="text-sm font-medium">{log.note}</p>}
                 </div>
