@@ -335,8 +335,12 @@ export function ParentSelfJournal({ selectedDate }: { selectedDate: Date }) {
 
   const parents = persons.filter(p => p.role === 'parent');
 
-  const [selectedParent, setSelectedParent] = useState(parents[0]?.id || '');
+  const [selectedParent, setSelectedParent] = useState('');
   const [editing, setEditing] = useState<string | 'new' | undefined>(undefined);
+
+  useEffect(() => {
+    if (!selectedParent && parents.length > 0) setSelectedParent(parents[0].id);
+  }, [parents, selectedParent]);
 
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
   const todayEntries = parentSelfLogs.filter(l => l.parentId === selectedParent && l.date === dateStr);
@@ -397,7 +401,7 @@ export function ParentSelfJournal({ selectedDate }: { selectedDate: Date }) {
               >
                 <div className="w-10 h-10 rounded-full overflow-hidden border-2 shadow-sm shrink-0"
                   style={{ borderColor: parent.color }}>
-                  <Image src={getAvatarUrl(parent.id)} alt={parent.name} width={40} height={40} className="object-cover w-full h-full" />
+                  <Image src={getAvatarUrl(parent.id, parent.avatarUrl)} alt={parent.name} width={40} height={40} className="object-cover w-full h-full" />
                 </div>
                 <span className="font-black text-sm text-indigo-900">{getPersonName(parent, settings.language)}</span>
               </button>
