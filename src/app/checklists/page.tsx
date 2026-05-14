@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { AppLayout } from '@/components/ui/Layout';
 import { useStore } from '@/lib/store';
 import { format, addDays } from 'date-fns';
-import { CheckSquare, Plus, Trash2, ChevronLeft, ChevronRight, Check, X, Pencil, ListPlus } from 'lucide-react';
+import { CheckSquare, Plus, Trash2, ChevronLeft, ChevronRight, Check, X, Pencil, ListPlus, Copy, ChevronUp, ChevronDown } from 'lucide-react';
 import { getAvatarUrl, getPersonName, cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import Image from 'next/image';
@@ -86,6 +86,9 @@ export default function CheckListsPage() {
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [editingTitleText, setEditingTitleText] = useState('');
 
+  // Copy-to panel
+  const [copyingId, setCopyingId] = useState<string | null>(null);
+
   useEffect(() => {
     if (addingItemTo && newItemRef.current) newItemRef.current.focus();
   }, [addingItemTo]);
@@ -152,6 +155,19 @@ export default function CheckListsPage() {
     setEditingTitleId(null);
   };
 
+  const handleCopyTo = (cl: Checklist, targetPersonId: string) => {
+    addChecklist({ title: cl.title, items: [...cl.items], assignedTo: targetPersonId });
+    setCopyingId(null);
+  };
+
+  const handleMoveItem = (cl: Checklist, idx: number, dir: 'up' | 'down') => {
+    const items = [...cl.items];
+    const swap = dir === 'up' ? idx - 1 : idx + 1;
+    if (swap < 0 || swap >= items.length) return;
+    [items[idx], items[swap]] = [items[swap], items[idx]];
+    updateChecklist(cl.id, { items });
+  };
+
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
@@ -164,6 +180,7 @@ export default function CheckListsPage() {
             <CheckSquare className="w-8 h-8" />
           </div>
           <h1 className="text-4xl font-black tracking-tight">Checklists</h1>
+          <p className="text-base text-muted-foreground font-bold opacity-70">Step-by-step routines to keep the family on track.</p>
         </div>
 
         {/* Controls row */}
@@ -250,7 +267,7 @@ export default function CheckListsPage() {
         {visibleChecklists.length === 0 && (
           <div className="text-center py-20 space-y-4">
             <div className="text-6xl">📋</div>
-            <p className="text-xl font-black text-muted-foreground/50">No checklists yet</p>
+            <p className="text-xl font-black text-muted-foreground/50">No checklists yet — add one to get started.</p>
             {isParentUnlocked ? (
               <button
                 onClick={() => setShowNewForm(true)}
@@ -306,7 +323,7 @@ export default function CheckListsPage() {
                         </div>
                       )}
 
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
                         {total > 0 && (
                           <span className={cn(
                             'text-sm font-black px-3 py-1 rounded-xl border',
@@ -317,6 +334,25 @@ export default function CheckListsPage() {
                         )}
                         {isParentUnlocked && (
                           <>
+                            <button
+                              onClick={() => updateChecklist(cl.id, { countForScoring: cl.countForScoring !== false ? false : true })}
+                              className={cn(
+                                'text-[10px] font-black px-2 py-1 rounded-xl border transition-all',
+                                cl.countForScoring !== false
+                                  ? 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100'
+                                  : 'bg-muted/50 text-muted-foreground border-border hover:border-muted-foreground/40'
+                              )}
+                              title={cl.countForScoring !== false ? 'Counted in scoring — click to exclude' : 'Not scored — click to include'}
+                            >
+                              {cl.countForScoring !== false ? '⭐ Scored' : '○ Not scored'}
+                            </button>
+                            <button
+                              onClick={() => setCopyingId(copyingId === cl.id ? null : cl.id)}
+                              className={cn('p-2 rounded-xl transition-colors', copyingId === cl.id ? 'bg-blue-100 text-blue-600' : 'hover:bg-muted/50 text-muted-foreground hover:text-blue-600')}
+                              title="Copy checklist to another person"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </button>
                             <button onClick={() => { setEditingTitleId(cl.id); setEditingTitleText(cl.title); }}
                               className="p-2 rounded-xl hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
                               <Pencil className="w-4 h-4" />
@@ -334,6 +370,27 @@ export default function CheckListsPage() {
                       <Progress value={pct} className="h-2 rounded-full" />
                     )}
                   </div>
+
+                  {/* Copy-to panel */}
+                  {isParentUnlocked && copyingId === cl.id && (
+                    <div className="px-7 py-4 bg-blue-50/80 border-b border-blue-100 flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-black uppercase tracking-widest text-blue-500 mr-1 opacity-70">Copy to:</span>
+                      {allPersons.map(p => (
+                        <button
+                          key={p.id}
+                          onClick={() => handleCopyTo(cl, p.id)}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-2xl border-2 font-bold text-xs hover:opacity-75 transition-all bg-white"
+                          style={{ borderColor: p.color, color: p.color }}
+                        >
+                          <Image src={getAvatarUrl(p.id, p.avatarUrl)} alt={p.name} width={20} height={20} className="w-5 h-5 rounded-full object-cover" />
+                          {getPersonName(p, settings.language)}
+                        </button>
+                      ))}
+                      <button onClick={() => setCopyingId(null)} className="text-xs font-bold text-muted-foreground hover:text-foreground px-2 transition-colors">
+                        Cancel
+                      </button>
+                    </div>
+                  )}
 
                   {/* Items */}
                   <div className="px-5 py-4 space-y-2">
@@ -369,14 +426,35 @@ export default function CheckListsPage() {
                             {item}
                           </span>
 
-                          {/* Delete item (parents only) */}
+                          {/* Reorder + delete (parents only) */}
                           {isParentUnlocked && (
-                            <button
-                              onClick={e => { e.stopPropagation(); handleDeleteItem(cl, idx); }}
-                              className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                            <div
+                              className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all"
+                              onClick={e => e.stopPropagation()}
                             >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
+                              <button
+                                onClick={() => handleMoveItem(cl, idx, 'up')}
+                                disabled={idx === 0}
+                                className="p-1 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-all disabled:opacity-20"
+                                title="Move up"
+                              >
+                                <ChevronUp className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleMoveItem(cl, idx, 'down')}
+                                disabled={idx === cl.items.length - 1}
+                                className="p-1 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-all disabled:opacity-20"
+                                title="Move down"
+                              >
+                                <ChevronDown className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteItem(cl, idx)}
+                                className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           )}
                         </div>
                       );

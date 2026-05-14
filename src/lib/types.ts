@@ -141,6 +141,7 @@ export interface Checklist {
   items: string[];
   assignedTo: string; // personId | 'all' | 'kids'
   createdAt: number;
+  countForScoring?: boolean; // undefined/true = counts; false = excluded from scoring
 }
 
 export interface ChecklistCompletion {
