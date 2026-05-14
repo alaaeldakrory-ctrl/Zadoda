@@ -42,7 +42,7 @@ export function PointsEngine() {
             >
               <div className="w-16 h-16 rounded-full overflow-hidden border-2 shadow-sm shrink-0" style={{ borderColor: kid.color }}>
                 <Image
-                  src={getAvatarUrl(kid.id)}
+                  src={getAvatarUrl(kid.id, kid.avatarUrl)}
                   alt={kid.name}
                   width={64}
                   height={64}

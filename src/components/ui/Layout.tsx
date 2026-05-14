@@ -5,88 +5,51 @@ import React, { Suspense } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { cn, getAvatarUrl, getPersonName } from '@/lib/utils';
-import { Calendar, Layers, Settings, Globe, StickyNote, Plus, Users, ClipboardList, CheckSquare, Lock, Unlock, Tv2, LogOut } from 'lucide-react';
+import { Home, Calendar, Layers, Settings, Globe, StickyNote, Plus, Users, ClipboardList, CheckSquare, Tv2, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
+
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PinDialog } from '@/components/ui/PinDialog';
-
 const SidebarNav = () => {
-  const { settings, persons, isParentUnlocked, lockParent } = useStore();
+  const { settings, persons } = useStore();
   const t = getTranslation(settings.language);
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const currentPersonId = searchParams.get('personId');
-  const [pinDialogOpen, setPinDialogOpen] = React.useState(false);
-  const [pendingHref, setPendingHref] = React.useState<string | null>(null);
 
   const navItems = [
+    { label: 'Home', icon: Home, href: '/home' },
     { label: t.calendar, icon: Calendar, href: '/' },
     { label: t.dailyChores, icon: ClipboardList, href: '/chores' },
     { label: t.checkLists, icon: CheckSquare, href: '/checklists' },
-    { label: t.memos, icon: StickyNote, href: '/memos' },
-    { label: t.parentsPlanning || 'Parents Planning', icon: Layers, href: '/parents-planning', protected: true },
-    { label: t.settings, icon: Settings, href: '/settings', protected: true },
+    { label: t.todos, icon: StickyNote, href: '/todos' },
+    { label: t.parentsPlanning || 'Parents Planning', icon: Layers, href: '/parents-planning' },
+    { label: t.settings, icon: Settings, href: '/settings' },
   ];
-
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, item: typeof navItems[0]) => {
-    if (item.protected && !isParentUnlocked) {
-      e.preventDefault();
-      setPendingHref(item.href);
-      setPinDialogOpen(true);
-    }
-  };
 
   return (
     <>
-      <div className="px-4 mb-4 flex items-center justify-between">
+      <div className="px-4 mb-4">
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">Menu</p>
-        {isParentUnlocked && (
-          <button 
-            onClick={() => lockParent()} 
-            className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1 hover:text-primary/80 transition-colors"
-          >
-            <Lock className="w-3 h-3" /> {t.lock || 'Lock App'}
-          </button>
-        )}
       </div>
       {navItems.map(item => (
         <Link
           key={item.href}
           href={item.href}
-          onClick={(e) => handleNavClick(e, item)}
           className={cn(
             "flex items-center gap-4 px-6 py-4 rounded-3xl transition-all font-bold text-lg group",
-            pathname === item.href 
-              ? "bg-primary/10 text-foreground" 
+            pathname === item.href
+              ? "bg-primary/10 text-foreground"
               : "hover:bg-muted text-muted-foreground hover:text-foreground"
           )}
         >
-          <div className="relative">
-            <item.icon className={cn("w-6 h-6", pathname === item.href ? "text-primary" : "group-hover:text-primary")} />
-            {item.protected && !isParentUnlocked && (
-              <Lock className="w-3 h-3 absolute -bottom-1 -right-1 text-muted-foreground bg-background rounded-full" />
-            )}
-            {item.protected && isParentUnlocked && (
-              <Unlock className="w-3 h-3 absolute -bottom-1 -right-1 text-primary bg-background rounded-full" />
-            )}
-          </div>
+          <item.icon className={cn("w-6 h-6", pathname === item.href ? "text-primary" : "group-hover:text-primary")} />
           {item.label}
         </Link>
       ))}
-      <PinDialog 
-        open={pinDialogOpen} 
-        onOpenChange={setPinDialogOpen} 
-        onSuccess={() => {
-          if (pendingHref) {
-            router.push(pendingHref);
-          }
-        }} 
-      />
 
       <div className="px-4 mt-10 mb-4">
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60 flex items-center gap-2">
@@ -131,28 +94,16 @@ const SidebarNav = () => {
 };
 
 const MobileBottomNav = () => {
-  const { settings, isParentUnlocked, lockParent } = useStore();
-  const t = getTranslation(settings.language);
+  const { settings } = useStore();
   const pathname = usePathname();
-  const router = useRouter();
-  const [pinDialogOpen, setPinDialogOpen] = React.useState(false);
-  const [pendingHref, setPendingHref] = React.useState<string | null>(null);
 
   const navItems = [
+    { label: 'Home', icon: Home, href: '/home' },
     { label: 'Calendar', icon: Calendar, href: '/' },
     { label: 'Chores', icon: ClipboardList, href: '/chores' },
-    { label: 'Checklists', icon: CheckSquare, href: '/checklists' },
-    { label: 'Parents', icon: Layers, href: '/parents-planning', protected: true },
-    { label: 'Settings', icon: Settings, href: '/settings', protected: true },
+    { label: 'Parents', icon: Layers, href: '/parents-planning' },
+    { label: 'Settings', icon: Settings, href: '/settings' },
   ];
-
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, item: typeof navItems[0]) => {
-    if (item.protected && !isParentUnlocked) {
-      e.preventDefault();
-      setPendingHref(item.href);
-      setPinDialogOpen(true);
-    }
-  };
 
   return (
     <nav className="border-t flex lg:hidden bg-card/95 backdrop-blur-xl sticky bottom-0 z-30 px-2 pb-[env(safe-area-inset-bottom)] pt-2 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.08)]">
@@ -163,33 +114,17 @@ const MobileBottomNav = () => {
             <Link
               key={item.href}
               href={item.href}
-              onClick={(e) => handleNavClick(e, item)}
               className={cn(
-                "flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-95 touch-manipulation relative",
+                "flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-95 touch-manipulation",
                 isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <div className="relative">
-                <item.icon className={cn("w-6 h-6", isActive && "fill-primary/20 stroke-[2.5px]")} />
-                {item.protected && !isParentUnlocked && (
-                  <Lock className="w-3 h-3 absolute -bottom-1 -right-1 text-muted-foreground bg-background rounded-full" />
-                )}
-                {item.protected && isParentUnlocked && (
-                  <Unlock className="w-3 h-3 absolute -bottom-1 -right-1 text-primary bg-background rounded-full" />
-                )}
-              </div>
+              <item.icon className={cn("w-6 h-6", isActive && "fill-primary/20 stroke-[2.5px]")} />
               <span className="text-[9px] font-black uppercase tracking-wider">{item.label}</span>
             </Link>
           );
         })}
       </div>
-      <PinDialog 
-        open={pinDialogOpen} 
-        onOpenChange={setPinDialogOpen} 
-        onSuccess={() => {
-          if (pendingHref) router.push(pendingHref);
-        }} 
-      />
     </nav>
   );
 };

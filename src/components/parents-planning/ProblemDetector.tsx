@@ -114,7 +114,7 @@ export function ProblemDetector() {
               return (
                 <div key={p.id} className="border-l-4 rounded-r-2xl p-4 bg-muted/5 flex items-start gap-4" style={{ borderLeftColor: p.severity === 'high' ? '#EF4444' : p.severity === 'medium' ? '#F59E0B' : '#3B82F6' }}>
                   <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 mt-1">
-                    <Image src={getAvatarUrl(kid.id)} alt={kid.name} width={40} height={40} className="object-cover w-full h-full" />
+                    <Image src={getAvatarUrl(kid.id, kid.avatarUrl)} alt={kid.name} width={40} height={40} className="object-cover w-full h-full" />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">

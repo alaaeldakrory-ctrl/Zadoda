@@ -9,6 +9,19 @@ import { LayoutDashboard } from 'lucide-react';
 import Image from 'next/image';
 import { format } from 'date-fns';
 
+function paceLabel(ratio: number): string {
+  if (ratio < 1.0) return 'Ahead of schedule ✓';
+  if (ratio <= 1.05) return 'On track ✓';
+  if (ratio <= 1.5) return 'Slightly behind';
+  return 'Needs attention';
+}
+
+function paceColor(ratio: number): string {
+  if (ratio <= 1.05) return '#10B981';
+  if (ratio <= 1.5) return '#F59E0B';
+  return '#EF4444';
+}
+
 export function DailySummaryCard({ selectedDate }: { selectedDate: Date }) {
   const { executionLogs, persons, settings } = useStore();
   const t = getTranslation(settings.language);
@@ -45,7 +58,7 @@ export function DailySummaryCard({ selectedDate }: { selectedDate: Date }) {
               <div key={kid.id} className="border-2 rounded-3xl p-6 relative overflow-hidden bg-muted/5 flex flex-col gap-6" style={{ borderColor: `${kid.color}50` }}>
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-full overflow-hidden border-4 shadow-sm" style={{ borderColor: kid.color }}>
-                    <Image src={getAvatarUrl(kid.id)} alt={kid.name} width={64} height={64} className="object-cover w-full h-full" />
+                    <Image src={getAvatarUrl(kid.id, kid.avatarUrl)} alt={kid.name} width={64} height={64} className="object-cover w-full h-full" />
                   </div>
                   <div>
                     <h3 className="text-2xl font-black" style={{ color: kid.color }}>{getPersonName(kid, settings.language)}</h3>
@@ -60,8 +73,8 @@ export function DailySummaryCard({ selectedDate }: { selectedDate: Date }) {
                   </div>
                   <div className="col-span-2 bg-muted/30 rounded-2xl p-4 border flex items-center justify-between">
                     <div>
-                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 opacity-60">{pt.delayRatio}</p>
-                      <p className="text-xl font-black">{avgDelayRatio.toFixed(1)}x <span className="text-[10px] font-bold text-muted-foreground ml-2 opacity-50">({pt.ideal})</span></p>
+                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1 opacity-60">Pace</p>
+                      <p className="text-xl font-black" style={{ color: paceColor(avgDelayRatio) }}>{paceLabel(avgDelayRatio)}</p>
                     </div>
                   </div>
                 </div>

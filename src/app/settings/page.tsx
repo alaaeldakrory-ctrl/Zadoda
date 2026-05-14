@@ -9,21 +9,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Globe, Calendar, Users, Clock, Palette, Download, Plus, Pencil, Trash2, Library, Layers, Settings as SettingsIcon, ShieldCheck, UserPlus, Baby, Crown } from 'lucide-react';
+import { Globe, Calendar, Users, Clock, Palette, Download, Plus, Pencil, Trash2, Library, Layers, Settings as SettingsIcon, UserPlus, Baby, Crown, Camera } from 'lucide-react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { getAvatarUrl, cn, getPersonName } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FixedEventTemplate, Person } from '@/lib/types';
 import { TemplateDialog } from '@/components/templates/TemplateDialog';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { AvatarCropDialog } from '@/components/ui/AvatarCropDialog';
 
 const PRESET_COLORS = ['#F87171', '#60A5FA', '#34D399', '#FBBF24', '#A78BFA', '#F472B6', '#FB923C', '#2DD4BF'];
 
 export default function SettingsPage() {
-  const { settings, updateSettings, persons, updatePerson, addPerson, deletePerson, templates, deleteTemplate, isParentUnlocked } = useStore();
+  const { settings, updateSettings, persons, updatePerson, addPerson, deletePerson, templates, deleteTemplate } = useStore();
   const t = getTranslation(settings.language);
-  const router = useRouter();
 
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -34,14 +33,6 @@ export default function SettingsPage() {
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState('#60A5FA');
   const [newRole, setNewRole] = useState<'parent' | 'child'>('child');
-
-  // PIN change state
-  const [newPin, setNewPin] = useState('');
-  const [pinSaved, setPinSaved] = useState(false);
-
-  useEffect(() => {
-    if (!isParentUnlocked) router.push('/');
-  }, [isParentUnlocked, router]);
 
   useEffect(() => {
     const handler = (e: any) => { e.preventDefault(); setDeferredPrompt(e); };
@@ -65,15 +56,6 @@ export default function SettingsPage() {
     setShowAddPerson(false);
   };
 
-  const handleSavePin = () => {
-    if (newPin.length < 4) return;
-    updateSettings({ pin: newPin });
-    setNewPin('');
-    setPinSaved(true);
-    setTimeout(() => setPinSaved(false), 2000);
-  };
-
-  if (!isParentUnlocked) return null;
 
   return (
     <AppLayout>
@@ -92,9 +74,6 @@ export default function SettingsPage() {
             </TabsTrigger>
             <TabsTrigger value="people" className="h-full px-4 sm:px-8 rounded-xl font-bold text-sm sm:text-base whitespace-nowrap data-[state=active]:bg-card data-[state=active]:shadow-sm">
               Family
-            </TabsTrigger>
-            <TabsTrigger value="security" className="h-full px-4 sm:px-8 rounded-xl font-bold text-sm sm:text-base whitespace-nowrap data-[state=active]:bg-card data-[state=active]:shadow-sm">
-              Security
             </TabsTrigger>
             <TabsTrigger value="fixed-events" className="h-full px-4 sm:px-8 rounded-xl font-bold text-sm sm:text-base whitespace-nowrap data-[state=active]:bg-card data-[state=active]:shadow-sm">
               {t.fixedEvents}
@@ -284,48 +263,6 @@ export default function SettingsPage() {
             </div>
           </TabsContent>
 
-          {/* ── Security ── */}
-          <TabsContent value="security" className="mt-8 focus-visible:outline-none focus-visible:ring-0">
-            <div className="max-w-2xl space-y-6">
-              <Card className="rounded-[2.5rem] border bg-card overflow-hidden">
-                <CardHeader className="bg-muted/20 pb-5">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-primary/20 rounded-xl">
-                      <ShieldCheck className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl font-black">Parent Lock PIN</CardTitle>
-                      <CardDescription className="font-medium">
-                        The PIN that protects the Parents Planning and Settings sections. Default: 1234
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6 space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">New PIN (4–6 digits)</Label>
-                    <Input
-                      type="password"
-                      inputMode="numeric"
-                      maxLength={6}
-                      placeholder="Enter new PIN"
-                      value={newPin}
-                      onChange={e => setNewPin(e.target.value.replace(/\D/g, ''))}
-                      className="h-12 rounded-2xl border font-bold text-base px-5 tracking-[0.3em] w-40"
-                    />
-                  </div>
-                  <Button
-                    onClick={handleSavePin}
-                    disabled={newPin.length < 4}
-                    className="rounded-full h-11 px-8 font-black shadow-md shadow-primary/20"
-                  >
-                    {pinSaved ? '✓ Saved!' : 'Save PIN'}
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
           {/* ── Fixed Events / Templates ── */}
           <TabsContent value="fixed-events" className="mt-8 focus-visible:outline-none focus-visible:ring-0">
             <div className="space-y-8">
@@ -390,18 +327,35 @@ export default function SettingsPage() {
 
 function PersonCard({ person, onUpdate, onDelete }: { person: Person; onUpdate: (u: Partial<Person>) => void; onDelete: () => void }) {
   const [name, setName] = useState(person.name);
+  const [cropOpen, setCropOpen] = useState(false);
 
   return (
+    <>
+      <AvatarCropDialog
+        open={cropOpen}
+        onOpenChange={setCropOpen}
+        personName={person.name}
+        personColor={person.color}
+        onSave={(dataUrl) => { onUpdate({ avatarUrl: dataUrl }); setCropOpen(false); }}
+      />
     <div className="bg-card border rounded-[2rem] p-5 flex items-center gap-4">
-      {/* Avatar */}
-      <div className="w-14 h-14 rounded-full overflow-hidden border-4 shrink-0" style={{ borderColor: person.color }}>
+      {/* Avatar — click to open crop dialog */}
+      <button
+        onClick={() => setCropOpen(true)}
+        className="relative w-14 h-14 rounded-full overflow-hidden border-4 shrink-0 group focus:outline-none"
+        style={{ borderColor: person.color }}
+        title="Change photo"
+      >
         <Image
           src={getAvatarUrl(person.id, person.avatarUrl)}
           alt={person.name}
           width={56} height={56}
           className="object-cover w-full h-full"
         />
-      </div>
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <Camera className="w-5 h-5 text-white" />
+        </div>
+      </button>
 
       {/* Name */}
       <div className="flex-1 min-w-0">
@@ -439,5 +393,6 @@ function PersonCard({ person, onUpdate, onDelete }: { person: Person; onUpdate: 
         <Trash2 className="w-4 h-4" />
       </button>
     </div>
+    </>
   );
 }

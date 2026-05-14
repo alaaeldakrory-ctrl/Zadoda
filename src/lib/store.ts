@@ -2,6 +2,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { format } from 'date-fns';
 import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language, Memo, Chore, ChoreOverride, TaskExecutionLog, Goal, RewardRule, ParentLog, ParentSelfLog, Checklist, ChecklistCompletion } from './types';
 import { timeToMinutes, minutesToTime } from './utils';
 import {
@@ -66,6 +67,9 @@ interface StoreContextValue {
   updateOccurrence: (seriesId: string, date: string, updates: Partial<CalendarEventOccurrenceOverride>) => void;
   moveEvent: (seriesId: string, date: string, newStartTime: string, newPersonId: string) => void;
   addTaskExecutionLog: (log: Omit<TaskExecutionLog, 'id'>) => void;
+  addGoal: (g: Omit<Goal, 'id' | 'createdAt'>) => void;
+  updateGoal: (id: string, updates: Partial<Goal>) => void;
+  deleteGoal: (id: string) => void;
   addParentLog: (log: Omit<ParentLog, 'id'>) => void;
   updateParentLog: (id: string, updates: Partial<ParentLog>) => void;
   deleteParentLog: (id: string) => void;
@@ -140,14 +144,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const checklistCompletionsRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'checklistCompletions') : null, [db, familyId]);
   const { data: checklistCompletionsData } = useCollection<ChecklistCompletion>(checklistCompletionsRef);
 
-  const [isParentUnlocked, setIsParentUnlocked] = useState(false);
+  const isParentUnlocked = true;
+  const [localLanguage, setLocalLanguage] = useState<Language>('en');
 
-  // Lock parent section when user changes
-  useEffect(() => {
-    setIsParentUnlocked(false);
-  }, [familyId]);
-
-  const settings = settingsData || DEFAULT_SETTINGS;
+  // Merge: Firestore language wins when authenticated, local override used otherwise
+  const settings = settingsData
+    ? settingsData
+    : { ...DEFAULT_SETTINGS, language: localLanguage };
   const persons = personsData || [];
   const templates = templatesData || [];
   const series = seriesData || [];
@@ -191,25 +194,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // ─── Auth ────────────────────────────────────────────────────────────────────
 
-  const unlockParent = (pin: string) => {
-    const correctPin = settings.pin || '1234';
-    if (pin === correctPin) {
-      setIsParentUnlocked(true);
-      return true;
-    }
-    return false;
-  };
-
-  const lockParent = () => setIsParentUnlocked(false);
+  const unlockParent = (_pin: string) => true;
+  const lockParent = () => {};
 
   const signOut = async () => {
-    setIsParentUnlocked(false);
     await signOutUser(auth);
   };
 
   // ─── Settings ────────────────────────────────────────────────────────────────
 
   const setLanguage = (language: Language) => {
+    setLocalLanguage(language);
     if (!settingsRef) return;
     setDocumentNonBlocking(settingsRef, { ...settings, language, id: 'global' }, { merge: true });
   };
@@ -390,6 +385,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setDocumentNonBlocking(ref, { ...log, id: ref.id });
   };
 
+  // ─── Goals ───────────────────────────────────────────────────────────────────
+
+  const addGoal = (g: Omit<Goal, 'id' | 'createdAt'>) => {
+    if (!familyId) return;
+    const ref = doc(fCol('goals'));
+    setDocumentNonBlocking(ref, { ...g, id: ref.id, createdAt: format(new Date(), 'yyyy-MM-dd') });
+  };
+
+  const updateGoal = (id: string, updates: Partial<Goal>) => {
+    if (!familyId) return;
+    updateDocumentNonBlocking(fDoc('goals', id), updates);
+  };
+
+  const deleteGoal = (id: string) => {
+    if (!familyId) return;
+    deleteDocumentNonBlocking(fDoc('goals', id));
+  };
+
   // ─── Parent logs ─────────────────────────────────────────────────────────────
 
   const addParentLog = (log: Omit<ParentLog, 'id'>) => {
@@ -507,6 +520,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     updateOccurrence,
     moveEvent,
     addTaskExecutionLog,
+    addGoal,
+    updateGoal,
+    deleteGoal,
     addParentLog,
     updateParentLog,
     deleteParentLog,

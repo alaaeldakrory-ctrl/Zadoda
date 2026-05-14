@@ -9,6 +9,19 @@ import Image from 'next/image';
 import { TrendingUp, TrendingDown, Minus, Sparkles, AlertCircle } from 'lucide-react';
 import { addDays } from 'date-fns';
 
+function paceLabel(ratio: number): string {
+  if (ratio < 1.0) return 'Ahead of schedule ✓';
+  if (ratio <= 1.05) return 'On track ✓';
+  if (ratio <= 1.5) return 'Slightly behind';
+  return 'Needs attention';
+}
+
+function paceColor(ratio: number): string {
+  if (ratio <= 1.05) return '#10B981';
+  if (ratio <= 1.5) return '#F59E0B';
+  return '#EF4444';
+}
+
 export function WeeklyDashboard({ selectedDate }: { selectedDate: Date }) {
   const { executionLogs, parentLogs, persons, settings } = useStore();
   const t = getTranslation(settings.language);
@@ -98,7 +111,7 @@ export function WeeklyDashboard({ selectedDate }: { selectedDate: Date }) {
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-full overflow-hidden border-4 shadow-md shrink-0" style={{ borderColor: kid.color }}>
                     <Image 
-                      src={getAvatarUrl(kid.id)} 
+                      src={getAvatarUrl(kid.id, kid.avatarUrl)}
                       alt={kid.name} 
                       width={64} 
                       height={64} 
@@ -123,8 +136,8 @@ export function WeeklyDashboard({ selectedDate }: { selectedDate: Date }) {
                   </div>
                   <div className="col-span-2 bg-muted/30 rounded-3xl p-6 border flex items-center justify-between">
                     <div>
-                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2 opacity-50">{pt.delayRatio}</p>
-                      <p className="text-2xl font-black">{currentStats.avgDelayRatio.toFixed(1)}x <span className="text-xs font-bold text-muted-foreground ml-2 opacity-60">({pt.ideal})</span></p>
+                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2 opacity-50">Pace</p>
+                      <p className="text-2xl font-black" style={{ color: paceColor(currentStats.avgDelayRatio) }}>{paceLabel(currentStats.avgDelayRatio)}</p>
                     </div>
                   </div>
                 </div>

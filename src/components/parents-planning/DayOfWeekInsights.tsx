@@ -67,7 +67,7 @@ export function DayOfWeekInsights() {
             <div key={kid.id}>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full overflow-hidden border-2 shrink-0" style={{ borderColor: kid.color }}>
-                  <Image src={getAvatarUrl(kid.id)} alt={kid.name} width={40} height={40} className="object-cover w-full h-full" />
+                  <Image src={getAvatarUrl(kid.id, kid.avatarUrl)} alt={kid.name} width={40} height={40} className="object-cover w-full h-full" />
                 </div>
                 <span className="font-black text-lg" style={{ color: kid.color }}>
                   {getPersonName(kid, settings.language)}
@@ -115,11 +115,11 @@ export function DayOfWeekInsights() {
               </div>
 
               <div className="flex items-center gap-4 mt-3 text-xs font-bold">
-                {bestDay?.avg !== null && (
-                  <span className="text-emerald-600">✅ Best: {bestDay?.label} ({Math.round(bestDay!.avg! * 100)}%)</span>
+                {bestDay != null && bestDay.avg !== null && (
+                  <span className="text-emerald-600">✅ Best: {bestDay.label} ({Math.round(bestDay.avg * 100)}%)</span>
                 )}
-                {worstDay?.avg !== null && worstDay?.avg !== maxAvg && (
-                  <span className="text-rose-500">⚠️ Toughest: {worstDay?.label} ({Math.round(worstDay!.avg! * 100)}%)</span>
+                {worstDay != null && worstDay.avg !== null && worstDay.avg !== maxAvg && (
+                  <span className="text-rose-500">⚠️ Toughest: {worstDay.label} ({Math.round(worstDay.avg * 100)}%)</span>
                 )}
               </div>
             </div>

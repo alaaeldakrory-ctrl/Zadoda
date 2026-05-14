@@ -143,7 +143,7 @@ export default function ChoresPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8">
           <div className="space-y-2">
             <h1 className="text-4xl lg:text-5xl font-black tracking-tighter">{t.dailyChores}</h1>
-            <p className="text-lg text-muted-foreground font-bold opacity-70">Plan and assign tasks for the family.</p>
+            <p className="text-lg text-muted-foreground font-bold opacity-70">Household tasks assigned to the family — tracked daily.</p>
           </div>
           
           <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="w-full sm:w-auto">
@@ -212,7 +212,7 @@ export default function ChoresPage() {
                   <ClipboardList className="w-16 h-16 text-muted-foreground" />
                 </div>
                 <div className="space-y-3">
-                  <p className="text-muted-foreground font-black text-2xl">No chores planned for today.</p>
+                  <p className="text-muted-foreground font-black text-2xl">No chores assigned for today.</p>
                   <p className="text-muted-foreground/60 font-bold max-w-sm mx-auto text-base">Pick a task from the library to get started.</p>
                 </div>
                 <Button onClick={() => setIsPickDialogOpen(true)} variant="link" className="font-black uppercase tracking-[0.2em] text-primary text-sm">
@@ -277,7 +277,7 @@ export default function ChoresPage() {
                           >
                             {assignedPerson ? (
                               <Image 
-                                src={getAvatarUrl(assignedPerson.id)} 
+                                src={getAvatarUrl(assignedPerson.id, assignedPerson.avatarUrl)}
                                 alt="assigned" 
                                 width={40} 
                                 height={40}
