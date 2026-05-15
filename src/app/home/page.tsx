@@ -3,25 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/ui/Layout';
 import { useStore } from '@/lib/store';
-import { getTranslation } from '@/lib/i18n';
-import {
-  getOccurrencesForDate, formatTime, getPersonName, getAvatarUrl, cn, timeToMinutes
-} from '@/lib/utils';
+import { getOccurrencesForDate, formatTime, getPersonName, timeToMinutes } from '@/lib/utils';
 import { format } from 'date-fns';
-import Image from 'next/image';
-import {
-  Sun, CloudRain, Cloud, Star, AlertTriangle,
-  Plus, CheckCircle2, Circle, Flame, ChevronRight
-} from 'lucide-react';
+import { Sun, CloudRain, Cloud, Plus, CheckCircle2, Flame, CalendarDays, Users, StickyNote } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 // ── Weather ───────────────────────────────────────────────────────────────────
 
-interface WeatherInfo {
-  label: string;
-  icon: 'sun' | 'rain' | 'cloud';
-  temp?: number;
-}
+interface WeatherInfo { label: string; icon: 'sun' | 'rain' | 'cloud'; }
 
 function WeatherIcon({ type }: { type: WeatherInfo['icon'] }) {
   if (type === 'rain') return <CloudRain className="w-4 h-4" />;
@@ -45,12 +34,10 @@ function useWeather(): WeatherInfo | null {
         const hourlyPrecip = data.hourly?.precipitation_probability ?? [];
         const currentHour = new Date().getHours();
         const nextRainHour = hourlyPrecip.findIndex((p: number, i: number) => i > currentHour && p >= 50);
-
         let label: string;
         let icon: WeatherInfo['icon'];
         if (wm >= 61 || (nextRainHour !== -1 && nextRainHour - currentHour <= 3)) {
-          const hoursUntil = nextRainHour - currentHour;
-          label = wm >= 61 ? `Raining · ${temp}°C` : `Rain in ~${hoursUntil}h`;
+          label = wm >= 61 ? `Raining · ${temp}°C` : `Rain in ~${nextRainHour - currentHour}h`;
           icon = 'rain';
         } else if (wm >= 2) {
           label = `Cloudy · ${temp}°C`;
@@ -59,46 +46,100 @@ function useWeather(): WeatherInfo | null {
           label = `Sunny · ${temp}°C`;
           icon = 'sun';
         }
-        setWeather({ label, icon, temp });
+        setWeather({ label, icon });
       } catch {}
     }, () => {});
   }, []);
   return weather;
 }
 
-// ── Greeting Bar ─────────────────────────────────────────────────────────────
+// ── Hex → rgba helper ─────────────────────────────────────────────────────────
+
+function hexToRgba(hex: string, alpha: number): string {
+  if (!hex || hex.length < 7) return `rgba(0,0,0,${alpha})`;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// ── Section 1: Greeting Bar ───────────────────────────────────────────────────
 
 function GreetingBar() {
-  const { settings, currentUser, persons } = useStore();
+  const { settings, currentUser, persons, series, overrides } = useStore();
   const weather = useWeather();
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   const firstName = currentUser?.displayName?.split(' ')[0] || 'there';
   const today = new Date();
-  const parents = persons.filter(p => p.role === 'parent');
+  const eventCount = getOccurrencesForDate(series, today, overrides).length;
+
+  // Parents first, then children
+  const sortedPersons = [...persons].sort((a, b) =>
+    a.role === b.role ? 0 : a.role === 'parent' ? -1 : 1
+  );
 
   return (
-    <div className="rounded-[2rem] px-8 py-6 flex items-center justify-between gap-6" style={{ background: 'linear-gradient(135deg, #2D6A4F 0%, #1B4332 100%)' }}>
-      <div className="space-y-1">
-        <h1 className="text-3xl font-black text-white">{greeting}, {firstName} 👋</h1>
-        <p className="text-white/70 font-bold text-sm">
-          {format(today, 'EEEE, MMMM d')} · {settings.familyName || 'Your'} Family
+    <div
+      className="flex items-center justify-between gap-4 px-6 py-5"
+      style={{ backgroundColor: '#2D6A4F', borderRadius: 14 }}
+    >
+      {/* Left: greeting */}
+      <div className="space-y-1.5 min-w-0">
+        <div className="flex items-center gap-2">
+          <Sun style={{ width: 18, height: 18, color: 'white', flexShrink: 0 }} />
+          <span style={{ fontSize: 19, color: 'white', fontWeight: 500 }}>
+            {greeting}, {firstName}
+          </span>
+        </div>
+        <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.72)', fontWeight: 400 }}>
+          {format(today, 'EEEE, MMMM d')} · {settings.familyName || 'Your'} Family · {eventCount} event{eventCount !== 1 ? 's' : ''} today
         </p>
       </div>
-      {weather && (
-        <div className="flex items-center gap-2 bg-white/15 text-white px-4 py-2 rounded-2xl text-sm font-bold shrink-0">
-          <WeatherIcon type={weather.icon} />
-          {weather.label}
+
+      {/* Right: overlapping avatar bubbles + weather pill */}
+      <div className="flex items-center gap-4 shrink-0">
+        <div className="flex items-center">
+          {sortedPersons.map((person, i) => (
+            <div
+              key={person.id}
+              style={{
+                width: 36, height: 36,
+                borderRadius: '50%',
+                backgroundColor: person.color,
+                border: '2.5px solid #2D6A4F',
+                marginLeft: i === 0 ? 0 : -8,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                position: 'relative',
+                zIndex: sortedPersons.length - i,
+                flexShrink: 0,
+              }}
+            >
+              <span style={{ color: 'white', fontSize: 12, fontWeight: 500, lineHeight: 1 }}>
+                {person.name.slice(0, 2).toUpperCase()}
+              </span>
+            </div>
+          ))}
         </div>
-      )}
+
+        {weather && (
+          <div
+            className="flex items-center gap-1.5 text-white"
+            style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 999, padding: '6px 12px' }}
+          >
+            <WeatherIcon type={weather.icon} />
+            <span style={{ fontSize: 13, fontWeight: 500 }}>{weather.label}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-// ── Today's Schedule ─────────────────────────────────────────────────────────
+// ── Section 2: Today's Schedule ───────────────────────────────────────────────
 
 function TodaySchedule() {
-  const { series, overrides, persons, settings, toggleCompletion } = useStore();
+  const { series, overrides, persons, settings } = useStore();
   const router = useRouter();
   const today = new Date();
   const nowMins = today.getHours() * 60 + today.getMinutes();
@@ -106,82 +147,161 @@ function TodaySchedule() {
   const occurrences = getOccurrencesForDate(series, today, overrides)
     .sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
 
-  const visible = occurrences.slice(0, 7);
-  const extra = occurrences.length - 7;
+  const visible = occurrences.slice(0, 6);
+  const extra = occurrences.length - 6;
 
-  const getPerson = (personId: string) => persons.find(p => p.id === personId);
+  const getColor = (personId: string) => {
+    if (personId === 'all' || personId === 'kids') return '#9B59B6';
+    return persons.find(p => p.id === personId)?.color || '#2D6A4F';
+  };
 
   return (
-    <div className="rounded-[2rem] border bg-card shadow-sm overflow-hidden flex flex-col h-full">
-      <div className="px-6 py-5 border-b bg-muted/10">
-        <h2 className="text-xl font-black">Today's Schedule</h2>
-        <p className="text-xs font-bold text-muted-foreground opacity-60 mt-0.5">{format(today, 'EEEE, MMMM d')}</p>
+    <div
+      className="flex flex-col h-full"
+      style={{ borderRadius: 14, border: '0.5px solid var(--border)', overflow: 'hidden' }}
+    >
+      {/* Colored header */}
+      <div
+        className="flex items-center justify-between shrink-0"
+        style={{ backgroundColor: '#2D6A4F', padding: '11px 14px' }}
+      >
+        <div className="flex items-center gap-2">
+          <CalendarDays style={{ width: 16, height: 16, color: 'white' }} />
+          <span style={{ color: 'white', fontWeight: 700, fontSize: 14 }}>Today's schedule</span>
+        </div>
+        <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>
+          {format(today, 'EEE, MMM d')}
+        </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      {/* Event list */}
+      <div className="flex-1 overflow-y-auto bg-white" style={{ padding: '10px 14px 4px' }}>
         {visible.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 opacity-30">
-            <p className="font-black text-lg">No events today</p>
-            <p className="text-sm font-medium mt-1">A free day!</p>
+          <div className="flex flex-col items-center justify-center py-12" style={{ opacity: 0.35 }}>
+            <p style={{ fontWeight: 700, fontSize: 15 }}>No events today</p>
+            <p style={{ fontSize: 13, marginTop: 4 }}>A free day!</p>
           </div>
         ) : (
-          <div className="divide-y">
-            {visible.map(occ => {
-              const startMins = timeToMinutes(occ.startTime);
-              const endMins = timeToMinutes(occ.endTime);
-              const isNow = nowMins >= startMins && nowMins <= endMins;
-              const isPast = nowMins > endMins || occ.completed;
-              const person = occ.personId !== 'all' && occ.personId !== 'kids' ? getPerson(occ.personId) : null;
-              const color = person?.color || '#2D6A4F';
+          visible.map((occ, idx) => {
+            const startMins = timeToMinutes(occ.startTime);
+            const endMins = timeToMinutes(occ.endTime);
+            const isNow = nowMins >= startMins && nowMins <= endMins;
+            const isPast = !isNow && (nowMins > endMins || occ.completed);
+            const color = getColor(occ.personId);
+            const person = occ.personId !== 'all' && occ.personId !== 'kids'
+              ? persons.find(p => p.id === occ.personId)
+              : null;
 
+            if (isNow) {
               return (
-                <div key={occ.id}
-                  className={cn('flex items-center gap-4 px-6 py-4 transition-all',
-                    isNow ? 'bg-emerald-50' : isPast ? 'opacity-50' : 'hover:bg-muted/20'
-                  )}>
-                  <div className="w-14 text-right shrink-0">
-                    <span className="text-xs font-black text-muted-foreground">{formatTime(occ.startTime)}</span>
+                <div
+                  key={occ.id}
+                  className="flex items-center gap-3 my-1"
+                  style={{
+                    backgroundColor: '#F0FAF4',
+                    border: '1px solid #A8D5B5',
+                    borderRadius: 8,
+                    padding: '8px 10px',
+                    marginLeft: -4,
+                    marginRight: -4,
+                  }}
+                >
+                  <div style={{ minWidth: 44, flexShrink: 0 }}>
+                    <span style={{ fontSize: 11, color: '#2D6A4F', fontWeight: 500 }}>
+                      {formatTime(occ.startTime)}
+                    </span>
                   </div>
-                  <div className="w-1 rounded-full self-stretch min-h-8 shrink-0" style={{ backgroundColor: color }} />
+                  <div style={{ width: 3, borderRadius: 2, alignSelf: 'stretch', minHeight: 28, backgroundColor: color, flexShrink: 0 }} />
                   <div className="flex-1 min-w-0">
-                    <p className={cn('font-black text-sm truncate', isNow && 'text-emerald-800')}>{occ.title}</p>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#1A4731' }} className="truncate">
+                      {occ.title}
+                    </p>
                     {person && (
-                      <p className="text-xs font-bold text-muted-foreground opacity-60 truncate">
-                        {getPersonName(person, settings.language)}
-                      </p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <div style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
+                        <span style={{ fontSize: 11, color: '#6B7280' }} className="truncate">
+                          {getPersonName(person, settings.language)}
+                        </span>
+                      </div>
                     )}
                   </div>
-                  {isNow && (
-                    <span className="bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">NOW</span>
-                  )}
-                  {isPast && !isNow && (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                  )}
+                  <span
+                    style={{
+                      backgroundColor: '#2D6A4F', color: 'white',
+                      fontSize: 10, fontWeight: 500,
+                      borderRadius: 4, padding: '2px 7px', flexShrink: 0,
+                    }}
+                  >
+                    NOW
+                  </span>
                 </div>
               );
-            })}
-          </div>
+            }
+
+            return (
+              <div
+                key={occ.id}
+                className="flex items-center gap-3"
+                style={{
+                  padding: '8px 0',
+                  borderBottom: idx < visible.length - 1 ? '0.5px solid var(--border)' : 'none',
+                }}
+              >
+                <div style={{ minWidth: 44, flexShrink: 0 }}>
+                  <span style={{ fontSize: 11, color: '#9CA3AF' }}>
+                    {formatTime(occ.startTime)}
+                  </span>
+                </div>
+                <div style={{ width: 3, borderRadius: 2, alignSelf: 'stretch', minHeight: 28, backgroundColor: color, flexShrink: 0 }} />
+                <div className="flex-1 min-w-0">
+                  <p style={{ fontSize: 13, fontWeight: 700 }} className="truncate">
+                    {occ.title}
+                  </p>
+                  {person && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
+                      <span style={{ fontSize: 11, color: '#9CA3AF' }} className="truncate">
+                        {getPersonName(person, settings.language)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {isPast && (
+                  <CheckCircle2 style={{ width: 15, height: 15, color: '#10B981', flexShrink: 0 }} />
+                )}
+              </div>
+            );
+          })
         )}
       </div>
 
-      <div className="px-6 py-4 border-t flex items-center justify-between">
-        {extra > 0 && (
-          <button onClick={() => router.push('/')} className="text-xs font-black text-primary hover:underline">
-            + {extra} more events
+      {/* Footer */}
+      <div
+        className="bg-white flex items-center justify-between shrink-0"
+        style={{ borderTop: '0.5px solid var(--border)', padding: '10px 14px' }}
+      >
+        {extra > 0 ? (
+          <button
+            onClick={() => router.push('/')}
+            style={{ fontSize: 12, color: '#2D6A4F', fontWeight: 700 }}
+            className="hover:underline"
+          >
+            + {extra} more
           </button>
-        )}
+        ) : <span />}
         <button
           onClick={() => router.push('/')}
-          className="flex items-center gap-1 text-xs font-black text-muted-foreground hover:text-primary transition-colors ml-auto"
+          className="flex items-center gap-1 hover:opacity-70 transition-opacity"
+          style={{ fontSize: 12, color: '#6B7280', fontWeight: 700 }}
         >
-          <Plus className="w-3 h-3" /> Add event
+          <Plus style={{ width: 12, height: 12 }} /> Add event
         </button>
       </div>
     </div>
   );
 }
 
-// ── Kids on Track ─────────────────────────────────────────────────────────────
+// ── Section 3: Kids on Track ───────────────────────────────────────────────────
 
 function KidsOnTrack() {
   const { persons, chores, choreOverrides, checklists, checklistCompletions, settings } = useStore();
@@ -189,84 +309,141 @@ function KidsOnTrack() {
   const today = format(new Date(), 'yyyy-MM-dd');
   const kids = persons.filter(p => p.role === 'child');
 
+  const CIRCUMFERENCE = 188.5; // 2 * π * 30
+
   return (
-    <div className="rounded-[2rem] border bg-card shadow-sm overflow-hidden">
-      <div className="px-6 py-5 border-b bg-muted/10">
-        <h2 className="text-xl font-black">Kids on Track</h2>
-        <p className="text-xs font-bold text-muted-foreground opacity-60 mt-0.5">Today's progress</p>
+    <div style={{ borderRadius: 14, border: '0.5px solid var(--border)', overflow: 'hidden' }}>
+      {/* Colored header */}
+      <div
+        className="flex items-center justify-between"
+        style={{ backgroundColor: '#E8713A', padding: '11px 14px' }}
+      >
+        <div className="flex items-center gap-2">
+          <Users style={{ width: 16, height: 16, color: 'white' }} />
+          <span style={{ color: 'white', fontWeight: 700, fontSize: 14 }}>Kids on track</span>
+        </div>
+        <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>Today</span>
       </div>
-      <div className="p-4 space-y-3">
-        {kids.map(kid => {
-          const todayChores = choreOverrides.filter(o => o.date === today);
-          const kidChores = todayChores.filter(o => {
-            const chore = chores.find(c => c.id === o.choreId);
-            return chore && (o.assignedTo === kid.id || chore.defaultAssignedTo === kid.id);
-          });
-          const doneChores = kidChores.filter(o => o.completed).length;
-          const totalChores = kidChores.length;
 
-          const kidChecklists = checklists.filter(cl =>
-            cl.countForScoring !== false &&
-            (cl.assignedTo === kid.id || cl.assignedTo === 'all' || cl.assignedTo === 'kids')
-          );
-          const allItems = kidChecklists.flatMap((cl) =>
-            cl.items.map((_, idx) => ({ checklistId: cl.id, itemIndex: idx }))
-          );
-          const doneItems = allItems.filter(({ checklistId, itemIndex }) => {
-            const key = `${today}_${kid.id}_${checklistId}_${itemIndex}`;
-            return checklistCompletions.find(c => c.id === key)?.completed;
-          }).length;
-          const totalItems = allItems.length;
+      {/* Card body */}
+      <div className="bg-white" style={{ padding: '20px 14px 16px' }}>
+        {kids.length === 0 ? (
+          <p className="text-center py-4" style={{ fontSize: 13, color: '#9CA3AF' }}>No children added yet</p>
+        ) : (
+          <div className="flex gap-3 justify-around flex-wrap">
+            {kids.map(kid => {
+              // Chores
+              const kidChoreOverrides = choreOverrides.filter(o => o.date === today);
+              const kidChores = kidChoreOverrides.filter(o => {
+                const chore = chores.find(c => c.id === o.choreId);
+                return chore && (o.assignedTo === kid.id || chore.defaultAssignedTo === kid.id);
+              });
+              const doneChores = kidChores.filter(o => o.completed).length;
+              const totalChores = kidChores.length;
 
-          const pct = (totalChores + totalItems) === 0 ? 0
-            : Math.round(((doneChores + doneItems) / (totalChores + totalItems)) * 100);
+              // Routine (scored checklists only)
+              const kidChecklists = checklists.filter(cl =>
+                cl.countForScoring !== false &&
+                (cl.assignedTo === kid.id || cl.assignedTo === 'all' || cl.assignedTo === 'kids')
+              );
+              const allItems = kidChecklists.flatMap(cl =>
+                cl.items.map((_, idx) => ({ checklistId: cl.id, itemIndex: idx }))
+              );
+              const doneItems = allItems.filter(({ checklistId, itemIndex }) => {
+                const key = `${today}_${kid.id}_${checklistId}_${itemIndex}`;
+                return checklistCompletions.find(c => c.id === key)?.completed;
+              }).length;
+              const totalItems = allItems.length;
 
-          const pillColor = pct === 100 ? 'bg-emerald-100 text-emerald-700'
-            : pct > 0 ? 'bg-amber-100 text-amber-700'
-            : 'bg-muted text-muted-foreground';
+              // Overall %
+              const total = totalChores + totalItems;
+              const done = doneChores + doneItems;
+              const pct = total === 0 ? 0 : (done / total) * 100;
+              const dashArray = `${(pct * CIRCUMFERENCE) / 100} ${CIRCUMFERENCE}`;
 
-          return (
-            <button key={kid.id}
-              onClick={() => router.push(`/checklists?personId=${kid.id}`)}
-              className="w-full flex items-center gap-4 p-4 rounded-2xl border hover:bg-muted/20 transition-all text-left">
-              <div className="w-12 h-12 rounded-full overflow-hidden border-2 shrink-0" style={{ borderColor: kid.color }}>
-                <Image src={getAvatarUrl(kid.id, kid.avatarUrl)} alt={kid.name} width={48} height={48} className="object-cover w-full h-full" />
-              </div>
-              <div className="flex-1 min-w-0 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-black text-sm">{getPersonName(kid, settings.language)}</span>
-                  {pct === 100 ? <Star className="w-4 h-4 text-yellow-500 fill-yellow-400" /> :
-                   pct > 0 ? <AlertTriangle className="w-4 h-4 text-amber-500" /> : null}
-                </div>
-                <div className="flex gap-2">
-                  {totalChores > 0 && (
-                    <span className={cn('text-[10px] font-black px-2 py-0.5 rounded-full', pillColor)}>
-                      {doneChores}/{totalChores} chores
-                    </span>
-                  )}
-                  {totalItems > 0 && (
-                    <span className={cn('text-[10px] font-black px-2 py-0.5 rounded-full', pillColor)}>
-                      {doneItems}/{totalItems} routine
-                    </span>
-                  )}
-                  {totalChores === 0 && totalItems === 0 && (
-                    <span className="text-[10px] font-medium text-muted-foreground opacity-50">No tasks today</span>
-                  )}
-                </div>
-                <div className="w-full bg-muted/30 rounded-full h-1.5">
-                  <div className={cn('h-1.5 rounded-full transition-all', pct === 100 ? 'bg-emerald-500' : 'bg-amber-400')}
-                    style={{ width: `${pct}%` }} />
-                </div>
-              </div>
-            </button>
-          );
-        })}
+              const trackColor = hexToRgba(kid.color, 0.15);
+              const innerBg = hexToRgba(kid.color, 0.11);
+              const initials = kid.name.slice(0, 2).toUpperCase();
+
+              // Pill styles
+              const choresDone = totalChores > 0 && doneChores === totalChores;
+              const routineDone = totalItems > 0 && doneItems === totalItems;
+
+              return (
+                <button
+                  key={kid.id}
+                  onClick={() => router.push(`/checklists?personId=${kid.id}`)}
+                  className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity"
+                  style={{ minWidth: 80 }}
+                >
+                  {/* SVG ring */}
+                  <svg width={80} height={80} viewBox="0 0 80 80">
+                    {/* Track ring */}
+                    <circle cx={40} cy={40} r={30} fill="none" stroke={trackColor} strokeWidth={7} />
+                    {/* Progress arc */}
+                    <circle
+                      cx={40} cy={40} r={30}
+                      fill="none"
+                      stroke={kid.color}
+                      strokeWidth={7}
+                      strokeLinecap="round"
+                      strokeDasharray={dashArray}
+                      transform="rotate(-90 40 40)"
+                    />
+                    {/* Inner tinted circle */}
+                    <circle cx={40} cy={40} r={22} fill={innerBg} />
+                    {/* Initials */}
+                    <text
+                      x={40} y={44}
+                      textAnchor="middle"
+                      fontSize={13}
+                      fill={kid.color}
+                      fontWeight={500}
+                    >
+                      {initials}
+                    </text>
+                  </svg>
+
+                  {/* Name */}
+                  <span style={{ fontSize: 12, fontWeight: 500 }}>
+                    {getPersonName(kid, settings.language)}
+                  </span>
+
+                  {/* Status pills */}
+                  <div className="flex flex-col items-center gap-1">
+                    {totalChores > 0 && (
+                      <span style={{
+                        fontSize: 10, padding: '2px 7px', borderRadius: 20, fontWeight: 500,
+                        backgroundColor: choresDone ? '#DCFCE7' : doneChores > 0 ? '#FEF3C7' : '#F3F4F6',
+                        color: choresDone ? '#166534' : doneChores > 0 ? '#92400E' : '#6B7280',
+                      }}>
+                        {choresDone ? 'All done!' : `${doneChores}/${totalChores} chores`}
+                      </span>
+                    )}
+                    {totalItems > 0 && (
+                      <span style={{
+                        fontSize: 10, padding: '2px 7px', borderRadius: 20, fontWeight: 500,
+                        backgroundColor: routineDone ? '#DCFCE7' : '#FEF3C7',
+                        color: routineDone ? '#166534' : '#92400E',
+                      }}>
+                        {routineDone ? 'Routine done' : 'Routine pending'}
+                      </span>
+                    )}
+                    {totalChores === 0 && totalItems === 0 && (
+                      <span style={{ fontSize: 10, color: '#9CA3AF' }}>No tasks</span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-// ── My To-Dos ─────────────────────────────────────────────────────────────────
+// ── Section 4: My To-Dos ──────────────────────────────────────────────────────
 
 function MyTodos() {
   const { memos, persons, toggleMemoCompletion } = useStore();
@@ -274,34 +451,65 @@ function MyTodos() {
   const parents = persons.filter(p => p.role === 'parent');
   const parentIds = new Set(parents.map(p => p.id));
 
-  const uncompleted = memos
-    .filter(m => !m.completed && parentIds.has(m.personId))
-    .sort((a, b) => b.createdAt - a.createdAt)
-    .slice(0, 3);
+  const allUncompleted = memos.filter(m => !m.completed && parentIds.has(m.personId));
+  const visible = allUncompleted.sort((a, b) => b.createdAt - a.createdAt).slice(0, 3);
+  const pendingCount = allUncompleted.length;
 
   return (
-    <div className="rounded-[2rem] border bg-card shadow-sm overflow-hidden">
-      <div className="px-6 py-5 border-b bg-muted/10">
-        <h2 className="text-xl font-black">My To-Dos</h2>
-        <p className="text-xs font-bold text-muted-foreground opacity-60 mt-0.5">Personal reminders</p>
+    <div style={{ borderRadius: 14, border: '0.5px solid var(--border)', overflow: 'hidden' }}>
+      {/* Colored header */}
+      <div
+        className="flex items-center justify-between"
+        style={{ backgroundColor: '#6C5CE7', padding: '11px 14px' }}
+      >
+        <div className="flex items-center gap-2">
+          <StickyNote style={{ width: 16, height: 16, color: 'white' }} />
+          <span style={{ color: 'white', fontWeight: 700, fontSize: 14 }}>My to-dos</span>
+        </div>
+        <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>
+          {pendingCount} pending
+        </span>
       </div>
-      <div className="p-4 space-y-2">
-        {uncompleted.length === 0 ? (
-          <p className="text-xs font-bold text-muted-foreground opacity-50 py-4 text-center">
-            Nothing here yet — add something to remember.
+
+      {/* Card body */}
+      <div className="bg-white" style={{ padding: '8px 14px 12px' }}>
+        {visible.length === 0 ? (
+          <p className="text-center py-5" style={{ fontSize: 13, color: '#9CA3AF' }}>
+            Nothing here yet — all clear!
           </p>
         ) : (
-          uncompleted.map(memo => {
+          visible.map((memo, idx) => {
             const person = persons.find(p => p.id === memo.personId);
             return (
-              <div key={memo.id} className="flex items-center gap-3 p-3 rounded-2xl hover:bg-muted/20 transition-all">
-                <button onClick={() => toggleMemoCompletion(memo.id)}
-                  className="shrink-0 text-muted-foreground/40 hover:text-primary transition-colors">
-                  <Circle className="w-5 h-5" />
+              <div
+                key={memo.id}
+                className="flex items-center gap-3"
+                style={{
+                  padding: '10px 0',
+                  borderBottom: idx < visible.length - 1 ? '0.5px solid var(--border)' : 'none',
+                }}
+              >
+                {/* Numbered circle */}
+                <div style={{
+                  width: 20, height: 20, borderRadius: '50%',
+                  backgroundColor: '#EDE7F6',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <span style={{ fontSize: 10, color: '#5E35B1', fontWeight: 600 }}>{idx + 1}</span>
+                </div>
+
+                {/* To-do text — clicking checks it off */}
+                <button
+                  onClick={() => toggleMemoCompletion(memo.id)}
+                  className="flex-1 text-left hover:opacity-60 transition-opacity min-w-0"
+                >
+                  <span className="block truncate" style={{ fontSize: 13 }}>{memo.title}</span>
                 </button>
-                <span className="flex-1 text-sm font-bold truncate">{memo.title}</span>
+
+                {/* Assignee name */}
                 {person && (
-                  <span className="text-[10px] font-bold text-muted-foreground/50 shrink-0">
+                  <span style={{ fontSize: 10, color: '#9CA3AF', flexShrink: 0 }}>
                     {person.name.split(' ')[0]}
                   </span>
                 )}
@@ -309,16 +517,20 @@ function MyTodos() {
             );
           })
         )}
-        <button onClick={() => router.push('/todos')}
-          className="w-full flex items-center justify-center gap-1 py-2 text-xs font-black text-primary hover:underline mt-1">
-          <Plus className="w-3 h-3" /> Add to-do
+
+        <button
+          onClick={() => router.push('/todos')}
+          className="w-full flex items-center justify-center gap-1 hover:opacity-70 transition-opacity"
+          style={{ paddingTop: 10, fontSize: 12, color: '#6C5CE7', fontWeight: 700 }}
+        >
+          <Plus style={{ width: 12, height: 12 }} /> Add to-do
         </button>
       </div>
     </div>
   );
 }
 
-// ── Streak Alert ──────────────────────────────────────────────────────────────
+// ── Section 5: Streak Alert (two-tone banner) ─────────────────────────────────
 
 function StreakAlert() {
   const { goals, persons, checklists, checklistCompletions, settings } = useStore();
@@ -328,19 +540,16 @@ function StreakAlert() {
 
   if (now.getHours() < 12) return null;
 
-  const activeGoals = goals.filter(g => g.status === 'active');
   const atRisk: { kid: typeof persons[0]; goal: typeof goals[0] }[] = [];
 
-  activeGoals.forEach(goal => {
+  goals.filter(g => g.status === 'active').forEach(goal => {
     const kid = persons.find(p => p.id === goal.childId);
     if (!kid) return;
-
     const kidChecklists = checklists.filter(cl =>
       cl.countForScoring !== false &&
       (cl.assignedTo === kid.id || cl.assignedTo === 'all' || cl.assignedTo === 'kids')
     );
     if (kidChecklists.length === 0) return;
-
     const allItems = kidChecklists.flatMap(cl =>
       cl.items.map((_, idx) => ({ checklistId: cl.id, itemIndex: idx }))
     );
@@ -348,7 +557,6 @@ function StreakAlert() {
       const key = `${today}_${kid.id}_${checklistId}_${itemIndex}`;
       return checklistCompletions.find(c => c.id === key)?.completed;
     }).length;
-
     if (doneItems === 0) atRisk.push({ kid, goal });
   });
 
@@ -357,27 +565,51 @@ function StreakAlert() {
   const hoursLeft = 23 - now.getHours();
   const names = atRisk.map(r => getPersonName(r.kid, settings.language)).join(' and ');
   const title = atRisk.length === 1
-    ? `${names}'s ${atRisk[0].goal.successCriteria.targetDays}-day streak is at risk`
+    ? `${names}'s streak is at risk today`
     : `${names} both have streaks at risk today`;
-  const subtitle = atRisk.length === 1
-    ? `They haven't completed their routine yet — ${hoursLeft} hours left today.`
-    : `They haven't completed their routines yet — ${hoursLeft} hours left today.`;
+
+  const firstKidChecklists = checklists.filter(cl =>
+    cl.countForScoring !== false &&
+    (cl.assignedTo === atRisk[0].kid.id || cl.assignedTo === 'all' || cl.assignedTo === 'kids')
+  );
+  const routineName = firstKidChecklists[0]?.title || 'their routine';
+  const description = `They haven't completed ${routineName} yet — ${hoursLeft} hour${hoursLeft !== 1 ? 's' : ''} left to keep the streak alive.`;
 
   return (
-    <div className="rounded-[2rem] border-2 border-amber-200 bg-amber-50 px-6 py-5 flex items-center gap-5">
-      <div className="bg-orange-500 rounded-2xl p-3 shrink-0">
-        <Flame className="w-6 h-6 text-white" />
-      </div>
-      <div className="flex-1">
-        <p className="font-black text-amber-900">{title}</p>
-        <p className="text-sm font-bold text-amber-700 opacity-80 mt-0.5">{subtitle}</p>
-      </div>
-      <button
-        onClick={() => router.push('/checklists')}
-        className="shrink-0 flex items-center gap-1 border-2 border-emerald-600 text-emerald-700 font-black text-xs px-4 py-2 rounded-2xl hover:bg-emerald-50 transition-all"
+    <div style={{ borderRadius: 14, border: '0.5px solid #FFCC02', overflow: 'hidden' }}>
+      {/* Top strip — deep orange */}
+      <div
+        className="flex items-center gap-3"
+        style={{ backgroundColor: '#FF8C00', padding: '10px 14px' }}
       >
-        View routine <ChevronRight className="w-3 h-3" />
-      </button>
+        <Flame style={{ width: 20, height: 20, color: 'white', flexShrink: 0 }} />
+        <span style={{ fontSize: 13, color: 'white', fontWeight: 500, flex: 1 }}>{title}</span>
+        <span style={{
+          background: 'rgba(255,255,255,0.25)', color: 'white',
+          fontSize: 11, fontWeight: 500, borderRadius: 6, padding: '3px 8px', flexShrink: 0,
+        }}>
+          {atRisk[0].goal.successCriteria.targetDays}d streak
+        </span>
+      </div>
+
+      {/* Bottom body — warm amber */}
+      <div
+        className="flex items-center justify-between gap-4"
+        style={{ backgroundColor: '#FFF8E1', padding: '10px 14px' }}
+      >
+        <p style={{ fontSize: 12, color: '#7B4F00', flex: 1 }}>{description}</p>
+        <button
+          onClick={() => router.push('/checklists')}
+          style={{
+            border: '1.5px solid #2D6A4F', color: '#2D6A4F',
+            background: 'none', borderRadius: 8,
+            padding: '5px 13px', fontSize: 12, fontWeight: 600,
+            flexShrink: 0, cursor: 'pointer',
+          }}
+        >
+          View routine
+        </button>
+      </div>
     </div>
   );
 }
@@ -385,31 +617,25 @@ function StreakAlert() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
-  const today = new Date();
-  const { series: s, overrides } = useStore();
-  const eventCount = getOccurrencesForDate(s, today, overrides).length;
-
   return (
     <AppLayout>
-      <div className="max-w-[1600px] mx-auto space-y-6 pb-16">
-
+      <div className="max-w-[1600px] mx-auto space-y-5 pb-16">
         <GreetingBar />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[55%_1fr] gap-6">
-          {/* Left — Today's Schedule */}
-          <div className="min-h-[500px] flex flex-col">
+        <div className="grid grid-cols-1 lg:grid-cols-[55%_1fr] gap-5 items-start">
+          {/* Left — Today's Schedule (tall) */}
+          <div style={{ minHeight: 480 }} className="flex flex-col">
             <TodaySchedule />
           </div>
 
-          {/* Right — Kids + Todos stacked */}
-          <div className="space-y-6">
+          {/* Right — Kids on Track + My To-Dos stacked */}
+          <div className="space-y-5">
             <KidsOnTrack />
             <MyTodos />
           </div>
         </div>
 
         <StreakAlert />
-
       </div>
     </AppLayout>
   );
