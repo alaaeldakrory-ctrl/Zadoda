@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language, Memo, Chore, ChoreOverride, TaskExecutionLog, Goal, RewardRule, ParentLog, ParentSelfLog, Checklist, ChecklistCompletion } from './types';
+import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language, Memo, Chore, ChoreOverride, TaskExecutionLog, Goal, RewardRule, ParentLog, ParentSelfLog, Checklist, ChecklistCompletion, FamilyMembership, FamilyInvitation } from './types';
 import { timeToMinutes, minutesToTime } from './utils';
 import {
   useCollection,
@@ -17,7 +17,7 @@ import {
   deleteDocumentNonBlocking,
   signOutUser,
 } from '@/firebase';
-import { collection, doc, query } from 'firebase/firestore';
+import { collection, doc, query, getDoc, setDoc } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 
 interface StoreContextValue {
@@ -40,9 +40,14 @@ interface StoreContextValue {
   isParentUnlocked: boolean;
   currentUser: User | null;
   isAuthLoading: boolean;
+  familyId: string | null;
+  isFamilyOwner: boolean;
+  isMembershipLoading: boolean;
   unlockParent: (pin: string) => boolean;
   lockParent: () => void;
   signOut: () => Promise<void>;
+  generateInviteCode: () => Promise<string>;
+  joinFamily: (code: string) => Promise<{ success: boolean; error?: string }>;
   setLanguage: (lang: Language) => void;
   updateSettings: (settings: Partial<AppSettings>) => void;
   updatePerson: (id: string, updates: Partial<Person>) => void;
@@ -96,8 +101,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const auth = useAuth();
   const db = useFirestore();
 
-  // Only load family data for authenticated, non-anonymous users
-  const familyId = (user && !user.isAnonymous) ? user.uid : null;
+  // ── Family membership resolution ─────────────────────────────────────────────
+  // Look up whether this user joined another family via an invite code.
+  const membershipRef = useMemoFirebase(
+    () => (user && !user.isAnonymous) ? doc(db, 'familyMemberships', user.uid) : null,
+    [db, user]
+  );
+  const { data: membershipData, isLoading: membershipLoading } = useDoc<FamilyMembership>(membershipRef);
+
+  // While membership is loading, familyId is null so no subcollections fire yet.
+  // Once resolved: members use the owner's uid; owners use their own uid.
+  const familyId = (user && !user.isAnonymous)
+    ? (membershipLoading ? null : (membershipData?.familyId ?? user.uid))
+    : null;
+
+  const isFamilyOwner = !!(user && familyId === user.uid);
+  const isMembershipLoading = isUserLoading || membershipLoading;
 
   const settingsRef = useMemoFirebase(() => familyId ? doc(db, 'families', familyId, 'settings', 'global') : null, [db, familyId]);
   const { data: settingsData, isLoading: settingsLoading } = useDoc<AppSettings>(settingsRef);
@@ -199,6 +218,43 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const signOut = async () => {
     await signOutUser(auth);
+  };
+
+  const generateInviteCode = async (): Promise<string> => {
+    if (!familyId) throw new Error('Not authenticated');
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const invRef = doc(db, 'invitations', code);
+    await setDoc(invRef, {
+      code,
+      familyId,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 48 * 60 * 60 * 1000,
+      used: false,
+    } satisfies FamilyInvitation);
+    return code;
+  };
+
+  const joinFamily = async (code: string): Promise<{ success: boolean; error?: string }> => {
+    if (!user) return { success: false, error: 'Not signed in' };
+    try {
+      const invRef = doc(db, 'invitations', code.trim().toUpperCase());
+      const invSnap = await getDoc(invRef);
+      if (!invSnap.exists()) return { success: false, error: 'Code not found. Check the code and try again.' };
+      const inv = invSnap.data() as FamilyInvitation;
+      if (inv.used) return { success: false, error: 'This code has already been used.' };
+      if (Date.now() > inv.expiresAt) return { success: false, error: 'This code has expired. Ask for a new one.' };
+
+      // Create membership — store resolves familyId to inv.familyId on next render
+      const memRef = doc(db, 'familyMemberships', user.uid);
+      await setDoc(memRef, { uid: user.uid, familyId: inv.familyId, joinedAt: Date.now() } satisfies FamilyMembership);
+
+      // Mark invite as used
+      await setDoc(invRef, { ...inv, used: true });
+
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, error: e.message ?? 'Something went wrong.' };
+    }
   };
 
   // ─── Settings ────────────────────────────────────────────────────────────────
@@ -493,9 +549,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     isParentUnlocked,
     currentUser: user,
     isAuthLoading: isUserLoading,
+    familyId,
+    isFamilyOwner,
+    isMembershipLoading,
     unlockParent,
     lockParent,
     signOut,
+    generateInviteCode,
+    joinFamily,
     setLanguage,
     updateSettings,
     updatePerson,

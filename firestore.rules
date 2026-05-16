@@ -3,13 +3,32 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // All family data lives under /families/{familyId}/.
-    // Only the authenticated user whose UID matches the familyId may read or write.
-    match /families/{familyId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == familyId;
+    // Each user can read/write only their own membership record.
+    match /familyMemberships/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
-    // Deny everything else (old root-level collections, etc.)
+    // Any authenticated user can read invitations (to validate a code).
+    // Any authenticated user can create or update (to mark as used).
+    match /invitations/{code} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null;
+    }
+
+    // Family data is accessible by:
+    //  - the owner (uid == familyId), OR
+    //  - any user whose familyMemberships doc points to this familyId.
+    match /families/{familyId}/{document=**} {
+      allow read, write: if request.auth != null && (
+        request.auth.uid == familyId ||
+        (
+          exists(/databases/$(database)/documents/familyMemberships/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/familyMemberships/$(request.auth.uid)).data.familyId == familyId
+        )
+      );
+    }
+
+    // Deny everything else.
     match /{document=**} {
       allow read, write: if false;
     }

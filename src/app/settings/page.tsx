@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Globe, Calendar, Users, Clock, Palette, Download, Plus, Pencil, Trash2, Library, Layers, Settings as SettingsIcon, UserPlus, Baby, Crown, Camera } from 'lucide-react';
+import { Globe, Calendar, Users, Clock, Palette, Download, Plus, Pencil, Trash2, Library, Layers, Settings as SettingsIcon, UserPlus, Baby, Crown, Camera, KeyRound, Copy, Check, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { getAvatarUrl, cn, getPersonName } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,12 +21,33 @@ import { AvatarCropDialog } from '@/components/ui/AvatarCropDialog';
 const PRESET_COLORS = ['#F87171', '#60A5FA', '#34D399', '#FBBF24', '#A78BFA', '#F472B6', '#FB923C', '#2DD4BF'];
 
 export default function SettingsPage() {
-  const { settings, updateSettings, persons, updatePerson, addPerson, deletePerson, templates, deleteTemplate } = useStore();
+  const { settings, updateSettings, persons, updatePerson, addPerson, deletePerson, templates, deleteTemplate, generateInviteCode, isFamilyOwner, currentUser } = useStore();
   const t = getTranslation(settings.language);
 
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<FixedEventTemplate | null>(null);
+
+  // Partner access state
+  const [inviteCode, setInviteCode] = useState('');
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
+
+  const handleGenerateCode = async () => {
+    setInviteLoading(true);
+    try {
+      const code = await generateInviteCode();
+      setInviteCode(code);
+    } catch {}
+    setInviteLoading(false);
+  };
+
+  const handleCopyCode = () => {
+    if (!inviteCode) return;
+    navigator.clipboard.writeText(inviteCode);
+    setCodeCopied(true);
+    setTimeout(() => setCodeCopied(false), 2000);
+  };
 
   // New person form state
   const [showAddPerson, setShowAddPerson] = useState(false);
@@ -177,6 +198,83 @@ export default function SettingsPage() {
                     className="h-12 rounded-2xl border font-bold text-base px-5"
                     onChange={e => updateSettings({ familyName: e.target.value })}
                   />
+                </CardContent>
+              </Card>
+
+              {/* Partner Access */}
+              <Card className="rounded-[2.5rem] border bg-card overflow-hidden">
+                <CardHeader className="bg-muted/20 pb-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-primary/20 rounded-xl">
+                      <KeyRound className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl font-black">Partner Access</CardTitle>
+                      <CardDescription className="font-medium">
+                        {isFamilyOwner
+                          ? 'Invite your partner to see the same family data on their device.'
+                          : 'You joined this family with an invite code.'}
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6 space-y-4">
+                  {isFamilyOwner ? (
+                    <>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Generate a 6-character code and share it with your partner. It's valid for 48 hours and can only be used once.
+                      </p>
+                      {!inviteCode ? (
+                        <Button
+                          onClick={handleGenerateCode}
+                          disabled={inviteLoading}
+                          className="rounded-full h-12 px-8 font-black shadow-md shadow-primary/20 w-full sm:w-auto"
+                        >
+                          {inviteLoading
+                            ? <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            : <KeyRound className="w-4 h-4 mr-2" />}
+                          Generate Invite Code
+                        </Button>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3 p-4 rounded-2xl bg-primary/5 border-2 border-primary/20">
+                            <span className="flex-1 text-3xl font-black tracking-[0.35em] text-primary text-center">
+                              {inviteCode}
+                            </span>
+                            <button
+                              onClick={handleCopyCode}
+                              className="p-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shrink-0"
+                              title="Copy code"
+                            >
+                              {codeCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            </button>
+                          </div>
+                          <p className="text-xs font-medium text-muted-foreground opacity-60 text-center">
+                            Valid for 48 hours · Single use · Tell your partner to open Zadoda and enter this code
+                          </p>
+                          <button
+                            onClick={handleGenerateCode}
+                            disabled={inviteLoading}
+                            className="text-xs font-bold text-primary hover:underline w-full text-center"
+                          >
+                            Generate a new code
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
+                      <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                        <Check className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <div>
+                        <p className="font-black text-sm text-emerald-800">Joined via invite</p>
+                        <p className="text-xs font-medium text-emerald-600 mt-0.5">
+                          You're sharing data with this family. Signed in as {currentUser?.email}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

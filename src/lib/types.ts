@@ -144,6 +144,20 @@ export interface Checklist {
   countForScoring?: boolean; // undefined/true = counts; false = excluded from scoring
 }
 
+export interface FamilyMembership {
+  uid: string;
+  familyId: string; // the owner's uid whose family this member joined
+  joinedAt: number;
+}
+
+export interface FamilyInvitation {
+  code: string;
+  familyId: string;
+  createdAt: number;
+  expiresAt: number;
+  used: boolean;
+}
+
 export interface ChecklistCompletion {
   id: string; // `${date}_${personId}_${checklistId}_${itemIndex}`
   checklistId: string;

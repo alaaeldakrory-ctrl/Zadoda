@@ -243,7 +243,7 @@ export const LandingPage = () => {
     setGoogleError(null);
     try {
       await signInWithGoogle(auth);
-      router.push('/home');
+      router.push('/setup');
     } catch (err: any) {
       console.error('Google sign-in error:', err);
       setGoogleError(err?.code || err?.message || 'Sign-in failed');
