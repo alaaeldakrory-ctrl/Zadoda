@@ -135,13 +135,27 @@ export interface ParentLog {
   note?: string;
 }
 
+export type ChecklistScoringMode =
+  | 'always'     // counted every day (default for most routines)
+  | 'never'      // never counted (reference-only checklist)
+  | 'on-demand'; // only counted on days a parent explicitly activates it
+
 export interface Checklist {
   id: string;
   title: string;
   items: string[];
   assignedTo: string; // personId | 'all' | 'kids'
   createdAt: number;
-  countForScoring?: boolean; // undefined/true = counts; false = excluded from scoring
+  countForScoring?: boolean;    // legacy field — superseded by scoringMode
+  scoringMode?: ChecklistScoringMode;
+  deletedAt?: number;           // set on soft-delete; permanent removal after 30 days
+}
+
+export interface ChecklistDayActivation {
+  id: string;   // `${checklistId}_${date}`
+  checklistId: string;
+  date: string; // YYYY-MM-DD
+  active: boolean;
 }
 
 export interface FamilyMembership {

@@ -304,10 +304,17 @@ function TodaySchedule() {
 // ── Section 3: Kids on Track ───────────────────────────────────────────────────
 
 function KidsOnTrack() {
-  const { persons, chores, choreOverrides, checklists, checklistCompletions, settings } = useStore();
+  const { persons, chores, choreOverrides, checklists, checklistCompletions, checklistDayActivations, settings } = useStore();
   const router = useRouter();
   const today = format(new Date(), 'yyyy-MM-dd');
   const kids = persons.filter(p => p.role === 'child');
+
+  const isScoredToday = (cl: { id: string; scoringMode?: string; countForScoring?: boolean }) => {
+    const mode = cl.scoringMode ?? (cl.countForScoring !== false ? 'always' : 'never');
+    if (mode === 'always') return true;
+    if (mode === 'on-demand') return checklistDayActivations.find(a => a.checklistId === cl.id && a.date === today)?.active === true;
+    return false;
+  };
 
   const CIRCUMFERENCE = 188.5; // 2 * π * 30
 
@@ -343,7 +350,7 @@ function KidsOnTrack() {
 
               // Routine (scored checklists only)
               const kidChecklists = checklists.filter(cl =>
-                cl.countForScoring !== false &&
+                isScoredToday(cl) &&
                 (cl.assignedTo === kid.id || cl.assignedTo === 'all' || cl.assignedTo === 'kids')
               );
               const allItems = kidChecklists.flatMap(cl =>
@@ -533,10 +540,17 @@ function MyTodos() {
 // ── Section 5: Streak Alert (two-tone banner) ─────────────────────────────────
 
 function StreakAlert() {
-  const { goals, persons, checklists, checklistCompletions, settings } = useStore();
+  const { goals, persons, checklists, checklistCompletions, checklistDayActivations, settings } = useStore();
   const router = useRouter();
   const now = new Date();
   const today = format(now, 'yyyy-MM-dd');
+
+  const isScoredToday = (cl: { id: string; scoringMode?: string; countForScoring?: boolean }) => {
+    const mode = cl.scoringMode ?? (cl.countForScoring !== false ? 'always' : 'never');
+    if (mode === 'always') return true;
+    if (mode === 'on-demand') return checklistDayActivations.find(a => a.checklistId === cl.id && a.date === today)?.active === true;
+    return false;
+  };
 
   if (now.getHours() < 12) return null;
 
@@ -546,7 +560,7 @@ function StreakAlert() {
     const kid = persons.find(p => p.id === goal.childId);
     if (!kid) return;
     const kidChecklists = checklists.filter(cl =>
-      cl.countForScoring !== false &&
+      isScoredToday(cl) &&
       (cl.assignedTo === kid.id || cl.assignedTo === 'all' || cl.assignedTo === 'kids')
     );
     if (kidChecklists.length === 0) return;
@@ -569,7 +583,7 @@ function StreakAlert() {
     : `${names} both have streaks at risk today`;
 
   const firstKidChecklists = checklists.filter(cl =>
-    cl.countForScoring !== false &&
+    isScoredToday(cl) &&
     (cl.assignedTo === atRisk[0].kid.id || cl.assignedTo === 'all' || cl.assignedTo === 'kids')
   );
   const routineName = firstKidChecklists[0]?.title || 'their routine';

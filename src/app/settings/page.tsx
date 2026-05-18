@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Globe, Calendar, Users, Clock, Palette, Download, Plus, Pencil, Trash2, Library, Layers, Settings as SettingsIcon, UserPlus, Baby, Crown, Camera, KeyRound, Copy, Check, Loader2 } from 'lucide-react';
+import { Globe, Calendar, Users, Clock, Palette, Download, Plus, Pencil, Trash2, Library, Layers, Settings as SettingsIcon, UserPlus, Baby, Crown, Camera, KeyRound, Copy, Check, Loader2, LogOut } from 'lucide-react';
 import Image from 'next/image';
 import { getAvatarUrl, cn, getPersonName } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,7 +21,7 @@ import { AvatarCropDialog } from '@/components/ui/AvatarCropDialog';
 const PRESET_COLORS = ['#F87171', '#60A5FA', '#34D399', '#FBBF24', '#A78BFA', '#F472B6', '#FB923C', '#2DD4BF'];
 
 export default function SettingsPage() {
-  const { settings, updateSettings, persons, updatePerson, addPerson, deletePerson, templates, deleteTemplate, generateInviteCode, isFamilyOwner, currentUser } = useStore();
+  const { settings, updateSettings, persons, updatePerson, addPerson, deletePerson, templates, deleteTemplate, generateInviteCode, isFamilyOwner, currentUser, signOut } = useStore();
   const t = getTranslation(settings.language);
 
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -277,6 +277,32 @@ export default function SettingsPage() {
                   )}
                 </CardContent>
               </Card>
+              {/* Account / Sign Out */}
+              {currentUser && !currentUser.isAnonymous && (
+                <Card className="rounded-[2.5rem] border bg-card overflow-hidden">
+                  <CardHeader className="bg-muted/20 pb-5">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-destructive/10 rounded-xl">
+                        <LogOut className="w-6 h-6 text-destructive" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl font-black">Account</CardTitle>
+                        <CardDescription className="font-medium truncate">{currentUser.email || currentUser.displayName}</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <Button
+                      variant="outline"
+                      onClick={signOut}
+                      className="w-full h-12 rounded-2xl font-black border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/50 transition-all"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign Out
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </TabsContent>
 

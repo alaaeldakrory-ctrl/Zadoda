@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language, Memo, Chore, ChoreOverride, TaskExecutionLog, Goal, RewardRule, ParentLog, ParentSelfLog, Checklist, ChecklistCompletion, FamilyMembership, FamilyInvitation } from './types';
+import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language, Memo, Chore, ChoreOverride, TaskExecutionLog, Goal, RewardRule, ParentLog, ParentSelfLog, Checklist, ChecklistCompletion, ChecklistDayActivation, FamilyMembership, FamilyInvitation } from './types';
 import { timeToMinutes, minutesToTime } from './utils';
 import {
   useCollection,
@@ -35,6 +35,7 @@ interface StoreContextValue {
   parentSelfLogs: ParentSelfLog[];
   checklists: Checklist[];
   checklistCompletions: ChecklistCompletion[];
+  checklistDayActivations: ChecklistDayActivation[];
   settings: AppSettings;
   isLoading: boolean;
   isParentUnlocked: boolean;
@@ -84,7 +85,10 @@ interface StoreContextValue {
   addChecklist: (c: Omit<Checklist, 'id' | 'createdAt'>) => void;
   updateChecklist: (id: string, updates: Partial<Checklist>) => void;
   deleteChecklist: (id: string) => void;
+  restoreChecklist: (id: string) => void;
+  permanentlyDeleteChecklist: (id: string) => void;
   setChecklistItemDone: (checklistId: string, personId: string, date: string, itemIndex: number, done: boolean) => void;
+  setChecklistDayActivation: (checklistId: string, date: string, active: boolean) => void;
 }
 
 const StoreContext = createContext<StoreContextValue | null>(null);
@@ -163,6 +167,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const checklistCompletionsRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'checklistCompletions') : null, [db, familyId]);
   const { data: checklistCompletionsData } = useCollection<ChecklistCompletion>(checklistCompletionsRef);
 
+  const checklistDayActivationsRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'checklistDayActivations') : null, [db, familyId]);
+  const { data: checklistDayActivationsData } = useCollection<ChecklistDayActivation>(checklistDayActivationsRef);
+
   const isParentUnlocked = true;
   const [localLanguage, setLocalLanguage] = useState<Language>('en');
 
@@ -184,6 +191,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const parentSelfLogs = parentSelfLogsData || [];
   const checklists = checklistsData || [];
   const checklistCompletions = checklistCompletionsData || [];
+  const checklistDayActivations = checklistDayActivationsData || [];
 
   const isLoading = isUserLoading || (!!familyId && (
     settingsLoading ||
@@ -489,7 +497,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const deleteChecklist = (id: string) => {
+    updateDocumentNonBlocking(fDoc('checklists', id), { deletedAt: Date.now() });
+  };
+
+  const restoreChecklist = (id: string) => {
+    updateDocumentNonBlocking(fDoc('checklists', id), { deletedAt: 0 });
+  };
+
+  const permanentlyDeleteChecklist = (id: string) => {
     deleteDocumentNonBlocking(fDoc('checklists', id));
+  };
+
+  const setChecklistDayActivation = (checklistId: string, date: string, active: boolean) => {
+    const id = `${checklistId}_${date}`;
+    setDocumentNonBlocking(fDoc('checklistDayActivations', id), { id, checklistId, date, active }, { merge: true });
   };
 
   const setChecklistItemDone = (checklistId: string, personId: string, date: string, itemIndex: number, done: boolean) => {
@@ -544,6 +565,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     parentSelfLogs,
     checklists,
     checklistCompletions,
+    checklistDayActivations,
     settings,
     isLoading,
     isParentUnlocked,
@@ -593,7 +615,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addChecklist,
     updateChecklist,
     deleteChecklist,
+    restoreChecklist,
+    permanentlyDeleteChecklist,
     setChecklistItemDone,
+    setChecklistDayActivation,
   };
 
   return React.createElement(

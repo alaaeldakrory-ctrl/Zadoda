@@ -4,11 +4,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import { AppLayout } from '@/components/ui/Layout';
 import { useStore } from '@/lib/store';
 import { format, addDays } from 'date-fns';
-import { CheckSquare, Plus, Trash2, ChevronLeft, ChevronRight, Check, X, Pencil, ListPlus, Copy, ChevronUp, ChevronDown } from 'lucide-react';
+import {
+  CheckSquare, Plus, Trash2, ChevronLeft, ChevronRight, Check, X, Pencil,
+  ListPlus, Copy, ChevronUp, ChevronDown, RotateCcw, AlertTriangle,
+  ToggleLeft, ToggleRight, Trash,
+} from 'lucide-react';
 import { getAvatarUrl, getPersonName, cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import Image from 'next/image';
-import { Checklist } from '@/lib/types';
+import { Checklist, ChecklistScoringMode } from '@/lib/types';
 import confetti from 'canvas-confetti';
 
 // ── Audio helpers ─────────────────────────────────────────────────────────────
@@ -45,13 +49,21 @@ const playTada = () => {
   } catch {}
 };
 
+// ── Scoring mode helpers ──────────────────────────────────────────────────────
+
+function getScoringMode(cl: Checklist): ChecklistScoringMode {
+  if (cl.scoringMode) return cl.scoringMode;
+  return cl.countForScoring !== false ? 'always' : 'never';
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function CheckListsPage() {
   const {
     persons, settings,
-    checklists, checklistCompletions,
+    checklists, checklistCompletions, checklistDayActivations,
     addChecklist, updateChecklist, deleteChecklist, setChecklistItemDone,
+    restoreChecklist, permanentlyDeleteChecklist, setChecklistDayActivation,
     isParentUnlocked,
   } = useStore();
 
@@ -89,6 +101,12 @@ export default function CheckListsPage() {
   // Copy-to panel
   const [copyingId, setCopyingId] = useState<string | null>(null);
 
+  // Delete confirmation
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  // Recycle bin visibility
+  const [showRecycleBin, setShowRecycleBin] = useState(false);
+
   useEffect(() => {
     if (addingItemTo && newItemRef.current) newItemRef.current.focus();
   }, [addingItemTo]);
@@ -105,13 +123,28 @@ export default function CheckListsPage() {
     return { done, total: cl.items.length };
   };
 
+  const isActiveToday = (checklistId: string): boolean => {
+    return checklistDayActivations.find(a => a.checklistId === checklistId && a.date === dateKey)?.active === true;
+  };
+
   const visibleChecklists = checklists
+    .filter(cl => !cl.deletedAt)
     .filter(cl => {
       if (cl.assignedTo === 'all') return true;
       if (cl.assignedTo === 'kids' && selectedPerson?.role === 'child') return true;
       return cl.assignedTo === selectedPersonId;
     })
     .sort((a, b) => a.createdAt - b.createdAt);
+
+  const deletedChecklists = checklists
+    .filter(cl => !!cl.deletedAt)
+    .sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0));
+
+  const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+  const daysUntilPermanent = (deletedAt: number) =>
+    Math.max(0, Math.ceil((deletedAt + THIRTY_DAYS - Date.now()) / (24 * 60 * 60 * 1000)));
+
+  const confirmDeleteTarget = checklists.find(cl => cl.id === confirmDeleteId);
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
@@ -142,7 +175,6 @@ export default function CheckListsPage() {
     if (!newItemText.trim()) return;
     updateChecklist(cl.id, { items: [...cl.items, newItemText.trim()] });
     setNewItemText('');
-    // keep focus for rapid entry
     setTimeout(() => newItemRef.current?.focus(), 50);
   };
 
@@ -166,6 +198,19 @@ export default function CheckListsPage() {
     if (swap < 0 || swap >= items.length) return;
     [items[idx], items[swap]] = [items[swap], items[idx]];
     updateChecklist(cl.id, { items });
+  };
+
+  const cycleScoringMode = (cl: Checklist) => {
+    const current = getScoringMode(cl);
+    const next: ChecklistScoringMode =
+      current === 'always' ? 'on-demand' : current === 'on-demand' ? 'never' : 'always';
+    updateChecklist(cl.id, { scoringMode: next, countForScoring: next !== 'never' });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!confirmDeleteId) return;
+    deleteChecklist(confirmDeleteId);
+    setConfirmDeleteId(null);
   };
 
   // ── Render ───────────────────────────────────────────────────────────────────
@@ -290,6 +335,8 @@ export default function CheckListsPage() {
               const pct = total === 0 ? 0 : (done / total) * 100;
               const isEditingTitle = editingTitleId === cl.id;
               const isAddingItem = addingItemTo === cl.id;
+              const mode = getScoringMode(cl);
+              const activeToday = isActiveToday(cl.id);
 
               return (
                 <div
@@ -334,17 +381,20 @@ export default function CheckListsPage() {
                         )}
                         {isParentUnlocked && (
                           <>
+                            {/* 3-way scoring badge */}
                             <button
-                              onClick={() => updateChecklist(cl.id, { countForScoring: cl.countForScoring !== false ? false : true })}
+                              onClick={() => cycleScoringMode(cl)}
                               className={cn(
                                 'text-[10px] font-black px-2 py-1 rounded-xl border transition-all',
-                                cl.countForScoring !== false
+                                mode === 'always'
                                   ? 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100'
+                                  : mode === 'on-demand'
+                                  ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
                                   : 'bg-muted/50 text-muted-foreground border-border hover:border-muted-foreground/40'
                               )}
-                              title={cl.countForScoring !== false ? 'Counted in scoring — click to exclude' : 'Not scored — click to include'}
+                              title="Click to change scoring mode"
                             >
-                              {cl.countForScoring !== false ? '⭐ Scored' : '○ Not scored'}
+                              {mode === 'always' ? '⭐ Always' : mode === 'on-demand' ? '📅 Active days' : '○ Not scored'}
                             </button>
                             <button
                               onClick={() => setCopyingId(copyingId === cl.id ? null : cl.id)}
@@ -357,7 +407,7 @@ export default function CheckListsPage() {
                               className="p-2 rounded-xl hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
                               <Pencil className="w-4 h-4" />
                             </button>
-                            <button onClick={() => deleteChecklist(cl.id)}
+                            <button onClick={() => setConfirmDeleteId(cl.id)}
                               className="p-2 rounded-xl hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -390,6 +440,32 @@ export default function CheckListsPage() {
                         Cancel
                       </button>
                     </div>
+                  )}
+
+                  {/* On-demand day activation banner */}
+                  {isParentUnlocked && mode === 'on-demand' && (
+                    <button
+                      onClick={() => setChecklistDayActivation(cl.id, dateKey, !activeToday)}
+                      className={cn(
+                        'w-full px-7 py-3 border-b flex items-center justify-between gap-3 transition-all',
+                        activeToday
+                          ? 'bg-blue-50 border-blue-100 hover:bg-blue-100'
+                          : 'bg-muted/30 border-border hover:bg-muted/50'
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        {activeToday
+                          ? <ToggleRight className="w-5 h-5 text-blue-600 shrink-0" />
+                          : <ToggleLeft className="w-5 h-5 text-muted-foreground shrink-0" />
+                        }
+                        <span className={cn('text-xs font-black', activeToday ? 'text-blue-700' : 'text-muted-foreground')}>
+                          {activeToday
+                            ? `Scored for ${format(currentDate, 'EEE, MMM d')}`
+                            : `Not scored for ${format(currentDate, 'EEE, MMM d')} — tap to activate`
+                          }
+                        </span>
+                      </div>
+                    </button>
                   )}
 
                   {/* Items */}
@@ -520,7 +596,96 @@ export default function CheckListsPage() {
             )}
           </div>
         )}
+
+        {/* Recycle Bin */}
+        {isParentUnlocked && deletedChecklists.length > 0 && (
+          <div className="space-y-3">
+            <button
+              onClick={() => setShowRecycleBin(v => !v)}
+              className="flex items-center gap-2 text-sm font-black text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Trash className="w-4 h-4" />
+              Recycle Bin ({deletedChecklists.length})
+              <ChevronRight className={cn('w-4 h-4 transition-transform', showRecycleBin && 'rotate-90')} />
+            </button>
+
+            {showRecycleBin && (
+              <div className="rounded-[2rem] border-2 border-dashed border-border bg-muted/20 p-6 space-y-3">
+                <p className="text-xs font-bold text-muted-foreground/60 uppercase tracking-widest">
+                  Deleted checklists are permanently removed after 30 days.
+                </p>
+                {deletedChecklists.map(cl => {
+                  const days = daysUntilPermanent(cl.deletedAt!);
+                  return (
+                    <div key={cl.id} className="flex items-center gap-3 bg-card rounded-2xl border px-5 py-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black truncate">{cl.title}</p>
+                        <p className={cn('text-xs font-medium mt-0.5', days <= 3 ? 'text-destructive' : 'text-muted-foreground')}>
+                          {days > 0 ? `Deleted · ${days} day${days !== 1 ? 's' : ''} left` : 'Expires soon'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => restoreChecklist(cl.id)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl border font-bold text-xs text-primary border-primary/30 hover:bg-primary/5 transition-all shrink-0"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        Restore
+                      </button>
+                      <button
+                        onClick={() => permanentlyDeleteChecklist(cl.id)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl border font-bold text-xs text-destructive border-destructive/30 hover:bg-destructive/5 transition-all shrink-0"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Delete forever
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Delete confirmation dialog */}
+      {confirmDeleteId && confirmDeleteTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          onClick={() => setConfirmDeleteId(null)}
+        >
+          <div
+            className="bg-card rounded-[2rem] border shadow-2xl max-w-sm w-full p-7 space-y-5"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-amber-100 rounded-2xl shrink-0">
+                <AlertTriangle className="w-6 h-6 text-amber-600" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-black text-lg leading-snug">Delete "{confirmDeleteTarget.title}"?</h3>
+                <p className="text-sm font-medium text-muted-foreground">
+                  This checklist will be moved to the Recycle Bin and permanently deleted after 30 days. You can restore it any time before then.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="flex-1 h-11 rounded-xl border font-bold text-muted-foreground hover:bg-muted/50 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-[1.5] h-11 rounded-xl bg-destructive/10 text-destructive border border-destructive/30 font-black hover:bg-destructive/20 transition-all flex items-center justify-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Move to Bin
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }
