@@ -192,3 +192,62 @@ export interface ParentSelfLog {
   reflection?: string;     // free-form note about parenting Lyla & Malika
 }
 
+// ── Meal Planner ──
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+
+export type ShoppingCategory =
+  | 'produce'
+  | 'protein'
+  | 'dairy'
+  | 'pantry'
+  | 'other';
+
+export interface RecipeIngredient {
+  name: string;
+  quantity: string;
+  unit: string;
+}
+
+export interface Recipe {
+  id: string;
+  name: string;
+  mealType?: MealType;
+  prepTime?: number;
+  emoji?: string;
+  ingredients: RecipeIngredient[];
+  steps?: string[];
+  tags?: string[];
+  source: 'curated' | 'custom';
+  sourceId?: string;       // id of the curated recipe this was copied from
+  addedAt: number;
+  imageUrl?: string;
+}
+
+export interface MealDish {
+  recipeId?: string;   // set if the dish comes from a named recipe
+  freeText?: string;   // set if entered as free text
+}
+
+export interface MealSlot {
+  id: string;            // `${weekStartDate}_${dayIndex}_${mealType}`
+  date: string;          // YYYY-MM-DD of the actual day
+  weekStartDate: string; // YYYY-MM-DD of the week's Sunday
+  dayIndex: number;      // 0 = Sunday … 6 = Saturday
+  mealType: MealType;
+  dishes: MealDish[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ShoppingItem {
+  id: string;
+  name: string;
+  category: ShoppingCategory;
+  quantity?: string;
+  unit?: string;
+  checked: boolean;
+  addedAt: number;
+  source: 'auto' | 'manual';
+  weekStartDate?: string;
+}
+

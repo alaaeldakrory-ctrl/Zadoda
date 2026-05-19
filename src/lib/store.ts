@@ -2,8 +2,8 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { format } from 'date-fns';
-import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language, Memo, Chore, ChoreOverride, TaskExecutionLog, Goal, RewardRule, ParentLog, ParentSelfLog, Checklist, ChecklistCompletion, ChecklistDayActivation, FamilyMembership, FamilyInvitation } from './types';
+import { format, addDays, parseISO } from 'date-fns';
+import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language, Memo, Chore, ChoreOverride, TaskExecutionLog, Goal, RewardRule, ParentLog, ParentSelfLog, Checklist, ChecklistCompletion, ChecklistDayActivation, FamilyMembership, FamilyInvitation, Recipe, MealSlot, MealType, MealDish, ShoppingItem } from './types';
 import { timeToMinutes, minutesToTime } from './utils';
 import {
   useCollection,
@@ -89,6 +89,19 @@ interface StoreContextValue {
   permanentlyDeleteChecklist: (id: string) => void;
   setChecklistItemDone: (checklistId: string, personId: string, date: string, itemIndex: number, done: boolean) => void;
   setChecklistDayActivation: (checklistId: string, date: string, active: boolean) => void;
+  recipes: Recipe[];
+  mealSlots: MealSlot[];
+  shoppingItems: ShoppingItem[];
+  addRecipe: (r: Omit<Recipe, 'id'>) => void;
+  updateRecipe: (id: string, updates: Partial<Recipe>) => void;
+  deleteRecipe: (id: string) => void;
+  setMealSlot: (weekStartDate: string, dayIndex: number, mealType: MealType, dishes: MealDish[]) => void;
+  deleteMealSlot: (id: string) => void;
+  addShoppingItem: (item: Omit<ShoppingItem, 'id'>) => void;
+  updateShoppingItem: (id: string, updates: Partial<ShoppingItem>) => void;
+  deleteShoppingItem: (id: string) => void;
+  clearCheckedShoppingItems: () => void;
+  replaceShoppingItems: (items: Omit<ShoppingItem, 'id'>[], weekStartDate: string) => void;
 }
 
 const StoreContext = createContext<StoreContextValue | null>(null);
@@ -170,6 +183,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const checklistDayActivationsRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'checklistDayActivations') : null, [db, familyId]);
   const { data: checklistDayActivationsData } = useCollection<ChecklistDayActivation>(checklistDayActivationsRef);
 
+  const recipesRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'recipes') : null, [db, familyId]);
+  const { data: recipesData } = useCollection<Recipe>(recipesRef);
+
+  const mealSlotsRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'mealSlots') : null, [db, familyId]);
+  const { data: mealSlotsData } = useCollection<MealSlot>(mealSlotsRef);
+
+  const shoppingItemsRef = useMemoFirebase(() => familyId ? collection(db, 'families', familyId, 'shoppingItems') : null, [db, familyId]);
+  const { data: shoppingItemsData } = useCollection<ShoppingItem>(shoppingItemsRef);
+
   const isParentUnlocked = true;
   const [localLanguage, setLocalLanguage] = useState<Language>('en');
 
@@ -192,6 +214,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const checklists = checklistsData || [];
   const checklistCompletions = checklistCompletionsData || [];
   const checklistDayActivations = checklistDayActivationsData || [];
+  const recipes = recipesData || [];
+  const mealSlots = mealSlotsData || [];
+  const shoppingItems = shoppingItemsData || [];
 
   const isLoading = isUserLoading || (!!familyId && (
     settingsLoading ||
@@ -532,6 +557,83 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  // ─── Meal Planner — Recipes ───────────────────────────────────────────────────
+
+  const addRecipe = (r: Omit<Recipe, 'id'>) => {
+    if (!familyId) return;
+    const ref = doc(fCol('recipes'));
+    setDocumentNonBlocking(ref, { ...r, id: ref.id, addedAt: r.addedAt ?? Date.now() });
+  };
+
+  const updateRecipe = (id: string, updates: Partial<Recipe>) => {
+    if (!familyId) return;
+    updateDocumentNonBlocking(fDoc('recipes', id), updates);
+  };
+
+  const deleteRecipe = (id: string) => {
+    if (!familyId) return;
+    deleteDocumentNonBlocking(fDoc('recipes', id));
+  };
+
+  // ─── Meal Planner — Meal Slots ────────────────────────────────────────────────
+
+  const setMealSlot = (weekStartDate: string, dayIndex: number, mealType: MealType, dishes: MealDish[]) => {
+    if (!familyId) return;
+    const id = `${weekStartDate}_${dayIndex}_${mealType}`;
+    const now = Date.now();
+    const existing = mealSlots.find(s => s.id === id);
+    const date = format(addDays(parseISO(weekStartDate), dayIndex), 'yyyy-MM-dd');
+    setDocumentNonBlocking(fDoc('mealSlots', id), {
+      id,
+      date,
+      weekStartDate,
+      dayIndex,
+      mealType,
+      dishes,
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+    }, { merge: true });
+  };
+
+  const deleteMealSlot = (id: string) => {
+    if (!familyId) return;
+    deleteDocumentNonBlocking(fDoc('mealSlots', id));
+  };
+
+  // ─── Meal Planner — Shopping List ─────────────────────────────────────────────
+
+  const addShoppingItem = (item: Omit<ShoppingItem, 'id'>) => {
+    if (!familyId) return;
+    const ref = doc(fCol('shoppingItems'));
+    setDocumentNonBlocking(ref, { ...item, id: ref.id });
+  };
+
+  const updateShoppingItem = (id: string, updates: Partial<ShoppingItem>) => {
+    if (!familyId) return;
+    updateDocumentNonBlocking(fDoc('shoppingItems', id), updates);
+  };
+
+  const deleteShoppingItem = (id: string) => {
+    if (!familyId) return;
+    deleteDocumentNonBlocking(fDoc('shoppingItems', id));
+  };
+
+  const clearCheckedShoppingItems = () => {
+    if (!familyId) return;
+    shoppingItems.filter(i => i.checked).forEach(i => deleteDocumentNonBlocking(fDoc('shoppingItems', i.id)));
+  };
+
+  const replaceShoppingItems = (items: Omit<ShoppingItem, 'id'>[], weekStartDate: string) => {
+    if (!familyId) return;
+    shoppingItems
+      .filter(i => i.source === 'auto' && i.weekStartDate === weekStartDate)
+      .forEach(i => deleteDocumentNonBlocking(fDoc('shoppingItems', i.id)));
+    items.forEach(item => {
+      const ref = doc(fCol('shoppingItems'));
+      setDocumentNonBlocking(ref, { ...item, id: ref.id });
+    });
+  };
+
   // ─── Parent self logs ─────────────────────────────────────────────────────────
 
   const addParentSelfLog = (log: Omit<ParentSelfLog, 'id'>) => {
@@ -619,6 +721,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     permanentlyDeleteChecklist,
     setChecklistItemDone,
     setChecklistDayActivation,
+    recipes,
+    mealSlots,
+    shoppingItems,
+    addRecipe,
+    updateRecipe,
+    deleteRecipe,
+    setMealSlot,
+    deleteMealSlot,
+    addShoppingItem,
+    updateShoppingItem,
+    deleteShoppingItem,
+    clearCheckedShoppingItems,
+    replaceShoppingItems,
   };
 
   return React.createElement(

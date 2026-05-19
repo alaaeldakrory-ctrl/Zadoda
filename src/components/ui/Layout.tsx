@@ -5,7 +5,7 @@ import React, { Suspense } from 'react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { cn, getAvatarUrl, getPersonName } from '@/lib/utils';
-import { Home, Calendar, Layers, Settings, Globe, StickyNote, Plus, Users, ClipboardList, CheckSquare, Tv2, LogOut } from 'lucide-react';
+import { Home, Calendar, Layers, Settings, Globe, StickyNote, Plus, Users, ClipboardList, CheckSquare, Tv2, LogOut, ChefHat } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 
@@ -26,6 +26,7 @@ const SidebarNav = () => {
     { label: t.dailyChores, icon: ClipboardList, href: '/chores' },
     { label: t.checkLists, icon: CheckSquare, href: '/checklists' },
     { label: t.todos, icon: StickyNote, href: '/todos' },
+    { label: t.mealPlanner || 'Meal Planner', icon: ChefHat, href: '/meal-planner' },
     { label: t.parentsPlanning || 'Parents Planning', icon: Layers, href: '/parents-planning' },
     { label: t.settings, icon: Settings, href: '/settings' },
   ];
@@ -101,6 +102,7 @@ const MobileBottomNav = () => {
     { label: 'Home', icon: Home, href: '/home' },
     { label: 'Calendar', icon: Calendar, href: '/' },
     { label: 'Chores', icon: ClipboardList, href: '/chores' },
+    { label: 'Meals', icon: ChefHat, href: '/meal-planner' },
     { label: 'Parents', icon: Layers, href: '/parents-planning' },
     { label: 'Settings', icon: Settings, href: '/settings' },
   ];

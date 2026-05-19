@@ -15,10 +15,12 @@ import {
 } from '@/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Home } from 'lucide-react';
+import { Home, ChefHat } from 'lucide-react';
+import { CURATED_RECIPES } from '@/components/meal-planner/curatedRecipes';
+import { MealType } from '@/lib/types';
 
 export const TVDashboard: React.FC = () => {
-  const { persons, series, overrides, settings, executionLogs, isLoading } = useStore();
+  const { persons, series, overrides, settings, executionLogs, isLoading, mealSlots, recipes } = useStore();
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -27,8 +29,32 @@ export const TVDashboard: React.FC = () => {
   }, []);
 
   const today = new Date();
+  const todayStr = format(today, 'yyyy-MM-dd');
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const kids = persons.filter(p => p.role === 'child');
+
+  const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+  const MEAL_META: Record<MealType, { en: string; ar: string; emoji: string; color: string }> = {
+    breakfast: { en: 'Breakfast', ar: 'الفطور',       emoji: '☀️', color: 'text-emerald-700' },
+    lunch:     { en: 'Lunch',     ar: 'الغداء',       emoji: '🌤️', color: 'text-amber-700'  },
+    dinner:    { en: 'Dinner',    ar: 'العشاء',       emoji: '🌙', color: 'text-blue-700'   },
+    snack:     { en: 'Snack',     ar: 'وجبة خفيفة', emoji: '🍎', color: 'text-yellow-700' },
+  };
+
+  const resolveDishName = (dish: { recipeId?: string; freeText?: string }): string => {
+    if (dish.recipeId?.startsWith('curated_')) {
+      const c = CURATED_RECIPES.find(r => r.id === dish.recipeId);
+      if (c) return `${c.emoji} ${c.name}`;
+    }
+    if (dish.recipeId) {
+      const r = recipes.find(r => r.id === dish.recipeId);
+      if (r) return r.name;
+    }
+    return dish.freeText || '';
+  };
+
+  const todaySlots = mealSlots.filter(s => s.date === todayStr);
+  const isArabic = settings.language === 'ar';
 
   if (isLoading) {
     return (
@@ -65,6 +91,48 @@ export const TVDashboard: React.FC = () => {
           Back to App
         </Link>
       </div>
+
+      {/* ── Today's Meals ── */}
+      {todaySlots.length > 0 && (
+        <div className="bg-white rounded-[2rem] shadow-sm p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <ChefHat className="w-5 h-5 text-primary" />
+            <span className="font-black text-lg">
+              {isArabic ? 'وجبات اليوم' : "Today's Meals"}
+            </span>
+          </div>
+          <div className="grid grid-cols-4 gap-3">
+            {MEAL_TYPES.map(mealType => {
+              const slot = todaySlots.find(s => s.mealType === mealType);
+              const meta = MEAL_META[mealType];
+              const dishes = slot?.dishes ?? [];
+              return (
+                <div key={mealType} className="rounded-2xl border bg-muted/10 p-3">
+                  <div className={cn('flex items-center gap-1.5 mb-2', meta.color)}>
+                    <span>{meta.emoji}</span>
+                    <span className="text-xs font-black uppercase tracking-wide">
+                      {isArabic ? meta.ar : meta.en}
+                    </span>
+                  </div>
+                  {dishes.length > 0 ? (
+                    <div className="space-y-1">
+                      {dishes.map((dish, i) => (
+                        <p key={i} className="text-sm font-bold leading-tight truncate">
+                          {resolveDishName(dish)}
+                        </p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground/50 font-medium">
+                      {isArabic ? 'غير مخطط' : 'Not planned'}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Kid columns ── */}
       <div className="flex-1 grid grid-cols-2 gap-6">
