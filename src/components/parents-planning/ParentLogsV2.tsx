@@ -24,7 +24,8 @@ const moodColors = { good: 'border-emerald-200 bg-emerald-50', neutral: 'border-
 
 // ── Existing log card ─────────────────────────────────────────────────────────
 function ExistingLogCard({ log, onEdit, onDelete }: { log: ParentLog; onEdit: () => void; onDelete: () => void }) {
-  const [expanded, setExpanded] = useState(false);
+  const hasContent = !!(log.note || (log.goodItems?.length ?? 0) > 0 || (log.badItems?.length ?? 0) > 0);
+  const [expanded, setExpanded] = useState(hasContent);
   return (
     <div className={cn('rounded-3xl border-2 p-5 flex flex-col gap-3', moodColors[log.overallMood])}>
       <div className="flex items-center justify-between">
@@ -226,11 +227,12 @@ Return ONLY valid JSON, no markdown:
   };
 
   const handleSave = () => {
-    // flush any pending inline inputs before saving
+    // flush any pending inline inputs before saving; fall back to universalNote for kids with no individual note
     const toSave = drafts.map(d => ({
       ...d,
       goodItems: d.newGood.trim() ? [...d.goodItems, d.newGood.trim()] : d.goodItems,
       badItems: d.newBad.trim() ? [...d.badItems, d.newBad.trim()] : d.badItems,
+      note: d.note.trim() || universalNote.trim(),
     }));
     toSave.forEach(d => {
       addParentLog({
@@ -251,7 +253,7 @@ Return ONLY valid JSON, no markdown:
     if (confirm('Delete this log entry?')) deleteParentLog(id);
   };
 
-  const canSave = drafts.some(d =>
+  const canSave = universalNote.trim().length > 0 || drafts.some(d =>
     d.note.trim() || d.goodItems.length > 0 || d.badItems.length > 0 || d.newGood.trim() || d.newBad.trim()
   );
 
@@ -319,7 +321,7 @@ Return ONLY valid JSON, no markdown:
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-black uppercase tracking-widest text-muted-foreground opacity-60">
-                  What happened today? (optional — AI will fill the cards below)
+                  What happened today? (saved as a note for all kids — or use AI to fill the cards)
                 </p>
                 {apiKey && (
                   <Button type="button" variant="ghost" size="sm" onClick={handleSmartFill}
@@ -358,6 +360,7 @@ Return ONLY valid JSON, no markdown:
               <Button
                 type="button"
                 onClick={handleSave}
+                disabled={!canSave}
                 className="flex-1 rounded-2xl font-black gap-2 h-12"
               >
                 <Check className="w-4 h-4" />
