@@ -415,6 +415,21 @@ export const LandingPage = () => {
         </div>
       </section>
 
+      {/* ── Lifestyle image banner ── */}
+      <div className="px-6 py-4">
+        <div className="max-w-7xl mx-auto relative rounded-[3rem] overflow-hidden shadow-2xl shadow-[#7C3AED]/10" style={{ height: 'clamp(240px, 35vw, 520px)' }}>
+          <Image
+            src="https://firebasestorage.googleapis.com/v0/b/studio-3744208193-a3aca.firebasestorage.app/o/Gemini_Generated_Image_yagcu0yagcu0yagc.png?alt=media&token=df17a3ec-8b02-457b-8714-56c62f2c3db5"
+            alt="A warm family moment at home"
+            fill
+            className="object-cover"
+            priority={false}
+          />
+          {/* subtle gradient overlay so the section below feels continuous */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#FAFAF8]/70" />
+        </div>
+      </div>
+
       {/* ── A day with Zadoda ── */}
       <section className="py-28 px-6" style={{ backgroundColor: '#FAFAF8' }}>
         <div className="max-w-6xl mx-auto">
