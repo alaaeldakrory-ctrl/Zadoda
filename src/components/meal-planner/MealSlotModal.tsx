@@ -94,10 +94,10 @@ export function MealSlotModal({
   const lowerQuery = query.toLowerCase();
   const curatedBase = CURATED_BASE[mealType];
 
-  // When searching: match across all curated types. When browsing: show base type.
+  // When searching: match across all curated types. When browsing: show all for base type.
   const matchedCurated = query.trim()
-    ? CURATED_RECIPES.filter(r => r.name.toLowerCase().includes(lowerQuery)).slice(0, 8)
-    : CURATED_RECIPES.filter(r => r.mealType === curatedBase).slice(0, 6);
+    ? CURATED_RECIPES.filter(r => r.name.toLowerCase().includes(lowerQuery))
+    : CURATED_RECIPES.filter(r => r.mealType === curatedBase);
 
   // Always show family recipes — filtered when searching, most-recent when browsing.
   const matchedFamily = query.trim()
@@ -202,7 +202,7 @@ export function MealSlotModal({
           {matchedCurated.length > 0 && (
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">
-                {isRtl ? 'وصفات مقترحة' : 'Curated Recipes'}
+                {isRtl ? 'قائمة الوجبات' : query.trim() ? 'Matching Meals' : 'Meal Ideas'}
               </p>
               <div className="space-y-1">
                 {matchedCurated.map(r => (
