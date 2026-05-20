@@ -18,21 +18,27 @@ interface RecipeLibraryProps {
 type Tab = 'explore' | 'mine';
 type MealFilter = 'all' | MealType;
 
-const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner'];
 
 const MEAL_FILTER_LABEL: Record<MealFilter, { en: string; ar: string }> = {
-  all:       { en: 'All',       ar: 'الكل'   },
-  breakfast: { en: 'Breakfast', ar: 'إفطار'  },
-  lunch:     { en: 'Lunch',     ar: 'غداء'   },
-  dinner:    { en: 'Dinner',    ar: 'عشاء'   },
-  snack:     { en: 'Snack',     ar: 'خفيفة'  },
+  all:       { en: 'All',       ar: 'الكل'  },
+  breakfast: { en: 'Breakfast', ar: 'إفطار' },
+  lunch:     { en: 'Lunch',     ar: 'غداء'  },
+  dinner:    { en: 'Dinner',    ar: 'عشاء'  },
+  'lyla-breakfast':   { en: 'Lyla Brkfst',  ar: 'إفطار ليلى' },
+  'malika-breakfast': { en: 'Malika Brkfst', ar: 'إفطار مالكة' },
+  'lyla-lunchbox':    { en: 'Lyla Lunch',   ar: 'لنش ليلى' },
+  'malika-lunchbox':  { en: 'Malika Lunch', ar: 'لنش مالكة' },
 };
 
-const MEAL_BADGE: Record<MealType, string> = {
+const MEAL_BADGE: Partial<Record<MealType, string>> = {
   breakfast: 'bg-emerald-100 text-emerald-700',
   lunch:     'bg-amber-100 text-amber-700',
   dinner:    'bg-green-100 text-green-800',
-  snack:     'bg-yellow-100 text-yellow-700',
+  'lyla-breakfast':   'bg-rose-100 text-rose-700',
+  'malika-breakfast': 'bg-violet-100 text-violet-700',
+  'lyla-lunchbox':    'bg-pink-100 text-pink-700',
+  'malika-lunchbox':  'bg-purple-100 text-purple-700',
 };
 
 interface RecipeFormState {
@@ -375,9 +381,10 @@ export function RecipeLibrary({
 
   const handleFavourite = (curated: CuratedRecipe) => {
     if (favouritedSourceIds.has(curated.id)) return;
+    const baseMealType: MealType = curated.mealType === 'snack' ? 'lunch' : curated.mealType;
     onAddRecipe({
       name: curated.name,
-      mealType: curated.mealType,
+      mealType: baseMealType,
       prepTime: curated.prepTime,
       emoji: curated.emoji,
       ingredients: curated.ingredients,
@@ -473,7 +480,7 @@ export function RecipeLibrary({
               name={r.name}
               emoji={r.emoji}
               prepTime={r.prepTime}
-              mealType={r.mealType}
+              mealType={r.mealType === 'snack' ? 'lunch' : r.mealType}
               onAddToMealPlan={() => onAddToMealPlan(r)}
               onFavourite={() => handleFavourite(r)}
               isFavourited={favouritedSourceIds.has(r.id)}

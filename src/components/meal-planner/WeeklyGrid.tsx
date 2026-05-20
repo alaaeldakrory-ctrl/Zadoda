@@ -17,16 +17,23 @@ interface WeeklyGridProps {
   lang: 'en' | 'ar';
 }
 
-const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+const MEAL_TYPES: MealType[] = [
+  'breakfast', 'lyla-breakfast', 'malika-breakfast',
+  'lunch', 'lyla-lunchbox', 'malika-lunchbox',
+  'dinner',
+];
 
 const EN_DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const AR_DAY_LABELS = ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
 
 const MEAL_LABELS: Record<MealType, { en: string; ar: string }> = {
-  breakfast: { en: 'Breakfast', ar: 'إفطار' },
-  lunch:     { en: 'Lunch',     ar: 'غداء'   },
-  dinner:    { en: 'Dinner',    ar: 'عشاء'   },
-  snack:     { en: 'Snack',     ar: 'وجبة خفيفة' },
+  breakfast:          { en: 'Breakfast',    ar: 'إفطار' },
+  'lyla-breakfast':   { en: 'Lyla Brkfst', ar: 'إفطار ليلى' },
+  'malika-breakfast': { en: 'Malika Brkfst', ar: 'إفطار مالكة' },
+  lunch:              { en: 'Lunch',        ar: 'غداء' },
+  'lyla-lunchbox':    { en: 'Lyla Lunch',  ar: 'لنش ليلى' },
+  'malika-lunchbox':  { en: 'Malika Lunch', ar: 'لنش مالكة' },
+  dinner:             { en: 'Dinner',       ar: 'عشاء' },
 };
 
 const MEAL_COLORS: Record<MealType, { row: string; chip: string; btn: string }> = {
@@ -35,20 +42,35 @@ const MEAL_COLORS: Record<MealType, { row: string; chip: string; btn: string }> 
     chip: 'bg-emerald-100 text-emerald-800 border border-emerald-200',
     btn:  'hover:bg-emerald-50 text-emerald-600 border border-emerald-200',
   },
+  'lyla-breakfast': {
+    row:  'text-rose-700',
+    chip: 'bg-rose-100 text-rose-800 border border-rose-200',
+    btn:  'hover:bg-rose-50 text-rose-600 border border-rose-200',
+  },
+  'malika-breakfast': {
+    row:  'text-violet-700',
+    chip: 'bg-violet-100 text-violet-800 border border-violet-200',
+    btn:  'hover:bg-violet-50 text-violet-600 border border-violet-200',
+  },
   lunch: {
     row:  'text-amber-700',
     chip: 'bg-amber-100 text-amber-800 border border-amber-200',
     btn:  'hover:bg-amber-50 text-amber-600 border border-amber-200',
   },
+  'lyla-lunchbox': {
+    row:  'text-pink-700',
+    chip: 'bg-pink-100 text-pink-800 border border-pink-200',
+    btn:  'hover:bg-pink-50 text-pink-600 border border-pink-200',
+  },
+  'malika-lunchbox': {
+    row:  'text-purple-700',
+    chip: 'bg-purple-100 text-purple-800 border border-purple-200',
+    btn:  'hover:bg-purple-50 text-purple-600 border border-purple-200',
+  },
   dinner: {
     row:  'text-green-800',
     chip: 'bg-green-100 text-green-900 border border-green-200',
     btn:  'hover:bg-green-50 text-green-800 border border-green-200',
-  },
-  snack: {
-    row:  'text-yellow-700',
-    chip: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
-    btn:  'hover:bg-yellow-50 text-yellow-600 border border-yellow-200',
   },
 };
 
@@ -86,8 +108,8 @@ export function WeeklyGrid({
 
   return (
     <div className="w-full overflow-x-auto rounded-[2rem] border bg-card shadow-sm" dir={isRtl ? 'rtl' : 'ltr'}>
-      <div className="min-w-[820px]">
-        <div className="grid grid-cols-[120px_repeat(7,minmax(110px,1fr))]">
+      <div className="min-w-[860px]">
+        <div className="grid grid-cols-[150px_repeat(7,minmax(110px,1fr))]">
           <div className="border-b border-r bg-muted/30 p-3" />
           {days.map((day, i) => {
             const today = isToday(day);

@@ -20,24 +20,44 @@ interface MealSlotModalProps {
 }
 
 const MEAL_LABELS: Record<MealType, { en: string; ar: string; emoji: string }> = {
-  breakfast: { en: 'Breakfast', ar: 'إفطار', emoji: '☀️' },
-  lunch:     { en: 'Lunch',     ar: 'غداء',   emoji: '🌤️' },
-  dinner:    { en: 'Dinner',    ar: 'عشاء',   emoji: '🌙' },
-  snack:     { en: 'Snack',     ar: 'وجبة خفيفة', emoji: '🍎' },
+  breakfast:          { en: 'Breakfast',      ar: 'إفطار',       emoji: '☀️' },
+  'lyla-breakfast':   { en: 'Lyla Breakfast', ar: 'إفطار ليلى',  emoji: '🌸' },
+  'malika-breakfast': { en: 'Malika Breakfast', ar: 'إفطار مالكة', emoji: '🌟' },
+  lunch:              { en: 'Lunch',          ar: 'غداء',         emoji: '🌤️' },
+  'lyla-lunchbox':    { en: 'Lyla Lunch Box', ar: 'لنش ليلى',    emoji: '🌸' },
+  'malika-lunchbox':  { en: 'Malika Lunch Box', ar: 'لنش مالكة', emoji: '🌟' },
+  dinner:             { en: 'Dinner',         ar: 'عشاء',         emoji: '🌙' },
 };
 
 const MEAL_ACCENT: Record<MealType, string> = {
-  breakfast: 'text-emerald-700 bg-emerald-50',
-  lunch:     'text-amber-700 bg-amber-50',
-  dinner:    'text-green-800 bg-green-50',
-  snack:     'text-yellow-700 bg-yellow-50',
+  breakfast:          'text-emerald-700 bg-emerald-50',
+  'lyla-breakfast':   'text-rose-700 bg-rose-50',
+  'malika-breakfast': 'text-violet-700 bg-violet-50',
+  lunch:              'text-amber-700 bg-amber-50',
+  'lyla-lunchbox':    'text-pink-700 bg-pink-50',
+  'malika-lunchbox':  'text-purple-700 bg-purple-50',
+  dinner:             'text-green-800 bg-green-50',
 };
 
 const CHIP_COLORS: Record<MealType, string> = {
-  breakfast: 'bg-emerald-100 text-emerald-800 border border-emerald-200',
-  lunch:     'bg-amber-100 text-amber-800 border border-amber-200',
-  dinner:    'bg-green-100 text-green-900 border border-green-200',
-  snack:     'bg-yellow-100 text-yellow-800 border border-yellow-200',
+  breakfast:          'bg-emerald-100 text-emerald-800 border border-emerald-200',
+  'lyla-breakfast':   'bg-rose-100 text-rose-800 border border-rose-200',
+  'malika-breakfast': 'bg-violet-100 text-violet-800 border border-violet-200',
+  lunch:              'bg-amber-100 text-amber-800 border border-amber-200',
+  'lyla-lunchbox':    'bg-pink-100 text-pink-800 border border-pink-200',
+  'malika-lunchbox':  'bg-purple-100 text-purple-800 border border-purple-200',
+  dinner:             'bg-green-100 text-green-900 border border-green-200',
+};
+
+// Map kid-specific types to the closest base type for curated recipe suggestions
+const CURATED_BASE: Record<MealType, 'breakfast' | 'lunch' | 'dinner' | 'snack'> = {
+  breakfast:          'breakfast',
+  'lyla-breakfast':   'breakfast',
+  'malika-breakfast': 'breakfast',
+  lunch:              'lunch',
+  'lyla-lunchbox':    'lunch',
+  'malika-lunchbox':  'lunch',
+  dinner:             'dinner',
 };
 
 export function MealSlotModal({
@@ -72,16 +92,17 @@ export function MealSlotModal({
   const chipColor = CHIP_COLORS[mealType];
 
   const lowerQuery = query.toLowerCase();
+  const curatedBase = CURATED_BASE[mealType];
 
+  // When searching: match across all curated types. When browsing: show base type.
   const matchedCurated = query.trim()
-    ? CURATED_RECIPES.filter(
-        r => r.mealType === mealType && r.name.toLowerCase().includes(lowerQuery)
-      ).slice(0, 6)
-    : CURATED_RECIPES.filter(r => r.mealType === mealType).slice(0, 6);
+    ? CURATED_RECIPES.filter(r => r.name.toLowerCase().includes(lowerQuery)).slice(0, 8)
+    : CURATED_RECIPES.filter(r => r.mealType === curatedBase).slice(0, 6);
 
+  // Always show family recipes — filtered when searching, most-recent when browsing.
   const matchedFamily = query.trim()
     ? recipes.filter(r => r.name.toLowerCase().includes(lowerQuery))
-    : [];
+    : recipes.slice(0, 5);
 
   const addCurated = (r: CuratedRecipe) => {
     setDishes(prev => [...prev, { recipeId: r.id }]);
@@ -206,7 +227,9 @@ export function MealSlotModal({
           {matchedFamily.length > 0 && (
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">
-                {isRtl ? 'وصفات العائلة' : 'Family Recipes'}
+                {isRtl
+                  ? 'وصفات العائلة'
+                  : query.trim() ? 'Family Recipes' : 'Your Recipes'}
               </p>
               <div className="space-y-1">
                 {matchedFamily.map(r => (

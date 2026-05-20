@@ -24,15 +24,14 @@ const PROMPT_CHIPS = [
   { en: 'High-protein week', ar: 'أسبوع غني بالبروتين' },
 ];
 
-const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner'];
 const DAY_LABELS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAY_LABELS_AR = ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
 
-const MEAL_LABELS: Record<MealType, { en: string; ar: string }> = {
+const MEAL_LABELS: Partial<Record<MealType, { en: string; ar: string }>> = {
   breakfast: { en: 'Breakfast', ar: 'إفطار' },
   lunch:     { en: 'Lunch',     ar: 'غداء'  },
   dinner:    { en: 'Dinner',    ar: 'عشاء'  },
-  snack:     { en: 'Snack',     ar: 'خفيفة' },
 };
 
 async function callGemini(promptText: string): Promise<Suggestion[]> {
@@ -42,8 +41,8 @@ async function callGemini(promptText: string): Promise<Suggestion[]> {
   const systemPrompt = `You are a helpful family meal planning assistant.
 Respond ONLY with valid JSON in this exact format, no markdown, no explanation:
 {"suggestions": [{"day": 0, "mealType": "breakfast", "dishName": "Pancakes"}, ...]}
-day is 0-6 (Sunday=0). mealType is one of: breakfast, lunch, dinner, snack.
-Provide at most 28 suggestions (7 days × 4 meal types). Keep dish names short and family-friendly.`;
+day is 0-6 (Sunday=0). mealType is one of: breakfast, lunch, dinner.
+Provide at most 21 suggestions (7 days × 3 meal types). Keep dish names short and family-friendly.`;
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
@@ -231,7 +230,7 @@ export function AIMealCoach({ weekStartDate, onApplySuggestions, lang }: AIMealC
                     {MEAL_TYPES.map(mealType => (
                       <tr key={mealType} className="border-b border-amber-50 last:border-0">
                         <td className="py-2 px-3 font-bold text-amber-900 whitespace-nowrap">
-                          {MEAL_LABELS[mealType][lang]}
+                          {MEAL_LABELS[mealType]?.[lang] ?? mealType}
                         </td>
                         {Array.from({ length: 7 }, (_, day) => {
                           const name = getSuggestion(day, mealType);

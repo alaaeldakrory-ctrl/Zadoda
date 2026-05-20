@@ -193,7 +193,14 @@ export interface ParentSelfLog {
 }
 
 // ── Meal Planner ──
-export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+export type MealType =
+  | 'breakfast'
+  | 'lunch'
+  | 'dinner'
+  | 'lyla-breakfast'
+  | 'malika-breakfast'
+  | 'lyla-lunchbox'
+  | 'malika-lunchbox';
 
 export type ShoppingCategory =
   | 'produce'
