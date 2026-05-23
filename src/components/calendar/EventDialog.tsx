@@ -130,12 +130,12 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] rounded-3xl overflow-hidden border-2">
-        <DialogHeader className="pb-4 border-b">
+      <DialogContent className="sm:max-w-[425px] rounded-3xl border-2 max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="pb-4 border-b flex-shrink-0">
           <DialogTitle className="text-2xl font-black">{eventToEdit?.seriesId ? t.edit : t.addEvent}</DialogTitle>
         </DialogHeader>
         
-        <div className="grid gap-4 py-6">
+        <div className="flex-1 overflow-y-auto py-6 pr-1 grid gap-4 min-h-0">
           {!eventToEdit?.seriesId && templates.length > 0 && (
             <div className="grid gap-2 p-3 bg-primary/5 rounded-2xl border-2 border-primary/10">
               <Label className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
@@ -334,7 +334,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange, in
             />
           </div>
         </div>
-        <DialogFooter className="flex items-center justify-between sm:justify-between w-full border-t pt-4">
+        <DialogFooter className="flex items-center justify-between sm:justify-between w-full border-t pt-4 flex-shrink-0">
           {eventToEdit?.seriesId ? (
             <Button variant="destructive" onClick={handleDelete} className="rounded-full font-bold">
               <Trash2 className="w-4 h-4 mr-2" />

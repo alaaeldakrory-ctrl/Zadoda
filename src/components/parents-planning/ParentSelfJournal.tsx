@@ -2,38 +2,28 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '@/lib/store';
-import { getTranslation } from '@/lib/i18n';
+import { getTranslation } from '@/lib/i18n'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { getPersonName, getAvatarUrl, cn } from '@/lib/utils';
 import {
-  BookHeart, Plus, X, Check, Smile, Meh, Frown,
-  Wand2, Loader2, Pencil, Trash2, ChevronDown, ChevronUp, Sparkles
+  BookHeart, Plus, X, Check,
+  Wand2, Loader2, Pencil, Trash2, Sparkles
 } from 'lucide-react';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { ParentSelfLog } from '@/lib/types';
 
-// ── Feeling helpers ────────────────────────────────────────────────────────────
-const FeelingIcon = ({ feeling }: { feeling: 'good' | 'neutral' | 'needs_work' }) => {
-  if (feeling === 'good') return <Smile className="w-5 h-5 text-violet-500" />;
-  if (feeling === 'needs_work') return <Frown className="w-5 h-5 text-rose-500" />;
-  return <Meh className="w-5 h-5 text-amber-500" />;
-};
+// ── Feeling config ─────────────────────────────────────────────────────────────
 
-const feelingColors = {
-  good: 'border-violet-200 bg-violet-50',
-  neutral: 'border-amber-200 bg-amber-50',
-  needs_work: 'border-rose-200 bg-rose-50',
-};
+const FEELINGS = {
+  good: { emoji: '😊', label: 'Felt Great', bg: 'bg-violet-50', border: 'border-violet-300', text: 'text-violet-700', badge: 'bg-violet-100 text-violet-800' },
+  neutral: { emoji: '😐', label: 'It was Okay', bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-700', badge: 'bg-amber-100 text-amber-800' },
+  needs_work: { emoji: '😔', label: 'Needs Work', bg: 'bg-rose-50', border: 'border-rose-300', text: 'text-rose-700', badge: 'bg-rose-100 text-rose-800' },
+} as const;
 
-const feelingLabel = {
-  good: '😊 Felt Great',
-  neutral: '😐 It was Okay',
-  needs_work: '😔 Needs Work',
-};
+// ── Existing entry card — always expanded, big readable text ───────────────────
 
-// ── Existing journal entry card ────────────────────────────────────────────────
 function ExistingEntryCard({
   entry,
   onEdit,
@@ -43,67 +33,66 @@ function ExistingEntryCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const feeling = FEELINGS[entry.overallFeeling];
+
   return (
-    <div className={cn('rounded-3xl border-2 p-5 flex flex-col gap-3 transition-all', feelingColors[entry.overallFeeling])}>
+    <div className={cn('rounded-3xl border-2 p-6 space-y-5', feeling.bg, feeling.border)}>
+      {/* Header row */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <FeelingIcon feeling={entry.overallFeeling} />
-          <span className="text-xs font-black uppercase tracking-wider text-muted-foreground opacity-70">
-            {feelingLabel[entry.overallFeeling]}
-          </span>
-        </div>
+        <span className={cn('inline-flex items-center gap-2 text-base font-black px-4 py-1.5 rounded-full', feeling.badge)}>
+          <span className="text-xl">{feeling.emoji}</span>
+          {feeling.label}
+        </span>
         <div className="flex items-center gap-1">
-          <button onClick={() => setExpanded(e => !e)} className="p-1.5 rounded-xl hover:bg-white/60 transition-all">
-            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-          <button onClick={onEdit} className="p-1.5 rounded-xl hover:bg-white/60 transition-all text-indigo-500">
+          <button onClick={onEdit} className="p-2 rounded-xl hover:bg-white/70 transition-all text-indigo-500 hover:text-indigo-700" title="Edit">
             <Pencil className="w-4 h-4" />
           </button>
-          <button onClick={onDelete} className="p-1.5 rounded-xl hover:bg-white/60 transition-all text-rose-500">
+          <button onClick={onDelete} className="p-2 rounded-xl hover:bg-white/70 transition-all text-rose-400 hover:text-rose-600" title="Delete">
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {expanded && (
-        <>
-          {(entry.goodThings?.length || 0) > 0 && (
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-black uppercase tracking-widest text-violet-600 opacity-70">✨ Good Things</p>
-              <div className="flex flex-wrap gap-1.5">
-                {entry.goodThings.map((item, i) => (
-                  <span key={i} className="bg-violet-100 text-violet-700 px-3 py-1 rounded-2xl text-xs font-bold border border-violet-200">
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {(entry.improveThings?.length || 0) > 0 && (
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-black uppercase tracking-widest text-rose-600 opacity-70">🔧 To Improve</p>
-              <div className="flex flex-wrap gap-1.5">
-                {entry.improveThings.map((item, i) => (
-                  <span key={i} className="bg-rose-100 text-rose-700 px-3 py-1 rounded-2xl text-xs font-bold border border-rose-200">
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {entry.reflection && (
-            <p className="text-sm font-medium text-muted-foreground bg-white/60 rounded-2xl p-3 border leading-relaxed">
-              💬 {entry.reflection}
-            </p>
-          )}
-        </>
+      {/* Reflection — big, prominent, always visible */}
+      {entry.reflection && (
+        <p className="text-lg font-semibold leading-relaxed text-gray-800 bg-white/70 rounded-2xl p-5 border border-white/80 whitespace-pre-wrap">
+          {entry.reflection}
+        </p>
+      )}
+
+      {/* Good things */}
+      {(entry.goodThings?.length || 0) > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-black uppercase tracking-widest text-violet-700 opacity-80">✨ Good Things I Did</p>
+          <div className="flex flex-wrap gap-2">
+            {entry.goodThings.map((item, i) => (
+              <span key={i} className="bg-violet-100 text-violet-800 px-4 py-1.5 rounded-2xl text-sm font-bold border border-violet-200">
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Things to improve */}
+      {(entry.improveThings?.length || 0) > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-black uppercase tracking-widest text-rose-700 opacity-80">🔧 Things to Improve</p>
+          <div className="flex flex-wrap gap-2">
+            {entry.improveThings.map((item, i) => (
+              <span key={i} className="bg-rose-100 text-rose-800 px-4 py-1.5 rounded-2xl text-sm font-bold border border-rose-200">
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
 // ── Journal entry form ─────────────────────────────────────────────────────────
+
 function JournalForm({
   selectedDate,
   parentId,
@@ -223,14 +212,14 @@ function JournalForm({
     return (
       <div className="space-y-3">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">{label}</p>
-          <p className="text-[10px] font-medium text-muted-foreground opacity-50 mt-0.5">{hint}</p>
+          <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">{label}</p>
+          <p className="text-xs font-medium text-muted-foreground opacity-60 mt-0.5">{hint}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {items.map((item, i) => (
             <span
               key={i}
-              className={`bg-${color}-100 text-${color}-700 px-3 py-1.5 rounded-2xl text-xs font-bold border border-${color}-200 flex items-center gap-1.5`}
+              className={`bg-${color}-100 text-${color}-800 px-4 py-1.5 rounded-2xl text-sm font-bold border border-${color}-200 flex items-center gap-1.5`}
             >
               {item}
               <button onClick={() => removeItem(type, i)} className="hover:opacity-70 transition-opacity">
@@ -243,7 +232,7 @@ function JournalForm({
             <button
               type="button"
               onClick={() => setShow(true)}
-              className="px-3 py-1.5 rounded-2xl text-xs font-black border-2 border-dashed border-muted-foreground/20 text-muted-foreground hover:border-indigo-400/40 hover:text-indigo-600 transition-all flex items-center gap-1"
+              className="px-4 py-1.5 rounded-2xl text-sm font-black border-2 border-dashed border-muted-foreground/20 text-muted-foreground hover:border-indigo-400/40 hover:text-indigo-600 transition-all flex items-center gap-1"
             >
               <Plus className="w-3 h-3" /> Add
             </button>
@@ -256,7 +245,7 @@ function JournalForm({
                 value={newVal}
                 onChange={e => setNew(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') addItem(type); if (e.key === 'Escape') setShow(false); }}
-                placeholder="Type and press Enter..."
+                placeholder="Type and press Enter…"
                 className="flex-1 rounded-2xl border-2 px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400"
               />
               <button type="button" onClick={() => addItem(type)} className="p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700">
@@ -271,13 +260,13 @@ function JournalForm({
 
   return (
     <div className="space-y-6">
-      {/* Reflection textarea + Smart Fill */}
+      {/* Reflection textarea — large and inviting */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">Free Reflection</p>
+          <p className="text-sm font-black uppercase tracking-wider text-muted-foreground">My Reflection</p>
           {reflection.length > 10 && (
             <Button type="button" variant="ghost" size="sm" onClick={handleAIAnalyze} disabled={isAnalyzing}
-              className="h-8 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-black text-[10px] uppercase tracking-wider gap-2 px-3 border border-indigo-200">
+              className="h-8 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-black text-xs uppercase tracking-wider gap-2 px-3 border border-indigo-200">
               {isAnalyzing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
               Smart Fill
             </Button>
@@ -286,25 +275,28 @@ function JournalForm({
         <textarea
           value={reflection}
           onChange={e => setReflection(e.target.value)}
-          placeholder="How did parenting feel today? How did things go with Lyla and Malika?"
-          className="w-full h-28 rounded-[1.5rem] border-2 p-4 font-medium resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-muted/5"
+          placeholder="How did parenting feel today? How did things go with the kids?"
+          className="w-full h-32 rounded-[1.5rem] border-2 p-5 text-base font-medium resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white/70 leading-relaxed"
         />
       </div>
 
       {/* Overall Feeling */}
       <div className="space-y-3">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">Overall Feeling</p>
+        <p className="text-sm font-black uppercase tracking-wider text-muted-foreground">Overall Feeling</p>
         <div className="flex gap-3">
-          {(['good', 'neutral', 'needs_work'] as const).map(f => (
-            <button key={f} type="button" onClick={() => setOverallFeeling(f)}
-              className={cn('flex-1 rounded-2xl py-3 border-2 flex flex-col items-center gap-1 transition-all font-black text-xs uppercase tracking-wider',
-                overallFeeling === f
-                  ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200'
-                  : 'border-muted bg-muted/10 hover:border-muted-foreground/30')}>
-              <FeelingIcon feeling={f} />
-              <span className="text-[9px]">{f === 'good' ? 'Great' : f === 'neutral' ? 'Okay' : 'Needs Work'}</span>
-            </button>
-          ))}
+          {(['good', 'neutral', 'needs_work'] as const).map(f => {
+            const cfg = FEELINGS[f];
+            return (
+              <button key={f} type="button" onClick={() => setOverallFeeling(f)}
+                className={cn('flex-1 rounded-2xl py-4 border-2 flex flex-col items-center gap-2 transition-all font-black',
+                  overallFeeling === f
+                    ? `${cfg.border} ${cfg.bg} ring-2 ring-offset-1`
+                    : 'border-muted bg-muted/10 hover:border-muted-foreground/30')}>
+                <span className="text-2xl">{cfg.emoji}</span>
+                <span className={cn('text-xs font-bold', overallFeeling === f ? cfg.text : 'text-muted-foreground')}>{cfg.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -315,7 +307,7 @@ function JournalForm({
       {/* Actions */}
       <div className="flex gap-3 pt-2">
         <Button type="button" onClick={handleSave}
-          className="flex-1 rounded-2xl font-black bg-indigo-600 hover:bg-indigo-700 text-white">
+          className="flex-1 h-12 rounded-2xl font-black bg-indigo-600 hover:bg-indigo-700 text-white text-base">
           <Check className="w-4 h-4 mr-2" />
           {initial ? 'Save Changes' : 'Save Reflection'}
         </Button>
@@ -328,13 +320,13 @@ function JournalForm({
 }
 
 // ── Main ParentSelfJournal ─────────────────────────────────────────────────────
+
 export function ParentSelfJournal({ selectedDate }: { selectedDate: Date }) {
   const { persons, settings, parentSelfLogs, addParentSelfLog, updateParentSelfLog, deleteParentSelfLog } = useStore();
   const t = getTranslation(settings.language);
   const jt = t.parentSelfJournal;
 
   const parents = persons.filter(p => p.role === 'parent');
-
   const [selectedParent, setSelectedParent] = useState('');
   const [editing, setEditing] = useState<string | 'new' | undefined>(undefined);
 
@@ -365,49 +357,53 @@ export function ParentSelfJournal({ selectedDate }: { selectedDate: Date }) {
   return (
     <Card className="rounded-[2.5rem] border-2 shadow-xl overflow-hidden"
       style={{ background: 'linear-gradient(135deg, #faf5ff 0%, #eef2ff 100%)' }}>
+
       {/* Header */}
-      <CardHeader className="pb-4 border-b border-indigo-100"
+      <CardHeader className="pb-5 border-b border-indigo-100"
         style={{ background: 'linear-gradient(135deg, #ede9fe 0%, #e0e7ff 100%)' }}>
         <CardTitle className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-100 rounded-2xl">
-            <BookHeart className="w-6 h-6 text-indigo-600" />
+          <div className="p-2.5 bg-indigo-100 rounded-2xl">
+            <BookHeart className="w-7 h-7 text-indigo-600" />
           </div>
           <div>
             <div className="text-2xl font-black text-indigo-700 flex items-center gap-2">
               {jt.title}
               <Sparkles className="w-5 h-5 text-violet-400" />
             </div>
-            <p className="text-xs font-bold text-indigo-400 mt-0.5">{jt.subtitle}</p>
+            <p className="text-sm font-bold text-indigo-400 mt-0.5">{jt.subtitle}</p>
           </div>
         </CardTitle>
       </CardHeader>
 
       <CardContent className="p-6 space-y-6">
+
         {/* Parent selector */}
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-50 mb-3">{jt.selectParent}</p>
-          <div className="flex gap-3">
-            {parents.map(parent => (
-              <button
-                key={parent.id}
-                type="button"
-                onClick={() => { setSelectedParent(parent.id); setEditing(undefined); }}
-                className={cn(
-                  'flex-1 rounded-2xl p-3 border-2 transition-all flex items-center gap-3',
-                  selectedParent === parent.id
-                    ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200/50 shadow-sm'
-                    : 'border-transparent bg-white/60 hover:bg-white/90 hover:border-indigo-200'
-                )}
-              >
-                <div className="w-10 h-10 rounded-full overflow-hidden border-2 shadow-sm shrink-0"
-                  style={{ borderColor: parent.color }}>
-                  <Image src={getAvatarUrl(parent.id, parent.avatarUrl)} alt={parent.name} width={40} height={40} className="object-cover w-full h-full" />
-                </div>
-                <span className="font-black text-sm text-indigo-900">{getPersonName(parent, settings.language)}</span>
-              </button>
-            ))}
+        {parents.length > 1 && (
+          <div>
+            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground opacity-60 mb-3">{jt.selectParent}</p>
+            <div className="flex gap-3">
+              {parents.map(parent => (
+                <button
+                  key={parent.id}
+                  type="button"
+                  onClick={() => { setSelectedParent(parent.id); setEditing(undefined); }}
+                  className={cn(
+                    'flex-1 rounded-2xl p-3 border-2 transition-all flex items-center gap-3',
+                    selectedParent === parent.id
+                      ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200/50 shadow-sm'
+                      : 'border-transparent bg-white/60 hover:bg-white/90 hover:border-indigo-200'
+                  )}
+                >
+                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 shadow-sm shrink-0"
+                    style={{ borderColor: parent.color }}>
+                    <Image src={getAvatarUrl(parent.id, parent.avatarUrl)} alt={parent.name} width={40} height={40} className="object-cover w-full h-full" />
+                  </div>
+                  <span className="font-black text-sm text-indigo-900">{getPersonName(parent, settings.language)}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Form or entries */}
         {editing ? (
@@ -419,12 +415,12 @@ export function ParentSelfJournal({ selectedDate }: { selectedDate: Date }) {
             onCancel={() => setEditing(undefined)}
           />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {todayEntries.length === 0 ? (
               <div className="text-center py-10 opacity-50">
-                <BookHeart className="w-12 h-12 mx-auto mb-3 text-indigo-400" />
-                <p className="font-black text-sm text-indigo-700">{jt.noEntry}</p>
-                <p className="text-xs font-medium mt-1 text-indigo-400">{jt.noEntryHint}</p>
+                <BookHeart className="w-14 h-14 mx-auto mb-3 text-indigo-400" />
+                <p className="font-black text-base text-indigo-700">{jt.noEntry}</p>
+                <p className="text-sm font-medium mt-1 text-indigo-400">{jt.noEntryHint}</p>
               </div>
             ) : (
               todayEntries.map(entry => (
@@ -441,9 +437,9 @@ export function ParentSelfJournal({ selectedDate }: { selectedDate: Date }) {
               type="button"
               variant="outline"
               onClick={() => setEditing('new')}
-              className="w-full rounded-2xl border-dashed border-indigo-300 font-black text-sm gap-2 h-12 hover:border-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 text-indigo-500 bg-white/60 transition-all"
+              className="w-full rounded-2xl border-dashed border-indigo-300 font-black text-base gap-2 h-14 hover:border-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 text-indigo-500 bg-white/60 transition-all"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-5 h-5" />
               {jt.addEntry} for {format(selectedDate, 'MMM d')}
             </Button>
           </div>
