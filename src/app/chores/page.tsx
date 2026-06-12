@@ -7,20 +7,22 @@ import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { Chore, Person, ChoreOverride } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { 
-  Plus, 
-  Trash2, 
-  Pencil, 
-  Shuffle, 
-  ClipboardList, 
-  Calendar as CalendarIcon, 
-  CheckCircle2, 
+import {
+  Plus,
+  Trash2,
+  Pencil,
+  Shuffle,
+  ClipboardList,
+  Calendar as CalendarIcon,
+  CheckCircle2,
   Circle,
   ChevronLeft,
   ChevronRight,
   Library,
   UserPlus,
-  MinusCircle
+  MinusCircle,
+  Repeat,
+  Zap
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -85,6 +87,7 @@ export default function ChoresPage() {
         description: editingChore.description || '',
         defaultAssignedTo: editingChore.defaultAssignedTo || 'random',
         isActive: true,
+        isDaily: editingChore.isDaily ?? false,
       });
     }
     setIsLibraryDialogOpen(false);
@@ -114,6 +117,29 @@ export default function ChoresPage() {
     deleteChoreOverride(choreId, selectedDate);
   };
 
+  const handleAddDailyChores = () => {
+    const yesterday = format(addDays(parseISO(selectedDate), -1), 'yyyy-MM-dd');
+    const dailyChores = chores.filter(c => c.isDaily);
+    const unscheduled = dailyChores.filter(c => !scheduledChores.some(sc => sc.id === c.id));
+
+    unscheduled.forEach(chore => {
+      const yesterdayOverride = choreOverrides.find(o => o.choreId === chore.id && o.date === yesterday);
+      const yesterdayAssignee = yesterdayOverride?.assignedTo;
+
+      let assignedTo: string | undefined;
+      if (persons.length === 0) {
+        assignedTo = undefined;
+      } else if (persons.length === 1) {
+        assignedTo = persons[0].id;
+      } else {
+        const pool = persons.filter(p => p.id !== yesterdayAssignee);
+        assignedTo = pool[Math.floor(Math.random() * pool.length)].id;
+      }
+
+      updateChoreOverride(chore.id, selectedDate, { assignedTo, completed: false });
+    });
+  };
+
   const handleShuffle = () => {
     if (scheduledChores.length === 0) return;
     
@@ -140,10 +166,10 @@ export default function ChoresPage() {
     <AppLayout>
       <div className="max-w-6xl mx-auto space-y-6 sm:space-y-10 pb-24 px-3 sm:px-4">
         {/* Header Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8">
-          <div className="space-y-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-8">
+          <div className="space-y-1">
             <h1 className="text-4xl lg:text-5xl font-black tracking-tighter">{t.dailyChores}</h1>
-            <p className="text-lg text-muted-foreground font-bold opacity-70">Household tasks assigned to the family — tracked daily.</p>
+            <p className="max-sm:hidden text-lg text-muted-foreground font-bold opacity-70">Household tasks assigned to the family — tracked daily.</p>
           </div>
           
           <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="w-full sm:w-auto">
@@ -178,30 +204,45 @@ export default function ChoresPage() {
                   </Button>
                 </div>
                 
-                <div className="flex items-center gap-3 px-6 border-l-2 border-r-2 border-dashed border-muted">
-                  <CalendarIcon className="w-6 h-6 text-primary" />
-                  <span className="text-xl lg:text-2xl font-black uppercase tracking-tighter whitespace-nowrap">
+                <div className="flex items-center gap-3 px-4 lg:px-6 border-l-2 border-r-2 border-dashed border-muted">
+                  <CalendarIcon className="w-5 h-5 lg:w-6 lg:h-6 text-primary shrink-0" />
+                  <span className="sm:hidden text-base font-black uppercase tracking-tighter">
+                    {format(parseISO(selectedDate), 'EEE, d MMM')}
+                  </span>
+                  <span className="max-sm:hidden text-xl lg:text-2xl font-black uppercase tracking-tighter whitespace-nowrap">
                     {format(parseISO(selectedDate), 'EEEE d MMMM')}
                   </span>
                 </div>
               </div>
 
-              <div className="flex gap-4 w-full lg:w-auto">
-                <Button 
-                  onClick={() => setIsPickDialogOpen(true)} 
-                  className="flex-1 lg:flex-none rounded-full px-10 h-14 font-black shadow-xl shadow-primary/20 hover:scale-105 transition-all text-xs uppercase tracking-widest"
-                >
-                  <Plus className="w-5 h-5 mr-2 stroke-[3px]" />
-                  {t.addChore}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleShuffle} 
-                  className="flex-1 lg:flex-none rounded-full px-10 h-14 font-black border-2 hover:bg-primary/5 text-xs uppercase tracking-widest"
-                >
-                  <Shuffle className="w-5 h-5 mr-2 text-primary" />
-                  {t.random}
-                </Button>
+              <div className="flex flex-col gap-3 w-full lg:flex-row lg:w-auto lg:gap-4">
+                {chores.some(c => c.isDaily) && (
+                  <Button
+                    onClick={handleAddDailyChores}
+                    variant="outline"
+                    className="w-full lg:w-auto rounded-full px-8 h-14 font-black border-2 border-primary/30 hover:bg-primary/5 text-xs uppercase tracking-widest text-primary"
+                  >
+                    <Zap className="w-5 h-5 mr-2 stroke-[2.5px]" />
+                    Add Daily Chores
+                  </Button>
+                )}
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => setIsPickDialogOpen(true)}
+                    className="flex-1 lg:flex-none rounded-full px-10 h-14 font-black shadow-xl shadow-primary/20 hover:scale-105 transition-all text-xs uppercase tracking-widest"
+                  >
+                    <Plus className="w-5 h-5 mr-2 stroke-[3px]" />
+                    {t.addChore}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleShuffle}
+                    className="flex-1 lg:flex-none rounded-full px-10 h-14 font-black border-2 hover:bg-primary/5 text-xs uppercase tracking-widest"
+                  >
+                    <Shuffle className="w-5 h-5 mr-2 text-primary" />
+                    {t.random}
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -341,8 +382,16 @@ export default function ChoresPage() {
                       <p className="text-sm text-muted-foreground font-medium line-clamp-3 opacity-70 leading-relaxed">{chore.description}</p>
                     </div>
                     <div className="flex items-center justify-between pt-6 border-t-2 border-dashed border-muted/50">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground bg-muted/50 px-5 py-2 rounded-full border shadow-sm">
-                        {chore.defaultAssignedTo === 'random' ? t.random : getPersonName(persons.find(p => p.id === chore.defaultAssignedTo)!, settings.language)}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground bg-muted/50 px-5 py-2 rounded-full border shadow-sm">
+                          {chore.defaultAssignedTo === 'random' ? t.random : getPersonName(persons.find(p => p.id === chore.defaultAssignedTo)!, settings.language)}
+                        </div>
+                        {chore.isDaily && (
+                          <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-3 py-2 rounded-full border border-primary/20">
+                            <Repeat className="w-3 h-3" />
+                            Daily
+                          </div>
+                        )}
                       </div>
                       <div className="flex gap-2">
                         <Button variant="ghost" size="icon" className="rounded-full h-11 w-11 hover:bg-muted" onClick={() => handleEditChore(chore)}>
@@ -419,10 +468,38 @@ export default function ChoresPage() {
                 placeholder="Any special details..."
               />
             </div>
+            <button
+              type="button"
+              onClick={() => setEditingChore(prev => prev ? ({ ...prev, isDaily: !prev.isDaily }) : null)}
+              className={cn(
+                "flex items-center justify-between p-5 rounded-2xl border-2 transition-all",
+                editingChore?.isDaily
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-muted bg-muted/30 text-muted-foreground hover:border-primary/30"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <Repeat className="w-5 h-5" />
+                <div className="text-left">
+                  <p className="font-black text-sm uppercase tracking-widest">Daily Chore</p>
+                  <p className="text-xs font-medium opacity-70 mt-0.5">Added automatically with "Add Daily Chores"</p>
+                </div>
+              </div>
+              <div className={cn(
+                "w-12 h-6 rounded-full transition-all relative shrink-0",
+                editingChore?.isDaily ? "bg-primary" : "bg-muted"
+              )}>
+                <div className={cn(
+                  "absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all",
+                  editingChore?.isDaily ? "left-7" : "left-1"
+                )} />
+              </div>
+            </button>
+
             <div className="grid gap-3">
               <Label className="font-black text-xs uppercase tracking-[0.2em] text-muted-foreground">Default Assignee</Label>
-              <Select 
-                value={editingChore?.defaultAssignedTo || 'random'} 
+              <Select
+                value={editingChore?.defaultAssignedTo || 'random'}
                 onValueChange={v => setEditingChore(prev => prev ? ({ ...prev, defaultAssignedTo: v }) : null)}
               >
                 <SelectTrigger className="rounded-2xl border-2 h-14 font-black px-6 text-lg">

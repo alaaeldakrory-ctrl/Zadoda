@@ -221,11 +221,13 @@ export default function CheckListsPage() {
 
         {/* Page header */}
         <div className="flex items-center gap-4">
-          <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+          <div className="p-3 bg-primary/10 rounded-2xl text-primary shrink-0">
             <CheckSquare className="w-8 h-8" />
           </div>
-          <h1 className="text-4xl font-black tracking-tight">Checklists</h1>
-          <p className="text-base text-muted-foreground font-bold opacity-70">Step-by-step routines to keep the family on track.</p>
+          <div>
+            <h1 className="text-4xl font-black tracking-tight">Checklists</h1>
+            <p className="max-sm:hidden text-base text-muted-foreground font-bold opacity-70">Step-by-step routines to keep the family on track.</p>
+          </div>
         </div>
 
         {/* Controls row */}

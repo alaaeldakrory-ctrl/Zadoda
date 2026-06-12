@@ -98,7 +98,7 @@ function GreetingBar() {
       </div>
 
       {/* Right: overlapping avatar bubbles + weather pill */}
-      <div className="flex items-center gap-4 shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
         <div className="flex items-center">
           {sortedPersons.map((person, i) => (
             <div
@@ -124,7 +124,7 @@ function GreetingBar() {
 
         {weather && (
           <div
-            className="flex items-center gap-1.5 text-white"
+            className="max-sm:hidden flex items-center gap-1.5 text-white"
             style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 999, padding: '6px 12px' }}
           >
             <WeatherIcon type={weather.icon} />

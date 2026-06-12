@@ -24,6 +24,7 @@ export interface Chore {
   description: string;
   defaultAssignedTo: string; // personId or 'random'
   isActive: boolean;
+  isDaily?: boolean;
 }
 
 export interface ChoreOverride {
