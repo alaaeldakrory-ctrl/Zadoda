@@ -233,7 +233,7 @@ export interface Recipe {
 
 export interface MealDish {
   recipeId?: string;   // set if the dish comes from a named recipe
-  freeText?: string;   // set if entered as free text
+  freeText?: string;   // set if entered as free text; alongside recipeId it holds the recipe's name as a fallback
 }
 
 export interface MealSlot {

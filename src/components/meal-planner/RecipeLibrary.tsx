@@ -453,24 +453,22 @@ export function RecipeLibrary({
         )}
       />
 
-      {tab === 'explore' && (
-        <div className="flex gap-2 flex-wrap">
-          {filterPills.map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={cn(
-                'px-3 py-1 rounded-full text-xs font-bold border transition-all',
-                filter === f
-                  ? 'bg-primary text-white border-primary'
-                  : 'border-border text-muted-foreground hover:border-primary/40 hover:text-primary'
-              )}
-            >
-              {MEAL_FILTER_LABEL[f][lang]}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="flex gap-2 flex-wrap">
+        {filterPills.map(f => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={cn(
+              'px-3 py-1 rounded-full text-xs font-bold border transition-all',
+              filter === f
+                ? 'bg-primary text-white border-primary'
+                : 'border-border text-muted-foreground hover:border-primary/40 hover:text-primary'
+            )}
+          >
+            {MEAL_FILTER_LABEL[f][lang]}
+          </button>
+        ))}
+      </div>
 
       {tab === 'explore' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -546,7 +544,10 @@ export function RecipeLibrary({
                   mealType={r.mealType}
                   onAddToMealPlan={() => onAddToMealPlan(r)}
                   onEdit={() => { setEditingId(r.id); setShowForm(false); }}
-                  onDelete={() => onDeleteRecipe(r.id)}
+                  onDelete={() => {
+                    const msg = isRtl ? `حذف "${r.name}"؟` : `Delete "${r.name}"?`;
+                    if (window.confirm(msg)) onDeleteRecipe(r.id);
+                  }}
                   isCustom
                   lang={lang}
                 />

@@ -6,6 +6,7 @@ import { X, Plus, Search, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MealSlot, MealType, MealDish, Recipe } from '@/lib/types';
 import { CURATED_RECIPES, CuratedRecipe } from './curatedRecipes';
+import { dishEmoji, dishFromRecipe, dishName } from './dishes';
 
 interface MealSlotModalProps {
   open: boolean;
@@ -104,12 +105,8 @@ export function MealSlotModal({
     ? recipes.filter(r => r.name.toLowerCase().includes(lowerQuery))
     : recipes.slice(0, 5);
 
-  const addCurated = (r: CuratedRecipe) => {
-    setDishes(prev => [...prev, { recipeId: r.id }]);
-  };
-
-  const addFamilyRecipe = (r: Recipe) => {
-    setDishes(prev => [...prev, { recipeId: r.id }]);
+  const addRecipe = (r: CuratedRecipe | Recipe) => {
+    setDishes(prev => [...prev, dishFromRecipe(r)]);
   };
 
   const addFreeText = () => {
@@ -124,16 +121,13 @@ export function MealSlotModal({
   };
 
   const getDishDisplayName = (dish: MealDish): string => {
-    if (dish.recipeId?.startsWith('curated_')) {
-      const curated = CURATED_RECIPES.find(r => r.id === dish.recipeId);
-      if (curated) return `${curated.emoji} ${curated.name}`;
-    }
-    if (dish.recipeId) {
-      const family = recipes.find(r => r.id === dish.recipeId);
-      if (family) return family.name;
-    }
-    return dish.freeText || '—';
+    const emoji = dishEmoji(dish, recipes);
+    const name = dishName(dish, recipes);
+    return emoji ? `${emoji} ${name}` : name;
   };
+
+  // An empty list is only saveable when it clears a slot that had dishes.
+  const canSave = dishes.length > 0 || !!existingSlot?.dishes?.length;
 
   return (
     <div
@@ -208,7 +202,7 @@ export function MealSlotModal({
                 {matchedCurated.map(r => (
                   <button
                     key={r.id}
-                    onClick={() => addCurated(r)}
+                    onClick={() => addRecipe(r)}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted/60 transition-all text-left group"
                   >
                     <span className="text-xl">{r.emoji}</span>
@@ -235,7 +229,7 @@ export function MealSlotModal({
                 {matchedFamily.map(r => (
                   <button
                     key={r.id}
-                    onClick={() => addFamilyRecipe(r)}
+                    onClick={() => addRecipe(r)}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted/60 transition-all text-left group"
                   >
                     <span className="text-xl">🍽️</span>
@@ -291,11 +285,13 @@ export function MealSlotModal({
             {isRtl ? 'إلغاء' : 'Cancel'}
           </button>
           <button
-            onClick={() => { onSave(dishes); onClose(); }}
-            disabled={dishes.length === 0}
+            onClick={() => onSave(dishes)}
+            disabled={!canSave}
             className="flex-1 py-3 rounded-2xl bg-primary text-white font-bold text-sm disabled:opacity-40 transition-all hover:bg-primary/90"
           >
-            {isRtl ? 'حفظ' : 'Save'}
+            {dishes.length === 0
+              ? (isRtl ? 'مسح الوجبة' : 'Clear meal')
+              : (isRtl ? 'حفظ' : 'Save')}
           </button>
         </div>
       </div>

@@ -5,7 +5,7 @@ import { addDays, format, isToday, parseISO } from 'date-fns';
 import { Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MealSlot, MealType, Recipe } from '@/lib/types';
-import { CURATED_RECIPES } from './curatedRecipes';
+import { dishName } from './dishes';
 
 interface WeeklyGridProps {
   weekStartDate: string;
@@ -74,18 +74,6 @@ const MEAL_COLORS: Record<MealType, { row: string; chip: string; btn: string }> 
   },
 };
 
-function resolveDishName(dish: { recipeId?: string; freeText?: string }, recipes: Recipe[]): string {
-  if (dish.recipeId) {
-    if (dish.recipeId.startsWith('curated_')) {
-      const curated = CURATED_RECIPES.find(r => r.id === dish.recipeId);
-      if (curated) return curated.name;
-    }
-    const r = recipes.find(r => r.id === dish.recipeId);
-    if (r) return r.name;
-  }
-  return dish.freeText || '—';
-}
-
 export function WeeklyGrid({
   weekStartDate,
   mealSlots,
@@ -139,10 +127,13 @@ export function WeeklyGrid({
             return (
               <React.Fragment key={mealType}>
                 <div className={cn(
-                  'border-b border-r bg-muted/20 p-3 flex items-center',
-                  'sticky left-0 z-10'
+                  'border-b border-r bg-card p-3 flex items-center',
+                  'sticky z-10',
+                  isRtl ? 'right-0' : 'left-0'
                 )}>
-                  <span className={cn('text-[11px] font-black uppercase tracking-wider', colors.row)}>
+                  {/* Tint on top of an opaque background so dishes don't show through while scrolling */}
+                  <div className="absolute inset-0 bg-muted/20 pointer-events-none" />
+                  <span className={cn('relative text-[11px] font-black uppercase tracking-wider', colors.row)}>
                     {MEAL_LABELS[mealType][lang]}
                   </span>
                 </div>
@@ -162,7 +153,7 @@ export function WeeklyGrid({
                       {hasDishes ? (
                         <>
                           {slot!.dishes.map((dish, dishIndex) => {
-                            const name = resolveDishName(dish, recipes);
+                            const name = dishName(dish, recipes);
                             return (
                               <div
                                 key={dishIndex}

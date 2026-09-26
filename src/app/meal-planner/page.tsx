@@ -1,8 +1,8 @@
 "use client"
 
 import React, { useState } from 'react';
-import { format, startOfWeek, addWeeks, subWeeks, parseISO } from 'date-fns';
-import { ChevronLeft, ChevronRight, ChefHat } from 'lucide-react';
+import { format, startOfWeek, addWeeks, addDays } from 'date-fns';
+import { ChevronLeft, ChevronRight, ChefHat, X } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { getTranslation } from '@/lib/i18n';
 import { MealSlot, MealType, MealDish, Recipe } from '@/lib/types';
@@ -12,6 +12,7 @@ import { MealSlotModal } from '@/components/meal-planner/MealSlotModal';
 import { RecipeLibrary } from '@/components/meal-planner/RecipeLibrary';
 import { ShoppingListView } from '@/components/meal-planner/ShoppingListView';
 import { AIMealCoach } from '@/components/meal-planner/AIMealCoach';
+import { dishFromRecipe } from '@/components/meal-planner/dishes';
 import { cn } from '@/lib/utils';
 
 type Tab = 'weekly' | 'recipes' | 'shopping';
@@ -30,7 +31,6 @@ export default function MealPlannerPage() {
     addShoppingItem,
     updateShoppingItem,
     deleteShoppingItem,
-    clearCheckedShoppingItems,
   } = useStore();
 
   const t = getTranslation(settings.language);
@@ -45,6 +45,9 @@ export default function MealPlannerPage() {
   const [modalDay, setModalDay] = useState(0);
   const [modalMealType, setModalMealType] = useState<MealType>('lunch');
 
+  // Set by "Add to Plan" in the recipe library; the next slot tapped receives it.
+  const [pendingRecipe, setPendingRecipe] = useState<Recipe | CuratedRecipe | null>(null);
+
   const weekStart = startOfWeek(
     addWeeks(new Date(), weekOffset),
     { weekStartsOn: 0 }
@@ -57,6 +60,12 @@ export default function MealPlannerPage() {
   );
 
   const openModal = (day: number, mealType: MealType) => {
+    if (pendingRecipe) {
+      const existing = getExistingSlot(day, mealType);
+      setMealSlot(weekStartDate, day, mealType, [...(existing?.dishes ?? []), dishFromRecipe(pendingRecipe)]);
+      setPendingRecipe(null);
+      return;
+    }
     setModalDay(day);
     setModalMealType(mealType);
     setModalOpen(true);
@@ -96,7 +105,12 @@ export default function MealPlannerPage() {
   };
 
   const handleAddToMealPlan = (recipe: Recipe | CuratedRecipe) => {
+    setPendingRecipe(recipe);
     setTab('weekly');
+  };
+
+  const handleClearChecked = () => {
+    weekShoppingItems.filter(i => i.checked).forEach(i => deleteShoppingItem(i.id));
   };
 
   const tabs: { key: Tab; label: string }[] = [
@@ -108,7 +122,7 @@ export default function MealPlannerPage() {
   const isCurrentWeek = weekOffset === 0;
   const weekLabel = isCurrentWeek
     ? (lang === 'ar' ? 'هذا الأسبوع' : 'This Week')
-    : format(weekStart, 'MMM d') + ' – ' + format(addWeeks(weekStart, 1), 'MMM d');
+    : format(weekStart, 'MMM d') + ' – ' + format(addDays(weekStart, 6), 'MMM d');
 
   return (
     <div className="max-w-screen-xl mx-auto px-2 sm:px-4 py-4 space-y-6" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -155,7 +169,7 @@ export default function MealPlannerPage() {
         {tabs.map(({ key, label }) => (
           <button
             key={key}
-            onClick={() => setTab(key)}
+            onClick={() => { setTab(key); if (key !== 'weekly') setPendingRecipe(null); }}
             className={cn(
               'px-4 py-2 rounded-xl text-sm font-bold transition-all',
               tab === key
@@ -171,6 +185,23 @@ export default function MealPlannerPage() {
       {/* Tab content */}
       {tab === 'weekly' && (
         <div className="space-y-4">
+          {pendingRecipe && (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-primary/10 border border-primary/30 text-sm">
+              <span className="text-xl">{pendingRecipe.emoji ?? '🍽️'}</span>
+              <p className="flex-1 font-bold">
+                {isRtl
+                  ? `اختر خانة لإضافة "${pendingRecipe.name}"`
+                  : `Tap a slot to add "${pendingRecipe.name}"`}
+              </p>
+              <button
+                onClick={() => setPendingRecipe(null)}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl border bg-card font-bold text-xs hover:bg-muted transition-all"
+              >
+                <X className="w-3.5 h-3.5" />
+                {isRtl ? 'إلغاء' : 'Cancel'}
+              </button>
+            </div>
+          )}
           <WeeklyGrid
             weekStartDate={weekStartDate}
             mealSlots={weekSlots}
@@ -208,7 +239,7 @@ export default function MealPlannerPage() {
           onAddItem={addShoppingItem}
           onUpdateItem={updateShoppingItem}
           onDeleteItem={deleteShoppingItem}
-          onClearChecked={clearCheckedShoppingItems}
+          onClearChecked={handleClearChecked}
           lang={lang}
         />
       )}

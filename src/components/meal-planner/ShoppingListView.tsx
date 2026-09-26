@@ -1,10 +1,11 @@
 "use client"
 
 import React, { useState } from 'react';
-import { ShoppingCart, Trash2, Plus, Zap, CheckCircle2 } from 'lucide-react';
+import { ShoppingCart, Trash2, Plus, Zap, CheckCircle2, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ShoppingItem, ShoppingCategory, MealSlot, Recipe } from '@/lib/types';
-import { CURATED_RECIPES } from './curatedRecipes';
+import { aggregateIngredients, planShoppingSync } from './shoppingList';
+import { dishIngredients } from './dishes';
 
 interface ShoppingListViewProps {
   shoppingItems: ShoppingItem[];
@@ -27,74 +28,6 @@ const CATEGORY_META: Record<ShoppingCategory, { en: string; ar: string; emoji: s
   pantry:  { en: 'Pantry',   ar: 'مؤونة',         emoji: '🏪', color: 'text-amber-700 bg-amber-50 border-amber-200' },
   other:   { en: 'Other',    ar: 'أخرى',          emoji: '📦', color: 'text-gray-700 bg-gray-50 border-gray-200' },
 };
-
-function inferCategory(name: string): ShoppingCategory {
-  const n = name.toLowerCase();
-  if (/chicken|beef|fish|salmon|tuna|shrimp|egg|meat|turkey|pork|lamb/.test(n)) return 'protein';
-  if (/milk|cheese|butter|yogurt|cream|dairy/.test(n)) return 'dairy';
-  if (/flour|rice|pasta|bread|oats|sugar|oil|sauce|paste|vinegar|spice|salt|pepper|soy|honey|cracker|cereal|noodle|baking|vanilla/.test(n)) return 'pantry';
-  if (/tomato|onion|garlic|carrot|lettuce|spinach|broccoli|celery|cucumber|pepper|zucchini|potato|apple|banana|lemon|lime|avocado|orange|berry|mango|grape/.test(n)) return 'produce';
-  return 'other';
-}
-
-function aggregateIngredients(
-  slots: MealSlot[],
-  weekStartDate: string,
-  recipes: Recipe[]
-): Omit<ShoppingItem, 'id'>[] {
-  const weekSlots = slots.filter(s => {
-    if (!s.weekStartDate) return true;
-    return s.weekStartDate === weekStartDate;
-  });
-
-  const map = new Map<string, Omit<ShoppingItem, 'id'>>();
-
-  const addToMap = (name: string, quantity: string, unit: string) => {
-    const key = `${name.toLowerCase()}__${unit.toLowerCase()}`;
-    if (map.has(key)) {
-      const existing = map.get(key)!;
-      const existingQty = parseFloat(existing.quantity || '0') || 0;
-      const newQty = parseFloat(quantity || '0') || 0;
-      if (existingQty > 0 && newQty > 0) {
-        map.set(key, { ...existing, quantity: String(existingQty + newQty) });
-      }
-    } else {
-      const category = inferCategory(name);
-      map.set(key, {
-        name,
-        quantity,
-        unit,
-        category,
-        checked: false,
-        weekStartDate,
-        source: 'auto' as const,
-        addedAt: Date.now(),
-      });
-    }
-  };
-
-  for (const slot of weekSlots) {
-    for (const dish of slot.dishes ?? []) {
-      if (dish.recipeId) {
-        if (dish.recipeId.startsWith('curated_')) {
-          const curated = CURATED_RECIPES.find(r => r.id === dish.recipeId);
-          if (curated) {
-            curated.ingredients.forEach(ing => addToMap(ing.name, ing.quantity, ing.unit));
-          }
-        } else {
-          const family = recipes.find(r => r.id === dish.recipeId);
-          if (family && family.ingredients) {
-            family.ingredients.forEach(ing => addToMap(ing.name, ing.quantity, ing.unit));
-          }
-        }
-      } else if (dish.freeText) {
-        addToMap(dish.freeText, '1', 'item');
-      }
-    }
-  }
-
-  return Array.from(map.values());
-}
 
 export function ShoppingListView({
   shoppingItems,
@@ -120,16 +53,20 @@ export function ShoppingListView({
   const checkedCount = weekItems.filter(i => i.checked).length;
   const totalCount = weekItems.length;
 
+  const [unknownDishes, setUnknownDishes] = useState<string[]>([]);
+  const hasAutoItems = weekItems.some(i => i.source === 'auto');
+
   const handleAutoGenerate = () => {
-    const suggestions = aggregateIngredients(mealSlots, weekStartDate, recipes);
-    suggestions.forEach(item => {
-      const alreadyExists = weekItems.some(
-        existing => existing.name.toLowerCase() === item.name.toLowerCase()
-      );
-      if (!alreadyExists) {
-        onAddItem(item);
-      }
-    });
+    const { items, unknownDishes: missing } = aggregateIngredients(
+      mealSlots,
+      weekStartDate,
+      dish => dishIngredients(dish, recipes)
+    );
+    const plan = planShoppingSync(weekItems, items);
+    plan.toAdd.forEach(onAddItem);
+    plan.toUpdate.forEach(({ id, updates }) => onUpdateItem(id, updates));
+    plan.toDelete.forEach(onDeleteItem);
+    setUnknownDishes(missing);
   };
 
   const handleAddManual = () => {
@@ -200,8 +137,22 @@ export function ShoppingListView({
         className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm hover:from-amber-600 hover:to-orange-600 transition-all shadow-sm"
       >
         <Zap className="w-4 h-4" />
-        {isRtl ? 'توليد تلقائي من خطة الأسبوع' : 'Auto-generate from this week\'s plan'}
+        {hasAutoItems
+          ? (isRtl ? 'تحديث من خطة الأسبوع' : 'Update from this week\'s plan')
+          : (isRtl ? 'توليد تلقائي من خطة الأسبوع' : 'Auto-generate from this week\'s plan')}
       </button>
+
+      {unknownDishes.length > 0 && (
+        <div className="flex items-start gap-2 px-4 py-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+          <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <p>
+            <span className="font-bold">
+              {isRtl ? 'هذه الأطباق ليس لها وصفة، أضف مكوناتها يدوياً: ' : 'These dishes have no recipe, so add their ingredients manually: '}
+            </span>
+            {unknownDishes.join(isRtl ? '، ' : ', ')}
+          </p>
+        </div>
+      )}
 
       {CATEGORIES.map(category => {
         const items = groupedItems[category];
@@ -247,7 +198,7 @@ export function ShoppingListView({
                   )}
                   <button
                     onClick={() => onDeleteItem(item.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                    className="[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
