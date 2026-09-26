@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Heart, Plus, Pencil, Trash2, Clock, ChefHat, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CURATED_RECIPES, CuratedRecipe } from './curatedRecipes';
-import { Recipe, MealType } from '@/lib/types';
+import { Recipe, MealType, MealCategory } from '@/lib/types';
 
 interface RecipeLibraryProps {
   recipes: Recipe[];
@@ -16,29 +16,21 @@ interface RecipeLibraryProps {
 }
 
 type Tab = 'explore' | 'mine';
-type MealFilter = 'all' | MealType;
+type MealFilter = 'all' | MealCategory;
 
-const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner'];
+const MEAL_TYPES: MealCategory[] = ['breakfast', 'lunch', 'dinner'];
 
 const MEAL_FILTER_LABEL: Record<MealFilter, { en: string; ar: string }> = {
   all:       { en: 'All',       ar: 'الكل'  },
   breakfast: { en: 'Breakfast', ar: 'إفطار' },
   lunch:     { en: 'Lunch',     ar: 'غداء'  },
   dinner:    { en: 'Dinner',    ar: 'عشاء'  },
-  'lyla-breakfast':   { en: 'Lyla Brkfst',  ar: 'إفطار ليلى' },
-  'malika-breakfast': { en: 'Malika Brkfst', ar: 'إفطار مالكة' },
-  'lyla-lunchbox':    { en: 'Lyla Lunch',   ar: 'لنش ليلى' },
-  'malika-lunchbox':  { en: 'Malika Lunch', ar: 'لنش مالكة' },
 };
 
 const MEAL_BADGE: Partial<Record<MealType, string>> = {
   breakfast: 'bg-emerald-100 text-emerald-700',
   lunch:     'bg-amber-100 text-amber-700',
   dinner:    'bg-green-100 text-green-800',
-  'lyla-breakfast':   'bg-rose-100 text-rose-700',
-  'malika-breakfast': 'bg-violet-100 text-violet-700',
-  'lyla-lunchbox':    'bg-pink-100 text-pink-700',
-  'malika-lunchbox':  'bg-purple-100 text-purple-700',
 };
 
 interface RecipeFormState {
@@ -298,7 +290,7 @@ function RecipeCard({
         <div className="flex items-center gap-2 mt-2 flex-wrap justify-center">
           {mealType && (
             <span className={cn('text-[10px] font-bold rounded-full px-2 py-0.5 capitalize', badge)}>
-              {MEAL_FILTER_LABEL[mealType]?.[lang] ?? mealType}
+              {MEAL_FILTER_LABEL[mealType as MealFilter]?.[lang] ?? mealType}
             </span>
           )}
           {prepTime ? (

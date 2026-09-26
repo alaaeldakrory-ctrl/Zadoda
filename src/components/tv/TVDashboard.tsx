@@ -17,7 +17,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Home, ChefHat } from 'lucide-react';
 import { CURATED_RECIPES } from '@/components/meal-planner/curatedRecipes';
-import { MealType } from '@/lib/types';
+import { MEAL_GROUPS, PLAN_ROWS, isRowActive } from '@/components/meal-planner/mealRows';
 
 export const TVDashboard: React.FC = () => {
   const { persons, series, overrides, settings, executionLogs, isLoading, mealSlots, recipes } = useStore();
@@ -33,16 +33,8 @@ export const TVDashboard: React.FC = () => {
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const kids = persons.filter(p => p.role === 'child');
 
-  const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'lyla-breakfast', 'malika-breakfast', 'lyla-lunchbox', 'malika-lunchbox'];
-  const MEAL_META: Record<MealType, { en: string; ar: string; emoji: string; color: string }> = {
-    breakfast:          { en: 'Breakfast',      ar: 'الفطور',      emoji: '☀️', color: 'text-emerald-700' },
-    lunch:              { en: 'Lunch',          ar: 'الغداء',      emoji: '🌤️', color: 'text-amber-700'  },
-    dinner:             { en: 'Dinner',         ar: 'العشاء',      emoji: '🌙', color: 'text-blue-700'   },
-    'lyla-breakfast':   { en: 'Lyla Brkfst',   ar: 'إفطار ليلى', emoji: '🌸', color: 'text-rose-700'   },
-    'malika-breakfast': { en: 'Malika Brkfst',  ar: 'إفطار مالكة', emoji: '🌟', color: 'text-violet-700' },
-    'lyla-lunchbox':    { en: 'Lyla Lunch',    ar: 'لنش ليلى',   emoji: '🌸', color: 'text-pink-700'   },
-    'malika-lunchbox':  { en: 'Malika Lunch',  ar: 'لنش مالكة',  emoji: '🌟', color: 'text-purple-700' },
-  };
+  // Today's rows, skipping the lunchbox when there's no school
+  const todayRows = PLAN_ROWS.filter(row => isRowActive(row, today.getDay()));
 
   const resolveDishName = (dish: { recipeId?: string; freeText?: string }): string => {
     if (dish.recipeId?.startsWith('curated_')) {
@@ -104,18 +96,20 @@ export const TVDashboard: React.FC = () => {
               {isArabic ? 'وجبات اليوم' : "Today's Meals"}
             </span>
           </div>
-          <div className="grid grid-cols-4 lg:grid-cols-7 gap-3">
-            {MEAL_TYPES.map(mealType => {
-              const slot = todaySlots.find(s => s.mealType === mealType);
-              const meta = MEAL_META[mealType];
+          <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
+            {todayRows.map(row => {
+              const slot = todaySlots.find(s => s.mealType === row.type);
+              const group = MEAL_GROUPS.find(g => g.key === row.group)!;
               const dishes = slot?.dishes ?? [];
               return (
-                <div key={mealType} className="rounded-2xl border bg-muted/10 p-3">
-                  <div className={cn('flex items-center gap-1.5 mb-2', meta.color)}>
-                    <span>{meta.emoji}</span>
-                    <span className="text-xs font-black uppercase tracking-wide">
-                      {isArabic ? meta.ar : meta.en}
-                    </span>
+                <div key={row.type} className="rounded-2xl border bg-muted/10 p-3">
+                  <div className="mb-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                      {group.emoji} {isArabic ? group.ar : group.en}
+                    </p>
+                    <p className={cn('text-xs font-black', row.text)}>
+                      {isArabic ? row.ar : row.en}
+                    </p>
                   </div>
                   {dishes.length > 0 ? (
                     <div className="space-y-1">

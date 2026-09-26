@@ -6,6 +6,7 @@ import { Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MealSlot, MealType, Recipe } from '@/lib/types';
 import { dishName } from './dishes';
+import { MEAL_GROUPS, PLAN_ROWS, isRowActive } from './mealRows';
 
 interface WeeklyGridProps {
   weekStartDate: string;
@@ -17,62 +18,8 @@ interface WeeklyGridProps {
   lang: 'en' | 'ar';
 }
 
-const MEAL_TYPES: MealType[] = [
-  'breakfast', 'lyla-breakfast', 'malika-breakfast',
-  'lunch', 'lyla-lunchbox', 'malika-lunchbox',
-  'dinner',
-];
-
 const EN_DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const AR_DAY_LABELS = ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
-
-const MEAL_LABELS: Record<MealType, { en: string; ar: string }> = {
-  breakfast:          { en: 'Breakfast',    ar: 'إفطار' },
-  'lyla-breakfast':   { en: 'Lyla Brkfst', ar: 'إفطار ليلى' },
-  'malika-breakfast': { en: 'Malika Brkfst', ar: 'إفطار مالكة' },
-  lunch:              { en: 'Lunch',        ar: 'غداء' },
-  'lyla-lunchbox':    { en: 'Lyla Lunch',  ar: 'لنش ليلى' },
-  'malika-lunchbox':  { en: 'Malika Lunch', ar: 'لنش مالكة' },
-  dinner:             { en: 'Dinner',       ar: 'عشاء' },
-};
-
-const MEAL_COLORS: Record<MealType, { row: string; chip: string; btn: string }> = {
-  breakfast: {
-    row:  'text-emerald-700',
-    chip: 'bg-emerald-100 text-emerald-800 border border-emerald-200',
-    btn:  'hover:bg-emerald-50 text-emerald-600 border border-emerald-200',
-  },
-  'lyla-breakfast': {
-    row:  'text-rose-700',
-    chip: 'bg-rose-100 text-rose-800 border border-rose-200',
-    btn:  'hover:bg-rose-50 text-rose-600 border border-rose-200',
-  },
-  'malika-breakfast': {
-    row:  'text-violet-700',
-    chip: 'bg-violet-100 text-violet-800 border border-violet-200',
-    btn:  'hover:bg-violet-50 text-violet-600 border border-violet-200',
-  },
-  lunch: {
-    row:  'text-amber-700',
-    chip: 'bg-amber-100 text-amber-800 border border-amber-200',
-    btn:  'hover:bg-amber-50 text-amber-600 border border-amber-200',
-  },
-  'lyla-lunchbox': {
-    row:  'text-pink-700',
-    chip: 'bg-pink-100 text-pink-800 border border-pink-200',
-    btn:  'hover:bg-pink-50 text-pink-600 border border-pink-200',
-  },
-  'malika-lunchbox': {
-    row:  'text-purple-700',
-    chip: 'bg-purple-100 text-purple-800 border border-purple-200',
-    btn:  'hover:bg-purple-50 text-purple-600 border border-purple-200',
-  },
-  dinner: {
-    row:  'text-green-800',
-    chip: 'bg-green-100 text-green-900 border border-green-200',
-    btn:  'hover:bg-green-50 text-green-800 border border-green-200',
-  },
-};
 
 export function WeeklyGrid({
   weekStartDate,
@@ -86,6 +33,7 @@ export function WeeklyGrid({
   const isRtl = lang === 'ar';
   const dayLabels = isRtl ? AR_DAY_LABELS : EN_DAY_LABELS;
   const weekStart = parseISO(weekStartDate);
+  const stickySide = isRtl ? 'right-0' : 'left-0';
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
@@ -98,14 +46,14 @@ export function WeeklyGrid({
     <div className="w-full overflow-x-auto rounded-[2rem] border bg-card shadow-sm" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="min-w-[860px]">
         <div className="grid grid-cols-[150px_repeat(7,minmax(110px,1fr))]">
-          <div className="border-b border-r bg-muted/30 p-3" />
+          <div className={cn('border-b border-e bg-card p-3 sticky z-10', stickySide)} />
           {days.map((day, i) => {
             const today = isToday(day);
             return (
               <div
                 key={i}
                 className={cn(
-                  'border-b border-r last:border-r-0 p-3 text-center',
+                  'border-b border-e last:border-e-0 p-3 text-center',
                   today ? 'bg-primary/8 ring-2 ring-inset ring-primary/30' : 'bg-muted/10'
                 )}
               >
@@ -122,48 +70,53 @@ export function WeeklyGrid({
             );
           })}
 
-          {MEAL_TYPES.map(mealType => {
-            const colors = MEAL_COLORS[mealType];
-            return (
-              <React.Fragment key={mealType}>
-                <div className={cn(
-                  'border-b border-r bg-card p-3 flex items-center',
-                  'sticky z-10',
-                  isRtl ? 'right-0' : 'left-0'
-                )}>
-                  {/* Tint on top of an opaque background so dishes don't show through while scrolling */}
-                  <div className="absolute inset-0 bg-muted/20 pointer-events-none" />
-                  <span className={cn('relative text-[11px] font-black uppercase tracking-wider', colors.row)}>
-                    {MEAL_LABELS[mealType][lang]}
-                  </span>
-                </div>
-                {days.map((day, dayIndex) => {
-                  const today = isToday(day);
-                  const slot = getSlot(dayIndex, mealType);
-                  const hasDishes = slot && slot.dishes && slot.dishes.length > 0;
+          {MEAL_GROUPS.map(group => (
+            <React.Fragment key={group.key}>
+              {/* Group heading spans the whole row; the label itself stays in view while scrolling */}
+              <div className="col-span-8 border-b bg-muted/40 px-3 py-1.5">
+                <span className={cn('sticky inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-muted-foreground', isRtl ? 'right-3' : 'left-3')}>
+                  <span>{group.emoji}</span>
+                  {group[lang]}
+                </span>
+              </div>
 
-                  return (
-                    <div
-                      key={`${mealType}-${dayIndex}`}
-                      className={cn(
-                        'border-b border-r last:border-r-0 p-2 min-h-[72px] flex flex-col gap-1',
-                        today ? 'bg-primary/5' : 'bg-background'
-                      )}
-                    >
-                      {hasDishes ? (
-                        <>
-                          {slot!.dishes.map((dish, dishIndex) => {
-                            const name = dishName(dish, recipes);
-                            return (
+              {PLAN_ROWS.filter(row => row.group === group.key).map(row => (
+                <React.Fragment key={row.type}>
+                  <div className={cn('border-b border-e bg-card p-3 flex items-center gap-2 sticky z-10', stickySide)}>
+                    {/* Tint on top of an opaque background so dishes don't show through while scrolling */}
+                    <div className="absolute inset-0 bg-muted/20 pointer-events-none" />
+                    <span className="relative text-base leading-none">{row.emoji}</span>
+                    <span className={cn('relative text-xs font-black leading-tight', row.text)}>
+                      {row[lang]}
+                    </span>
+                  </div>
+
+                  {days.map((day, dayIndex) => {
+                    const today = isToday(day);
+                    const slot = getSlot(dayIndex, row.type);
+                    const hasDishes = !!slot?.dishes?.length;
+                    const active = isRowActive(row, dayIndex);
+
+                    return (
+                      <div
+                        key={`${row.type}-${dayIndex}`}
+                        className={cn(
+                          'border-b border-e last:border-e-0 p-2 min-h-[72px] flex flex-col gap-1',
+                          today ? 'bg-primary/5' : active ? 'bg-background' : 'bg-muted/30'
+                        )}
+                      >
+                        {hasDishes ? (
+                          <>
+                            {slot!.dishes.map((dish, dishIndex) => (
                               <div
                                 key={dishIndex}
                                 className={cn(
                                   'flex items-center gap-1 rounded-full px-2 py-0.5 cursor-pointer text-[11px] font-bold transition-all',
-                                  colors.chip
+                                  row.chip
                                 )}
                                 onClick={() => onEditMeal(slot!)}
                               >
-                                <span className="truncate flex-1 leading-tight">{name}</span>
+                                <span className="truncate flex-1 leading-tight">{dishName(dish, recipes)}</span>
                                 <button
                                   onClick={e => {
                                     e.stopPropagation();
@@ -174,35 +127,40 @@ export function WeeklyGrid({
                                   <X className="w-3 h-3" />
                                 </button>
                               </div>
-                            );
-                          })}
+                            ))}
+                            <button
+                              onClick={() => onAddMeal(dayIndex, row.type)}
+                              className={cn('mt-auto self-start rounded-full p-0.5 transition-all', row.btn)}
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </>
+                        ) : active ? (
                           <button
-                            onClick={() => onAddMeal(dayIndex, mealType)}
+                            onClick={() => onAddMeal(dayIndex, row.type)}
                             className={cn(
-                              'mt-auto self-start rounded-full p-0.5 transition-all',
-                              colors.btn
+                              'w-full h-full min-h-[56px] flex items-center justify-center rounded-xl border-2 border-dashed transition-all group',
+                              row.btn
                             )}
                           >
-                            <Plus className="w-3 h-3" />
+                            <Plus className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
                           </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => onAddMeal(dayIndex, mealType)}
-                          className={cn(
-                            'w-full h-full min-h-[56px] flex items-center justify-center rounded-xl border-2 border-dashed transition-all group',
-                            colors.btn
-                          )}
-                        >
-                          <Plus className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </React.Fragment>
-            );
-          })}
+                        ) : (
+                          // Not needed today (e.g. no school), but still tappable for the odd exception
+                          <button
+                            onClick={() => onAddMeal(dayIndex, row.type)}
+                            className="w-full h-full min-h-[56px] flex items-center justify-center rounded-xl text-[11px] font-bold text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                          >
+                            {isRtl ? 'لا مدرسة' : 'No school'}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </React.Fragment>
+          ))}
         </div>
       </div>
     </div>

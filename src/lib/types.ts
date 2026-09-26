@@ -194,14 +194,27 @@ export interface ParentSelfLog {
 }
 
 // ── Meal Planner ──
-export type MealType =
+/** What a recipe is suited for. */
+export type MealCategory = 'breakfast' | 'lunch' | 'dinner';
+
+/** The rows of the weekly plan: one per meal actually cooked. */
+export type PlanMealType =
+  | 'kids-breakfast'     // Lyla & Malika
+  | 'mohamed-breakfast'
+  | 'malika-lunchbox'
+  | 'home-lunch'         // Wesam & Lyla
+  | 'mohamed-lunch'
+  | 'dinner';            // whole family
+
+/** Rows from the earlier layout; slots using them are migrated to PlanMealType on load. */
+export type LegacyMealType =
   | 'breakfast'
   | 'lunch'
-  | 'dinner'
   | 'lyla-breakfast'
   | 'malika-breakfast'
-  | 'lyla-lunchbox'
-  | 'malika-lunchbox';
+  | 'lyla-lunchbox';
+
+export type MealType = MealCategory | PlanMealType | LegacyMealType;
 
 export type ShoppingCategory =
   | 'produce'

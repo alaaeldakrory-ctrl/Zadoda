@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { MealSlot, MealType, MealDish, Recipe } from '@/lib/types';
 import { CURATED_RECIPES, CuratedRecipe } from './curatedRecipes';
 import { dishEmoji, dishFromRecipe, dishName } from './dishes';
+import { MEAL_GROUPS, PLAN_ROWS, getPlanRow } from './mealRows';
 
 interface MealSlotModalProps {
   open: boolean;
@@ -19,47 +20,6 @@ interface MealSlotModalProps {
   onClose: () => void;
   lang: 'en' | 'ar';
 }
-
-const MEAL_LABELS: Record<MealType, { en: string; ar: string; emoji: string }> = {
-  breakfast:          { en: 'Breakfast',      ar: 'إفطار',       emoji: '☀️' },
-  'lyla-breakfast':   { en: 'Lyla Breakfast', ar: 'إفطار ليلى',  emoji: '🌸' },
-  'malika-breakfast': { en: 'Malika Breakfast', ar: 'إفطار مالكة', emoji: '🌟' },
-  lunch:              { en: 'Lunch',          ar: 'غداء',         emoji: '🌤️' },
-  'lyla-lunchbox':    { en: 'Lyla Lunch Box', ar: 'لنش ليلى',    emoji: '🌸' },
-  'malika-lunchbox':  { en: 'Malika Lunch Box', ar: 'لنش مالكة', emoji: '🌟' },
-  dinner:             { en: 'Dinner',         ar: 'عشاء',         emoji: '🌙' },
-};
-
-const MEAL_ACCENT: Record<MealType, string> = {
-  breakfast:          'text-emerald-700 bg-emerald-50',
-  'lyla-breakfast':   'text-rose-700 bg-rose-50',
-  'malika-breakfast': 'text-violet-700 bg-violet-50',
-  lunch:              'text-amber-700 bg-amber-50',
-  'lyla-lunchbox':    'text-pink-700 bg-pink-50',
-  'malika-lunchbox':  'text-purple-700 bg-purple-50',
-  dinner:             'text-green-800 bg-green-50',
-};
-
-const CHIP_COLORS: Record<MealType, string> = {
-  breakfast:          'bg-emerald-100 text-emerald-800 border border-emerald-200',
-  'lyla-breakfast':   'bg-rose-100 text-rose-800 border border-rose-200',
-  'malika-breakfast': 'bg-violet-100 text-violet-800 border border-violet-200',
-  lunch:              'bg-amber-100 text-amber-800 border border-amber-200',
-  'lyla-lunchbox':    'bg-pink-100 text-pink-800 border border-pink-200',
-  'malika-lunchbox':  'bg-purple-100 text-purple-800 border border-purple-200',
-  dinner:             'bg-green-100 text-green-900 border border-green-200',
-};
-
-// Map kid-specific types to the closest base type for curated recipe suggestions
-const CURATED_BASE: Record<MealType, 'breakfast' | 'lunch' | 'dinner' | 'snack'> = {
-  breakfast:          'breakfast',
-  'lyla-breakfast':   'breakfast',
-  'malika-breakfast': 'breakfast',
-  lunch:              'lunch',
-  'lyla-lunchbox':    'lunch',
-  'malika-lunchbox':  'lunch',
-  dinner:             'dinner',
-};
 
 export function MealSlotModal({
   open,
@@ -88,17 +48,18 @@ export function MealSlotModal({
   if (!open) return null;
 
   const displayDate = format(addDays(parseISO(weekStartDate), day), 'EEE, MMM d');
-  const meta = MEAL_LABELS[mealType];
-  const accent = MEAL_ACCENT[mealType];
-  const chipColor = CHIP_COLORS[mealType];
+  // Slots always use plan rows; fall back to dinner rather than crash on unexpected data.
+  const row = getPlanRow(mealType) ?? PLAN_ROWS[PLAN_ROWS.length - 1];
+  const group = MEAL_GROUPS.find(g => g.key === row.group)!;
 
   const lowerQuery = query.toLowerCase();
-  const curatedBase = CURATED_BASE[mealType];
+  // Lunchboxes also suit snack recipes.
+  const curatedTypes: string[] = row.type === 'malika-lunchbox' ? ['lunch', 'snack'] : [row.group];
 
   // When searching: match across all curated types. When browsing: show all for base type.
   const matchedCurated = query.trim()
     ? CURATED_RECIPES.filter(r => r.name.toLowerCase().includes(lowerQuery))
-    : CURATED_RECIPES.filter(r => r.mealType === curatedBase);
+    : CURATED_RECIPES.filter(r => curatedTypes.includes(r.mealType));
 
   // Always show family recipes — filtered when searching, most-recent when browsing.
   const matchedFamily = query.trim()
@@ -136,13 +97,13 @@ export function MealSlotModal({
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="w-full max-w-lg bg-white rounded-[2rem] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-        <div className={cn('px-6 pt-6 pb-4 rounded-t-[2rem]', accent)}>
+        <div className={cn('px-6 pt-6 pb-4 rounded-t-[2rem]', row.accent)}>
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-2xl">{meta.emoji}</span>
+                <span className="text-2xl">{row.emoji}</span>
                 <h2 className="text-xl font-black">
-                  {isRtl ? meta.ar : meta.en}
+                  {group[lang]} · {row[lang]}
                 </h2>
               </div>
               <p className="text-sm font-medium opacity-70 mt-0.5">{displayDate}</p>
@@ -164,7 +125,7 @@ export function MealSlotModal({
                   key={i}
                   className={cn(
                     'flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold',
-                    chipColor
+                    row.chip
                   )}
                 >
                   <span>{getDishDisplayName(dish)}</span>

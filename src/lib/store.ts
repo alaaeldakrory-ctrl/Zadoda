@@ -1,10 +1,11 @@
 
 "use client"
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { format, addDays, parseISO } from 'date-fns';
 import { Person, CalendarEventSeries, CalendarEventOccurrenceOverride, FixedEventTemplate, AppSettings, Language, Memo, Chore, ChoreOverride, TaskExecutionLog, Goal, RewardRule, ParentLog, ParentSelfLog, Checklist, ChecklistCompletion, ChecklistDayActivation, FamilyMembership, FamilyInvitation, Recipe, MealSlot, MealType, MealDish, ShoppingItem } from './types';
 import { timeToMinutes, minutesToTime } from './utils';
+import { planSlotMigration } from '@/components/meal-planner/mealRows';
 import {
   useCollection,
   useDoc,
@@ -599,6 +600,25 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!familyId) return;
     deleteDocumentNonBlocking(fDoc('mealSlots', id));
   };
+
+  // Move slots saved under the old per-kid rows into the current rows (see mealRows.ts).
+  // Writes show up in the local snapshot straight away, so this settles after one pass;
+  // the ref just avoids resending while that snapshot is on its way.
+  const migratedSlotIds = useRef(new Set<string>());
+  useEffect(() => {
+    if (!familyId || !mealSlotsData) return;
+    const pending = mealSlotsData.filter(s => !migratedSlotIds.current.has(s.id));
+    for (const { target, deleteIds } of planSlotMigration(pending)) {
+      if (target.dishes.length > 0) {
+        setMealSlot(target.weekStartDate, target.dayIndex, target.mealType, target.dishes);
+      }
+      deleteIds.forEach(id => {
+        migratedSlotIds.current.add(id);
+        deleteMealSlot(id);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [familyId, mealSlotsData]);
 
   // ─── Meal Planner — Shopping List ─────────────────────────────────────────────
 
