@@ -43,6 +43,12 @@ export const PLAN_ROWS: PlanRow[] = [
     btn: 'hover:bg-sky-50 text-sky-600 border border-sky-200', accent: 'text-sky-700 bg-sky-50',
   },
   {
+    type: 'wesam-breakfast', group: 'breakfast',
+    en: 'Wesam', ar: 'وسام', emoji: '🧑',
+    text: 'text-teal-700', chip: 'bg-teal-100 text-teal-800 border border-teal-200',
+    btn: 'hover:bg-teal-50 text-teal-600 border border-teal-200', accent: 'text-teal-700 bg-teal-50',
+  },
+  {
     type: 'malika-lunchbox', group: 'lunch',
     en: "Malika's lunchbox", ar: 'لنش مليكة', emoji: '🎒', schoolDaysOnly: true,
     text: 'text-violet-700', chip: 'bg-violet-100 text-violet-800 border border-violet-200',

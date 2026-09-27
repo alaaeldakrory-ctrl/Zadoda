@@ -10,7 +10,8 @@ import { getYouTubeId, parseIngredientList, ImportedRecipe } from '@/lib/recipeI
 
 interface RecipeLibraryProps {
   recipes: Recipe[];
-  onAddRecipe: (r: Omit<Recipe, 'id'>) => void;
+  /** Returns the new recipe's id. */
+  onAddRecipe: (r: Omit<Recipe, 'id'>) => string | undefined;
   onUpdateRecipe: (id: string, updates: Partial<Recipe>) => void;
   onDeleteRecipe: (id: string) => void;
   onAddToMealPlan: (recipe: Recipe | CuratedRecipe) => void;
@@ -64,6 +65,26 @@ type ImportStatus =
   | { kind: 'loading' }
   | { kind: 'done'; message: string; warn?: boolean }
   | { kind: 'error'; message: string };
+
+function formFromRecipe(r: Recipe | CuratedRecipe): Partial<RecipeFormState> {
+  return {
+    name: r.name,
+    mealType: r.mealType === 'snack' ? 'lunch' : (r.mealType ?? 'dinner'),
+    prepTime: r.prepTime ?? 30,
+    emoji: r.emoji ?? '🍽️',
+    sourceUrl: ('sourceUrl' in r && r.sourceUrl) || '',
+    ...(r.ingredients?.length
+      ? { ingredients: r.ingredients.map(ing => ({ name: ing.name, quantity: ing.quantity ?? '', unit: ing.unit ?? '' })) }
+      : {}),
+    ...(r.steps?.length ? { steps: r.steps } : {}),
+  };
+}
+
+/** What the edit window is doing: a new recipe, editing one of ours, or copying a built-in one. */
+type EditorState =
+  | { kind: 'new' }
+  | { kind: 'edit'; id: string }
+  | { kind: 'customize'; curatedId: string };
 
 function RecipeForm({
   initial,
@@ -537,8 +558,8 @@ export function RecipeLibrary({
   const openIsFamily = !!openRecipe && !openRecipe.id.startsWith('curated_');
   const [filter, setFilter] = useState<MealFilter>('all');
   const [search, setSearch] = useState('');
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  // Shown instead of the detail view while open; closing it returns to whatever was open before.
+  const [editor, setEditor] = useState<EditorState | null>(null);
 
   const favouritedSourceIds = new Set(
     recipes.filter(r => r.source === 'curated').map(r => r.sourceId ?? '')
@@ -584,22 +605,46 @@ export function RecipeLibrary({
     steps: data.steps.map(s => s.trim()).filter(Boolean),
   });
 
-  const handleSaveNew = (data: RecipeFormState) => {
-    const url = data.sourceUrl.trim();
-    onAddRecipe({
-      ...cleanForm(data),
-      // Firestore rejects undefined fields, so only include the link when there is one.
-      ...(url ? { sourceUrl: url } : {}),
-      source: 'custom',
-      addedAt: Date.now(),
-    });
-    setShowForm(false);
+  const handleSave = (data: RecipeFormState) => {
+    if (!editor) return;
+    if (editor.kind === 'edit') {
+      onUpdateRecipe(editor.id, { ...cleanForm(data), sourceUrl: data.sourceUrl.trim() });
+    } else {
+      const url = data.sourceUrl.trim();
+      const newId = onAddRecipe({
+        ...cleanForm(data),
+        // Firestore rejects undefined fields, so only include the link when there is one.
+        ...(url ? { sourceUrl: url } : {}),
+        ...(editor.kind === 'customize'
+          ? { source: 'curated' as const, sourceId: editor.curatedId }
+          : { source: 'custom' as const }),
+        addedAt: Date.now(),
+      });
+      // Show the saved recipe where it now lives.
+      setTab('mine');
+      if (newId && openId) setOpenId(newId);
+    }
+    setEditor(null);
   };
 
-  const handleSaveEdit = (id: string, data: RecipeFormState) => {
-    onUpdateRecipe(id, { ...cleanForm(data), sourceUrl: data.sourceUrl.trim() });
-    setEditingId(null);
+  // Built-in recipes are edited as a family copy; reuse the copy if there already is one.
+  const handleCustomize = (curated: CuratedRecipe) => {
+    const copy = recipes.find(r => r.source === 'curated' && r.sourceId === curated.id);
+    if (copy) {
+      setOpenId(copy.id);
+      setEditor({ kind: 'edit', id: copy.id });
+    } else {
+      setEditor({ kind: 'customize', curatedId: curated.id });
+    }
   };
+
+  const editorInitial: Partial<RecipeFormState> | undefined = (() => {
+    if (!editor || editor.kind === 'new') return undefined;
+    const source = editor.kind === 'edit'
+      ? recipes.find(r => r.id === editor.id)
+      : CURATED_RECIPES.find(r => r.id === editor.curatedId);
+    return source ? formFromRecipe(source) : undefined;
+  })();
 
   const filterPills: MealFilter[] = ['all', ...MEAL_TYPES];
 
@@ -677,48 +722,16 @@ export function RecipeLibrary({
 
       {tab === 'mine' && (
         <div className="space-y-4">
-          {!showForm && (
-            <button
-              onClick={() => { setShowForm(true); setEditingId(null); }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-primary text-white font-bold text-sm hover:bg-primary/90 transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              {isRtl ? 'إنشاء وصفة' : 'Create Recipe'}
-            </button>
-          )}
-
-          {showForm && (
-            <RecipeForm
-              onSave={handleSaveNew}
-              onCancel={() => setShowForm(false)}
-              lang={lang}
-            />
-          )}
+          <button
+            onClick={() => setEditor({ kind: 'new' })}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-primary text-white font-bold text-sm hover:bg-primary/90 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            {isRtl ? 'إنشاء وصفة' : 'Create Recipe'}
+          </button>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {filteredFamily.map(r => {
-              if (editingId === r.id) {
-                return (
-                  <div key={r.id} className="col-span-2 sm:col-span-3">
-                    <RecipeForm
-                      initial={{
-                        name: r.name,
-                        mealType: r.mealType ?? 'dinner',
-                        prepTime: r.prepTime ?? 30,
-                        emoji: r.emoji ?? '🍽️',
-                        sourceUrl: r.sourceUrl ?? '',
-                        ...(r.ingredients?.length
-                          ? { ingredients: r.ingredients.map(ing => ({ name: ing.name, quantity: ing.quantity ?? '', unit: ing.unit ?? '' })) }
-                          : {}),
-                        ...(r.steps?.length ? { steps: r.steps } : {}),
-                      }}
-                      onSave={data => handleSaveEdit(r.id, data)}
-                      onCancel={() => setEditingId(null)}
-                      lang={lang}
-                    />
-                  </div>
-                );
-              }
               return (
                 <RecipeCard
                   key={r.id}
@@ -729,7 +742,7 @@ export function RecipeLibrary({
                   sourceUrl={r.sourceUrl}
                   onOpen={() => setOpenId(r.id)}
                   onAddToMealPlan={() => onAddToMealPlan(r)}
-                  onEdit={() => { setEditingId(r.id); setShowForm(false); }}
+                  onEdit={() => setEditor({ kind: 'edit', id: r.id })}
                   onDelete={() => {
                     const msg = isRtl ? `حذف "${r.name}"؟` : `Delete "${r.name}"?`;
                     if (window.confirm(msg)) onDeleteRecipe(r.id);
@@ -741,7 +754,7 @@ export function RecipeLibrary({
             })}
           </div>
 
-          {filteredFamily.length === 0 && !showForm && (
+          {filteredFamily.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
               <ChefHat className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p className="font-bold">{isRtl ? 'لا توجد وصفات بعد' : 'No recipes yet'}</p>
@@ -751,19 +764,57 @@ export function RecipeLibrary({
         </div>
       )}
 
-      {openRecipe && (
+      {editor && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          dir={isRtl ? 'rtl' : 'ltr'}
+          onClick={e => { if (e.target === e.currentTarget) setEditor(null); }}
+        >
+          <div className="w-full max-w-2xl bg-card rounded-[2rem] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+            <div className="px-6 pt-5 pb-4 border-b flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-black">
+                  {editor.kind === 'new'
+                    ? (isRtl ? 'وصفة جديدة' : 'New recipe')
+                    : (isRtl ? 'تعديل الوصفة' : 'Edit recipe')}
+                </h2>
+                {editor.kind === 'customize' && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {isRtl
+                      ? 'سيتم حفظ نسختك في «وصفاتي»، وتبقى الوصفة الأصلية كما هي.'
+                      : 'Your version is saved to My Recipes; the original stays as it is.'}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setEditor(null)}
+                className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full hover:bg-muted transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <RecipeForm
+                key={JSON.stringify(editor)}
+                initial={editorInitial}
+                onSave={handleSave}
+                onCancel={() => setEditor(null)}
+                lang={lang}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {openRecipe && !editor && (
         <RecipeDetail
           recipe={openRecipe}
           shoppingItems={shoppingItems}
           weekStartDate={weekStartDate}
           onAddShoppingItem={onAddShoppingItem}
           onAddToMealPlan={() => { setOpenId(null); onAddToMealPlan(openRecipe); }}
-          onEdit={openIsFamily ? () => {
-            setOpenId(null);
-            setTab('mine');
-            setShowForm(false);
-            setEditingId(openRecipe.id);
-          } : undefined}
+          onEdit={openIsFamily ? () => setEditor({ kind: 'edit', id: openRecipe.id }) : undefined}
+          onCustomize={!openIsFamily ? () => handleCustomize(openRecipe as CuratedRecipe) : undefined}
           onClose={() => setOpenId(null)}
           lang={lang}
         />

@@ -93,7 +93,8 @@ interface StoreContextValue {
   recipes: Recipe[];
   mealSlots: MealSlot[];
   shoppingItems: ShoppingItem[];
-  addRecipe: (r: Omit<Recipe, 'id'>) => void;
+  /** Returns the new recipe's id (undefined when signed out). */
+  addRecipe: (r: Omit<Recipe, 'id'>) => string | undefined;
   updateRecipe: (id: string, updates: Partial<Recipe>) => void;
   deleteRecipe: (id: string) => void;
   setMealSlot: (weekStartDate: string, dayIndex: number, mealType: MealType, dishes: MealDish[]) => void;
@@ -564,6 +565,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!familyId) return;
     const ref = doc(fCol('recipes'));
     setDocumentNonBlocking(ref, { ...r, id: ref.id, addedAt: r.addedAt ?? Date.now() });
+    return ref.id;
   };
 
   const updateRecipe = (id: string, updates: Partial<Recipe>) => {

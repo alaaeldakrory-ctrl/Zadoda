@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react';
-import { X, Clock, ExternalLink, ShoppingCart, CalendarPlus, Pencil, Check } from 'lucide-react';
+import { X, Clock, ExternalLink, ShoppingCart, CalendarPlus, Pencil, Check, Link as LinkIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Recipe, ShoppingItem } from '@/lib/types';
 import { getYouTubeId } from '@/lib/recipeImport';
@@ -17,6 +17,8 @@ interface RecipeDetailProps {
   onAddToMealPlan: () => void;
   /** Only for the family's own recipes. */
   onEdit?: () => void;
+  /** Only for built-in recipes: edit a family copy. */
+  onCustomize?: () => void;
   onClose: () => void;
   lang: 'en' | 'ar';
 }
@@ -28,10 +30,12 @@ export function RecipeDetail({
   onAddShoppingItem,
   onAddToMealPlan,
   onEdit,
+  onCustomize,
   onClose,
   lang,
 }: RecipeDetailProps) {
   const isRtl = lang === 'ar';
+  const editAction = onEdit ?? onCustomize;
   const ingredients = (recipe.ingredients ?? []).filter(i => i.name?.trim());
   const steps = (recipe.steps ?? []).filter(s => s.trim());
   const sourceUrl = 'sourceUrl' in recipe ? recipe.sourceUrl : undefined;
@@ -108,6 +112,12 @@ export function RecipeDetail({
                   {isRtl ? 'فتح الوصفة الأصلية' : 'Open original recipe'}
                 </a>
               )}
+              {!sourceUrl && editAction && (
+                <button onClick={editAction} className="flex items-center gap-1 text-primary font-bold hover:underline">
+                  <LinkIcon className="w-3.5 h-3.5" />
+                  {isRtl ? 'أضف رابطاً' : 'Add a link'}
+                </button>
+              )}
             </div>
           </div>
           <button
@@ -161,7 +171,7 @@ export function RecipeDetail({
             {ingredients.length === 0 ? (
               <p className="text-sm text-muted-foreground py-2">
                 {isRtl ? 'لا توجد مكونات بعد.' : 'No ingredients yet.'}
-                {onEdit && (isRtl ? ' أضفها بالتعديل.' : ' Add them with Edit.')}
+                {editAction && (isRtl ? ' أضفها بالتعديل.' : ' Add them with Edit.')}
               </p>
             ) : (
               <>
@@ -251,13 +261,13 @@ export function RecipeDetail({
 
         {/* Footer */}
         <div className="px-6 py-4 flex gap-3 border-t">
-          {onEdit && (
+          {editAction && (
             <button
-              onClick={onEdit}
+              onClick={editAction}
               className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border font-bold text-sm hover:bg-muted/50 transition-all"
             >
               <Pencil className="w-4 h-4" />
-              {isRtl ? 'تعديل' : 'Edit'}
+              {onEdit ? (isRtl ? 'تعديل' : 'Edit') : (isRtl ? 'تخصيص' : 'Customize')}
             </button>
           )}
           <button

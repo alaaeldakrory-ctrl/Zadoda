@@ -201,6 +201,7 @@ export type MealCategory = 'breakfast' | 'lunch' | 'dinner';
 export type PlanMealType =
   | 'kids-breakfast'     // Lyla & Malika
   | 'mohamed-breakfast'
+  | 'wesam-breakfast'
   | 'malika-lunchbox'
   | 'home-lunch'         // Wesam & Lyla
   | 'mohamed-lunch'

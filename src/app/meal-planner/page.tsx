@@ -233,7 +233,7 @@ export default function MealPlannerPage() {
         {tab === 'recipes' && (
           <RecipeLibrary
             recipes={recipes}
-            onAddRecipe={r => addRecipe(r)}
+            onAddRecipe={addRecipe}
             onUpdateRecipe={updateRecipe}
             onDeleteRecipe={deleteRecipe}
             onAddToMealPlan={handleAddToMealPlan}

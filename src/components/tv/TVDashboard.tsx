@@ -96,7 +96,7 @@ export const TVDashboard: React.FC = () => {
               {isArabic ? 'وجبات اليوم' : "Today's Meals"}
             </span>
           </div>
-          <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
             {todayRows.map(row => {
               const slot = todaySlots.find(s => s.mealType === row.type);
               const group = MEAL_GROUPS.find(g => g.key === row.group)!;
