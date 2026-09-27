@@ -237,6 +237,9 @@ export default function MealPlannerPage() {
             onUpdateRecipe={updateRecipe}
             onDeleteRecipe={deleteRecipe}
             onAddToMealPlan={handleAddToMealPlan}
+            weekStartDate={weekStartDate}
+            shoppingItems={weekShoppingItems}
+            onAddShoppingItem={addShoppingItem}
             lang={lang}
           />
         )}

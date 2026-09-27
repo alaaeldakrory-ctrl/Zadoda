@@ -1,10 +1,12 @@
 "use client"
 
 import React, { useState } from 'react';
-import { Heart, Plus, Pencil, Trash2, Clock, ChefHat, X } from 'lucide-react';
+import { Heart, Plus, Pencil, Trash2, Clock, ChefHat, X, Download, Loader2, Link as LinkIcon, PlayCircle, ClipboardPaste } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CURATED_RECIPES, CuratedRecipe } from './curatedRecipes';
-import { Recipe, MealType, MealCategory } from '@/lib/types';
+import { RecipeDetail } from './RecipeDetail';
+import { Recipe, MealType, MealCategory, ShoppingItem } from '@/lib/types';
+import { getYouTubeId, parseIngredientList, ImportedRecipe } from '@/lib/recipeImport';
 
 interface RecipeLibraryProps {
   recipes: Recipe[];
@@ -12,6 +14,10 @@ interface RecipeLibraryProps {
   onUpdateRecipe: (id: string, updates: Partial<Recipe>) => void;
   onDeleteRecipe: (id: string) => void;
   onAddToMealPlan: (recipe: Recipe | CuratedRecipe) => void;
+  /** The planner's selected week, whose shopping list ingredients are added to. */
+  weekStartDate: string;
+  shoppingItems: ShoppingItem[];
+  onAddShoppingItem: (item: Omit<ShoppingItem, 'id'>) => void;
   lang: 'en' | 'ar';
 }
 
@@ -38,6 +44,7 @@ interface RecipeFormState {
   mealType: MealType;
   prepTime: number;
   emoji: string;
+  sourceUrl: string;
   ingredients: { name: string; quantity: string; unit: string }[];
   steps: string[];
 }
@@ -47,9 +54,16 @@ const DEFAULT_FORM: RecipeFormState = {
   mealType: 'dinner',
   prepTime: 30,
   emoji: '🍽️',
+  sourceUrl: '',
   ingredients: [{ name: '', quantity: '', unit: '' }],
   steps: [''],
 };
+
+type ImportStatus =
+  | { kind: 'idle' }
+  | { kind: 'loading' }
+  | { kind: 'done'; message: string; warn?: boolean }
+  | { kind: 'error'; message: string };
 
 function RecipeForm({
   initial,
@@ -74,6 +88,57 @@ function RecipeForm({
     setForm(prev => ({ ...prev, [key]: value }));
   };
 
+  const [importStatus, setImportStatus] = useState<ImportStatus>({ kind: 'idle' });
+
+  // Fills the form from a recipe website or YouTube video; only overwrites what the link provides.
+  const handleImport = async () => {
+    const url = form.sourceUrl.trim();
+    if (!url) return;
+    setImportStatus({ kind: 'loading' });
+    try {
+      const res = await fetch('/api/recipe-import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      const data: ImportedRecipe & { error?: string } = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      setForm(prev => ({
+        ...prev,
+        name: data.name || prev.name,
+        prepTime: data.prepTime ?? prev.prepTime,
+        ingredients: data.ingredients.length ? data.ingredients : prev.ingredients,
+        steps: data.steps.length ? data.steps : prev.steps,
+      }));
+
+      const nIng = data.ingredients.length;
+      const nSteps = data.steps.length;
+      if (data.youtubeId && nIng === 0) {
+        setImportStatus({
+          kind: 'done', warn: true,
+          message: isRtl
+            ? 'تمت إضافة اسم الفيديو، لكن الوصف لا يحتوي على قائمة مكونات. أضفها بالأسفل.'
+            : "Added the video's title, but its description has no ingredient list. Add them below.",
+        });
+      } else {
+        setImportStatus({
+          kind: 'done',
+          message: isRtl
+            ? `تم استيراد ${nIng} من المكونات${nSteps ? ` و${nSteps} من الخطوات` : ''}. راجعها قبل الحفظ.`
+            : `Imported ${nIng} ingredient${nIng === 1 ? '' : 's'}${nSteps ? ` and ${nSteps} step${nSteps === 1 ? '' : 's'}` : ''}. Check them before saving.`,
+        });
+      }
+    } catch {
+      setImportStatus({
+        kind: 'error',
+        message: isRtl
+          ? 'بعض المواقع تمنع الاستيراد التلقائي. سيبقى الرابط محفوظاً، ويمكنك نسخ المكونات من الصفحة واستخدام "لصق قائمة" بالأسفل.'
+          : 'Some sites block importing. The link will still be saved; copy the ingredients from the page and use "Paste a list" below.',
+      });
+    }
+  };
+
   const updateIngredient = (i: number, field: 'name' | 'quantity' | 'unit', val: string) => {
     setForm(prev => {
       const ing = [...prev.ingredients];
@@ -84,6 +149,21 @@ function RecipeForm({
 
   const addIngredient = () =>
     setForm(prev => ({ ...prev, ingredients: [...prev.ingredients, { name: '', quantity: '', unit: '' }] }));
+
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteText, setPasteText] = useState('');
+
+  // Adds a copied ingredient list (one per line), for sites that block importing.
+  const addPasted = () => {
+    const parsed = parseIngredientList(pasteText);
+    if (parsed.length === 0) return;
+    setForm(prev => ({
+      ...prev,
+      ingredients: [...prev.ingredients.filter(i => i.name.trim()), ...parsed],
+    }));
+    setPasteText('');
+    setPasteOpen(false);
+  };
 
   const removeIngredient = (i: number) =>
     setForm(prev => ({ ...prev, ingredients: prev.ingredients.filter((_, idx) => idx !== i) }));
@@ -109,6 +189,49 @@ function RecipeForm({
   return (
     <div className="space-y-5 p-5 bg-muted/20 rounded-[1.5rem] border">
       <div className="grid grid-cols-2 gap-3">
+        <div className="col-span-2">
+          <label className="text-xs font-black uppercase tracking-wider text-muted-foreground block mb-1">
+            {isRtl ? 'رابط الوصفة (موقع أو يوتيوب)' : 'Recipe link (website or YouTube)'}
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="url"
+              dir="ltr"
+              value={form.sourceUrl}
+              onChange={e => { setField('sourceUrl', e.target.value); setImportStatus({ kind: 'idle' }); }}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleImport(); } }}
+              placeholder="https://…"
+              className={cn(inputCls, 'flex-1 text-left')}
+            />
+            <button
+              type="button"
+              onClick={handleImport}
+              disabled={!form.sourceUrl.trim() || importStatus.kind === 'loading'}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-white font-bold text-sm disabled:opacity-40 transition-all hover:bg-primary/90 whitespace-nowrap"
+            >
+              {importStatus.kind === 'loading'
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Download className="w-4 h-4" />}
+              {isRtl ? 'استيراد' : 'Import'}
+            </button>
+          </div>
+          {importStatus.kind === 'idle' && (
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {isRtl
+                ? 'الصق رابطاً واضغط استيراد لملء الاسم والمكونات والخطوات تلقائياً.'
+                : 'Paste a link and tap Import to fill in the name, ingredients and steps.'}
+            </p>
+          )}
+          {(importStatus.kind === 'done' || importStatus.kind === 'error') && (
+            <p className={cn(
+              'text-xs font-medium mt-1.5',
+              importStatus.kind === 'error' || importStatus.warn ? 'text-amber-700' : 'text-emerald-700'
+            )}>
+              {importStatus.message}
+            </p>
+          )}
+        </div>
+
         <div className="col-span-2">
           <label className="text-xs font-black uppercase tracking-wider text-muted-foreground block mb-1">
             {isRtl ? 'اسم الوصفة *' : 'Recipe Name *'}
@@ -169,11 +292,49 @@ function RecipeForm({
           <label className="text-xs font-black uppercase tracking-wider text-muted-foreground">
             {isRtl ? 'المكونات' : 'Ingredients'}
           </label>
-          <button onClick={addIngredient} className="text-xs text-primary font-bold flex items-center gap-1 hover:underline">
-            <Plus className="w-3 h-3" />
-            {isRtl ? 'أضف' : 'Add'}
-          </button>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setPasteOpen(o => !o)} className="text-xs text-primary font-bold flex items-center gap-1 hover:underline">
+              <ClipboardPaste className="w-3 h-3" />
+              {isRtl ? 'لصق قائمة' : 'Paste a list'}
+            </button>
+            <button onClick={addIngredient} className="text-xs text-primary font-bold flex items-center gap-1 hover:underline">
+              <Plus className="w-3 h-3" />
+              {isRtl ? 'أضف' : 'Add'}
+            </button>
+          </div>
         </div>
+        {pasteOpen && (
+          <div className="mb-3 space-y-2 rounded-xl border bg-card p-3">
+            <p className="text-[11px] text-muted-foreground">
+              {isRtl
+                ? 'انسخ المكونات من صفحة الوصفة أو وصف الفيديو والصقها هنا، مكون في كل سطر.'
+                : 'Copy the ingredients from the recipe page or video description and paste them here, one per line.'}
+            </p>
+            <textarea
+              value={pasteText}
+              onChange={e => setPasteText(e.target.value)}
+              rows={5}
+              dir="auto"
+              placeholder={'2 cups rice\n1 lb chicken thighs\n3 cloves garlic'}
+              className={cn(inputCls, 'resize-y')}
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => { setPasteOpen(false); setPasteText(''); }}
+                className="px-3 py-1.5 rounded-xl border font-bold text-xs hover:bg-muted/50 transition-all"
+              >
+                {isRtl ? 'إلغاء' : 'Cancel'}
+              </button>
+              <button
+                onClick={addPasted}
+                disabled={!pasteText.trim()}
+                className="px-3 py-1.5 rounded-xl bg-primary text-white font-bold text-xs disabled:opacity-40 hover:bg-primary/90 transition-all"
+              >
+                {isRtl ? 'أضف المكونات' : 'Add ingredients'}
+              </button>
+            </div>
+          </div>
+        )}
         <div className="space-y-2">
           {form.ingredients.map((ing, i) => (
             <div key={i} className="flex gap-2 items-center">
@@ -259,6 +420,8 @@ function RecipeCard({
   emoji,
   prepTime,
   mealType,
+  sourceUrl,
+  onOpen,
   onAddToMealPlan,
   onFavourite,
   onEdit,
@@ -271,6 +434,8 @@ function RecipeCard({
   emoji?: string;
   prepTime?: number;
   mealType?: MealType;
+  sourceUrl?: string;
+  onOpen: () => void;
   onAddToMealPlan: () => void;
   onFavourite?: () => void;
   onEdit?: () => void;
@@ -284,7 +449,11 @@ function RecipeCard({
 
   return (
     <div className="rounded-[2rem] border bg-card hover:shadow-md transition-all flex flex-col overflow-hidden">
-      <div className="flex flex-col items-center pt-5 pb-3 px-4">
+      <button
+        onClick={onOpen}
+        className="flex flex-col items-center pt-5 pb-3 px-4 hover:bg-muted/30 transition-colors"
+        title={isRtl ? 'عرض الوصفة' : 'View recipe'}
+      >
         <span style={{ fontSize: '3rem', lineHeight: 1 }}>{emoji ?? '🍽️'}</span>
         <h3 className="text-base font-black text-center mt-2 leading-tight">{name}</h3>
         <div className="flex items-center gap-2 mt-2 flex-wrap justify-center">
@@ -299,8 +468,15 @@ function RecipeCard({
               {prepTime}m
             </span>
           ) : null}
+          {sourceUrl && (
+            <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
+              {getYouTubeId(sourceUrl)
+                ? <PlayCircle className="w-3 h-3 text-red-500" />
+                : <LinkIcon className="w-3 h-3" />}
+            </span>
+          )}
         </div>
-      </div>
+      </button>
       <div className="flex gap-1.5 px-3 pb-4 mt-auto">
         {onFavourite && (
           <button
@@ -346,10 +522,19 @@ export function RecipeLibrary({
   onUpdateRecipe,
   onDeleteRecipe,
   onAddToMealPlan,
+  weekStartDate,
+  shoppingItems,
+  onAddShoppingItem,
   lang,
 }: RecipeLibraryProps) {
   const isRtl = lang === 'ar';
   const [tab, setTab] = useState<Tab>('explore');
+  // Looked up by id each render so the detail view reflects edits straight away.
+  const [openId, setOpenId] = useState<string | null>(null);
+  const openRecipe: Recipe | CuratedRecipe | undefined = openId
+    ? recipes.find(r => r.id === openId) ?? CURATED_RECIPES.find(r => r.id === openId)
+    : undefined;
+  const openIsFamily = !!openRecipe && !openRecipe.id.startsWith('curated_');
   const [filter, setFilter] = useState<MealFilter>('all');
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -387,14 +572,24 @@ export function RecipeLibrary({
     });
   };
 
+  // Drops the empty rows the form starts with.
+  const cleanForm = (data: RecipeFormState) => ({
+    name: data.name.trim(),
+    mealType: data.mealType,
+    prepTime: data.prepTime,
+    emoji: data.emoji,
+    ingredients: data.ingredients
+      .filter(i => i.name.trim())
+      .map(i => ({ name: i.name.trim(), quantity: i.quantity.trim(), unit: i.unit.trim() })),
+    steps: data.steps.map(s => s.trim()).filter(Boolean),
+  });
+
   const handleSaveNew = (data: RecipeFormState) => {
+    const url = data.sourceUrl.trim();
     onAddRecipe({
-      name: data.name,
-      mealType: data.mealType,
-      prepTime: data.prepTime,
-      emoji: data.emoji,
-      ingredients: data.ingredients,
-      steps: data.steps,
+      ...cleanForm(data),
+      // Firestore rejects undefined fields, so only include the link when there is one.
+      ...(url ? { sourceUrl: url } : {}),
       source: 'custom',
       addedAt: Date.now(),
     });
@@ -402,14 +597,7 @@ export function RecipeLibrary({
   };
 
   const handleSaveEdit = (id: string, data: RecipeFormState) => {
-    onUpdateRecipe(id, {
-      name: data.name,
-      mealType: data.mealType,
-      prepTime: data.prepTime,
-      emoji: data.emoji,
-      ingredients: data.ingredients,
-      steps: data.steps,
-    });
+    onUpdateRecipe(id, { ...cleanForm(data), sourceUrl: data.sourceUrl.trim() });
     setEditingId(null);
   };
 
@@ -471,6 +659,7 @@ export function RecipeLibrary({
               emoji={r.emoji}
               prepTime={r.prepTime}
               mealType={r.mealType === 'snack' ? 'lunch' : r.mealType}
+              onOpen={() => setOpenId(r.id)}
               onAddToMealPlan={() => onAddToMealPlan(r)}
               onFavourite={() => handleFavourite(r)}
               isFavourited={favouritedSourceIds.has(r.id)}
@@ -517,8 +706,11 @@ export function RecipeLibrary({
                         mealType: r.mealType ?? 'dinner',
                         prepTime: r.prepTime ?? 30,
                         emoji: r.emoji ?? '🍽️',
-                        ingredients: (r.ingredients ?? []).map(ing => ({ name: ing.name, quantity: ing.quantity, unit: ing.unit })),
-                        steps: r.steps ?? [''],
+                        sourceUrl: r.sourceUrl ?? '',
+                        ...(r.ingredients?.length
+                          ? { ingredients: r.ingredients.map(ing => ({ name: ing.name, quantity: ing.quantity ?? '', unit: ing.unit ?? '' })) }
+                          : {}),
+                        ...(r.steps?.length ? { steps: r.steps } : {}),
                       }}
                       onSave={data => handleSaveEdit(r.id, data)}
                       onCancel={() => setEditingId(null)}
@@ -534,6 +726,8 @@ export function RecipeLibrary({
                   emoji={r.emoji}
                   prepTime={r.prepTime}
                   mealType={r.mealType}
+                  sourceUrl={r.sourceUrl}
+                  onOpen={() => setOpenId(r.id)}
                   onAddToMealPlan={() => onAddToMealPlan(r)}
                   onEdit={() => { setEditingId(r.id); setShowForm(false); }}
                   onDelete={() => {
@@ -555,6 +749,24 @@ export function RecipeLibrary({
             </div>
           )}
         </div>
+      )}
+
+      {openRecipe && (
+        <RecipeDetail
+          recipe={openRecipe}
+          shoppingItems={shoppingItems}
+          weekStartDate={weekStartDate}
+          onAddShoppingItem={onAddShoppingItem}
+          onAddToMealPlan={() => { setOpenId(null); onAddToMealPlan(openRecipe); }}
+          onEdit={openIsFamily ? () => {
+            setOpenId(null);
+            setTab('mine');
+            setShowForm(false);
+            setEditingId(openRecipe.id);
+          } : undefined}
+          onClose={() => setOpenId(null)}
+          lang={lang}
+        />
       )}
     </div>
   );

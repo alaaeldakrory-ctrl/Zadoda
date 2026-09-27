@@ -240,6 +240,7 @@ export interface Recipe {
   tags?: string[];
   source: 'curated' | 'custom';
   sourceId?: string;       // id of the curated recipe this was copied from
+  sourceUrl?: string;      // web page or YouTube video the recipe came from
   addedAt: number;
   imageUrl?: string;
 }
