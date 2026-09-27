@@ -85,8 +85,18 @@ export async function POST(req: Request) {
   try {
     const youtubeId = getYouTubeId(url);
     if (youtubeId) {
-      const html = await fetchPage(`https://www.youtube.com/watch?v=${youtubeId}`);
-      return NextResponse.json<ImportedRecipe>(parseYouTubePage(html, youtubeId));
+      const watchUrl = `https://www.youtube.com/watch?v=${youtubeId}`;
+      // oEmbed is YouTube's official endpoint for titles; the watch page (for the description)
+      // is best-effort, since YouTube may answer cloud servers with a bot check instead.
+      const [oembed, html] = await Promise.all([
+        fetchPage(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(watchUrl)}`)
+          .then(text => JSON.parse(text) as { title?: string })
+          .catch(() => null),
+        fetchPage(watchUrl).catch(() => ''),
+      ]);
+      const recipe = parseYouTubePage(html, youtubeId, oembed?.title ?? '');
+      if (!recipe.name && recipe.ingredients.length === 0) throw new Error('Could not read that video');
+      return NextResponse.json<ImportedRecipe>(recipe);
     }
 
     const recipe = parseRecipePage(await fetchPage(url));

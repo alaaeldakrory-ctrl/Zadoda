@@ -35,12 +35,16 @@ export function getYouTubeId(url: string): string | null {
 const INGREDIENT_HEADING = /^\W*ingredients?\b/i;
 const SECTION_END = /^\W*(instructions?|directions?|method|steps?|preparation|how to make|notes?|equipment|music|follow|subscribe|timestamps?|chapters?)\b/i;
 
-/** Reads a YouTube page for its title and the ingredient list most cooking channels put in the description. */
-export function parseYouTubePage(html: string, youtubeId: string): ImportedRecipe {
-  const title = decodeEntities(
-    matchJsonString(html, 'title') ?? html.match(/<title>([^<]*)<\/title>/i)?.[1]?.replace(/\s*-\s*YouTube\s*$/, '') ?? ''
-  );
-  const description = matchJsonString(html, 'shortDescription') ?? '';
+/**
+ * Reads a YouTube watch page for the ingredient list most cooking channels put in the description.
+ * Only the player's "videoDetails" is trusted: YouTube sometimes serves a consent or bot-check page
+ * instead, and other "title" fields on the page are unrelated. `knownTitle` (from oEmbed) wins when given.
+ */
+export function parseYouTubePage(html: string, youtubeId: string, knownTitle = ''): ImportedRecipe {
+  const detailsAt = html.indexOf('"videoDetails":');
+  const details = detailsAt === -1 ? '' : html.slice(detailsAt, detailsAt + 50_000);
+  const title = knownTitle || decodeEntities(matchJsonString(details, 'title') ?? '');
+  const description = matchJsonString(details, 'shortDescription') ?? '';
 
   const ingredients: ImportedIngredient[] = [];
   const lines = description.split('\n').map(l => l.trim());
