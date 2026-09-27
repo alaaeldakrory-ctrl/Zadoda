@@ -118,8 +118,8 @@ function RecipeForm({
         setImportStatus({
           kind: 'done', warn: true,
           message: isRtl
-            ? 'تمت إضافة اسم الفيديو، لكن الوصف لا يحتوي على قائمة مكونات. أضفها بالأسفل.'
-            : "Added the video's title, but its description has no ingredient list. Add them below.",
+            ? 'تمت إضافة اسم الفيديو. لم نتمكن من قراءة المكونات من يوتيوب؛ انسخها من وصف الفيديو واستخدم "لصق قائمة" بالأسفل.'
+            : 'Added the video\'s title. YouTube didn\'t share the ingredients, so copy them from the video description and use "Paste a list" below.',
         });
       } else {
         setImportStatus({
