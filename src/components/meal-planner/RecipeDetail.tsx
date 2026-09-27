@@ -208,6 +208,13 @@ export function RecipeDetail({
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          {'imageUrl' in recipe && recipe.imageUrl && !youtubeId && (
+            <img
+              src={recipe.imageUrl}
+              alt={recipe.name}
+              className="w-full max-h-80 object-cover rounded-2xl"
+            />
+          )}
           {youtubeId && (
             <div className="space-y-2">
               <div className="aspect-video w-full overflow-hidden rounded-2xl bg-black">

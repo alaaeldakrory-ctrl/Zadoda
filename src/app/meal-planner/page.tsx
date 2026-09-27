@@ -21,6 +21,7 @@ type Tab = 'weekly' | 'recipes' | 'shopping';
 export default function MealPlannerPage() {
   const {
     settings,
+    familyId,
     mealSlots,
     recipes,
     shoppingItems,
@@ -240,6 +241,7 @@ export default function MealPlannerPage() {
             weekStartDate={weekStartDate}
             shoppingItems={weekShoppingItems}
             onAddShoppingItem={addShoppingItem}
+            familyId={familyId}
             lang={lang}
           />
         )}

@@ -1,12 +1,14 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
-import { Heart, Plus, Pencil, Trash2, Clock, ChefHat, X, Download, Loader2, Link as LinkIcon, PlayCircle, ClipboardPaste } from 'lucide-react';
+import { Heart, Plus, Pencil, Trash2, Clock, ChefHat, X, Loader2, Link as LinkIcon, PlayCircle, ClipboardPaste, Sparkles, ImagePlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CURATED_RECIPES, CuratedRecipe } from './curatedRecipes';
 import { RecipeDetail } from './RecipeDetail';
 import { Recipe, MealType, MealCategory, ShoppingItem } from '@/lib/types';
 import { getYouTubeId, normalizeUrl, parseIngredientList, ImportedRecipe } from '@/lib/recipeImport';
+import { authedPost } from '@/lib/aiClient';
+import { deleteRecipePhoto, uploadRecipePhoto } from '@/lib/recipePhoto';
 
 interface RecipeLibraryProps {
   recipes: Recipe[];
@@ -19,6 +21,8 @@ interface RecipeLibraryProps {
   weekStartDate: string;
   shoppingItems: ShoppingItem[];
   onAddShoppingItem: (item: Omit<ShoppingItem, 'id'>) => void;
+  /** Where recipe photos are stored; null while signed out. */
+  familyId: string | null;
   lang: 'en' | 'ar';
 }
 
@@ -62,9 +66,22 @@ const DEFAULT_FORM: RecipeFormState = {
 
 type ImportStatus =
   | { kind: 'idle' }
-  | { kind: 'loading' }
+  | { kind: 'loading'; message: string }
   | { kind: 'done'; message: string; warn?: boolean }
   | { kind: 'error'; message: string };
+
+/** The recipe's photo while editing: unchanged, removed, or a new one waiting to be uploaded on save. */
+export type PhotoState =
+  | { kind: 'none' }
+  | { kind: 'existing'; url: string }
+  | { kind: 'new'; dataUrl: string };
+
+interface ImportResponse {
+  recipe: ImportedRecipe & { emoji?: string };
+  photo?: string;
+  method: 'page-data' | 'ai-page' | 'ai-video' | 'ai-url' | 'ai-text';
+  error?: string;
+}
 
 function formFromRecipe(r: Recipe | CuratedRecipe): Partial<RecipeFormState> {
   return {
@@ -88,15 +105,18 @@ type EditorState =
 
 function RecipeForm({
   initial,
+  initialPhotoUrl,
   autoImport,
   onSave,
   onCancel,
   lang,
 }: {
   initial?: Partial<RecipeFormState>;
+  initialPhotoUrl?: string;
   /** Start importing from initial.sourceUrl as soon as the form opens. */
   autoImport?: boolean;
-  onSave: (data: RecipeFormState) => void;
+  /** Resolves once saved (photo uploaded); rejects to keep the form open with an error. */
+  onSave: (data: RecipeFormState, photo: PhotoState) => Promise<void>;
   onCancel: () => void;
   lang: 'en' | 'ar';
 }) {
@@ -113,53 +133,115 @@ function RecipeForm({
   };
 
   const [importStatus, setImportStatus] = useState<ImportStatus>({ kind: 'idle' });
+  const [photo, setPhoto] = useState<PhotoState>(initialPhotoUrl ? { kind: 'existing', url: initialPhotoUrl } : { kind: 'none' });
+  const [photoStatus, setPhotoStatus] = useState<ImportStatus>({ kind: 'idle' });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
-  // Fills the form from a recipe website or YouTube video; only overwrites what the link provides.
-  const handleImport = async () => {
-    const url = form.sourceUrl.trim();
-    if (!url) return;
-    setImportStatus({ kind: 'loading' });
+  // Puts an imported recipe into the form; only overwrites what the source provided.
+  const applyImport = (data: ImportResponse) => {
+    const r = data.recipe;
+    setForm(prev => ({
+      ...prev,
+      name: r.name || prev.name,
+      emoji: r.emoji || prev.emoji,
+      prepTime: r.prepTime ?? prev.prepTime,
+      ingredients: r.ingredients.length ? r.ingredients : prev.ingredients,
+      steps: r.steps.length ? r.steps : prev.steps,
+    }));
+    if (data.photo) setPhoto({ kind: 'new', dataUrl: data.photo });
+
+    const nIng = r.ingredients.length;
+    const nSteps = r.steps.length;
+    const counts = isRtl
+      ? `${nIng} من المكونات${nSteps ? ` و${nSteps} من الخطوات` : ''}${data.photo ? ' وصورة الطبق' : ''}`
+      : `${nIng} ingredient${nIng === 1 ? '' : 's'}${nSteps ? `, ${nSteps} step${nSteps === 1 ? '' : 's'}` : ''}${data.photo ? ' and the dish photo' : ''}`;
+    const byAI = data.method !== 'page-data';
+    setImportStatus({
+      kind: 'done',
+      warn: byAI,
+      message: isRtl
+        ? `تم استيراد ${counts}.${byAI ? ' قرأها الذكاء الاصطناعي، فراجع الكميات قبل الحفظ.' : ' راجعها قبل الحفظ.'}`
+        : `Imported ${counts}.${byAI ? ' Read by AI, so check the amounts before saving.' : ' Check them before saving.'}`,
+    });
+  };
+
+  const runImport = async (body: { url: string } | { text: string }, loadingMessage: string) => {
+    setImportStatus({ kind: 'loading', message: loadingMessage });
     try {
-      const res = await fetch('/api/recipe-import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
-      });
-      const data: ImportedRecipe & { error?: string } = await res.json();
+      const res = await authedPost('/api/ai/recipe', body);
+      const data: ImportResponse = await res.json();
       if (!res.ok) throw new Error(data.error);
-
-      setForm(prev => ({
-        ...prev,
-        name: data.name || prev.name,
-        prepTime: data.prepTime ?? prev.prepTime,
-        ingredients: data.ingredients.length ? data.ingredients : prev.ingredients,
-        steps: data.steps.length ? data.steps : prev.steps,
-      }));
-
-      const nIng = data.ingredients.length;
-      const nSteps = data.steps.length;
-      if (data.youtubeId && nIng === 0) {
-        setImportStatus({
-          kind: 'done', warn: true,
-          message: isRtl
-            ? 'تمت إضافة اسم الفيديو. لم نتمكن من قراءة المكونات من يوتيوب؛ انسخها من وصف الفيديو واستخدم "لصق قائمة" بالأسفل.'
-            : 'Added the video\'s title. YouTube didn\'t share the ingredients, so copy them from the video description and use "Paste a list" below.',
-        });
-      } else {
-        setImportStatus({
-          kind: 'done',
-          message: isRtl
-            ? `تم استيراد ${nIng} من المكونات${nSteps ? ` و${nSteps} من الخطوات` : ''}. راجعها قبل الحفظ.`
-            : `Imported ${nIng} ingredient${nIng === 1 ? '' : 's'}${nSteps ? ` and ${nSteps} step${nSteps === 1 ? '' : 's'}` : ''}. Check them before saving.`,
-        });
-      }
-    } catch {
+      applyImport(data);
+      return true;
+    } catch (e) {
       setImportStatus({
         kind: 'error',
-        message: isRtl
-          ? 'بعض المواقع تمنع الاستيراد التلقائي. سيبقى الرابط محفوظاً، ويمكنك نسخ المكونات من الصفحة واستخدام "لصق قائمة" بالأسفل.'
-          : 'Some sites block importing. The link will still be saved; copy the ingredients from the page and use "Paste a list" below.',
+        message: (e instanceof Error && e.message) || (isRtl ? 'تعذّر قراءة الوصفة، حاول مرة أخرى.' : "Couldn't read that recipe, try again."),
       });
+      return false;
+    }
+  };
+
+  // Fills the form from a recipe website or YouTube video.
+  const handleImport = () => {
+    const url = normalizeUrl(form.sourceUrl);
+    if (!url) {
+      setImportStatus({ kind: 'error', message: isRtl ? 'هذا لا يبدو رابط صفحة ويب.' : "That doesn't look like a web link." });
+      return;
+    }
+    const isVideo = !!getYouTubeId(url);
+    runImport({ url }, isVideo
+      ? (isRtl ? 'الذكاء الاصطناعي يشاهد الفيديو… قد يستغرق ذلك دقيقة.' : 'AI is watching the video… this can take up to a minute.')
+      : (isRtl ? 'جارٍ قراءة الوصفة…' : 'Reading the recipe…'));
+  };
+
+  // A photo for recipes whose source has none (or to replace it).
+  const handleCreatePhoto = async () => {
+    if (!form.name.trim()) {
+      setPhotoStatus({ kind: 'error', message: isRtl ? 'اكتب اسم الوصفة أولاً.' : 'Give the recipe a name first.' });
+      return;
+    }
+    setPhotoStatus({ kind: 'loading', message: isRtl ? 'جارٍ إنشاء الصورة…' : 'Creating the photo…' });
+    try {
+      const res = await authedPost('/api/ai/recipe-photo', {
+        name: form.name,
+        ingredients: form.ingredients.map(i => i.name).filter(Boolean),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error === 'billing'
+          ? (isRtl
+            ? 'إنشاء الصور بالذكاء الاصطناعي يحتاج تفعيل الدفع لمفتاح Gemini. يمكنك رفع صورة بدلاً من ذلك.'
+            : 'AI photos need billing turned on for the Gemini key. You can upload a photo instead.')
+          : data.error);
+      }
+      setPhoto({ kind: 'new', dataUrl: data.photo });
+      setPhotoStatus({ kind: 'idle' });
+    } catch (e) {
+      setPhotoStatus({ kind: 'error', message: (e instanceof Error && e.message) || (isRtl ? 'تعذّر إنشاء الصورة.' : "Couldn't create a photo.") });
+    }
+  };
+
+  const handleUploadFile = (file: File | undefined) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPhoto({ kind: 'new', dataUrl: String(reader.result) });
+      setPhotoStatus({ kind: 'idle' });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveClick = async () => {
+    if (!form.name.trim() || saving) return;
+    setSaving(true);
+    setSaveError('');
+    try {
+      await onSave(form, photo);
+    } catch {
+      setSaveError(isRtl ? 'تعذّر الحفظ، حاول مرة أخرى.' : "Couldn't save, try again.");
+      setSaving(false);
     }
   };
 
@@ -183,14 +265,21 @@ function RecipeForm({
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
 
-  // Adds a copied ingredient list (one per line), for sites that block importing.
-  const addPasted = () => {
-    const parsed = parseIngredientList(pasteText);
-    if (parsed.length === 0) return;
-    setForm(prev => ({
-      ...prev,
-      ingredients: [...prev.ingredients.filter(i => i.name.trim()), ...parsed],
-    }));
+  // Pasted recipe text (a message, a note, a copied page) is read by AI; if that fails,
+  // the lines are still added as ingredients.
+  const addPasted = async () => {
+    const text = pasteText.trim();
+    if (!text) return;
+    const ok = await runImport({ text }, isRtl ? 'الذكاء الاصطناعي يقرأ الوصفة…' : 'AI is reading the recipe…');
+    if (!ok) {
+      const parsed = parseIngredientList(text);
+      if (parsed.length === 0) return;
+      setForm(prev => ({ ...prev, ingredients: [...prev.ingredients.filter(i => i.name.trim()), ...parsed] }));
+      setImportStatus({
+        kind: 'done', warn: true,
+        message: isRtl ? `أُضيفت ${parsed.length} أسطر كمكونات (بدون الذكاء الاصطناعي).` : `Added ${parsed.length} lines as ingredients (without AI).`,
+      });
+    }
     setPasteText('');
     setPasteOpen(false);
   };
@@ -241,15 +330,21 @@ function RecipeForm({
             >
               {importStatus.kind === 'loading'
                 ? <Loader2 className="w-4 h-4 animate-spin" />
-                : <Download className="w-4 h-4" />}
+                : <Sparkles className="w-4 h-4" />}
               {isRtl ? 'استيراد' : 'Import'}
             </button>
           </div>
           {importStatus.kind === 'idle' && (
             <p className="text-[11px] text-muted-foreground mt-1">
               {isRtl
-                ? 'الصق رابطاً واضغط استيراد لملء الاسم والمكونات والخطوات تلقائياً.'
-                : 'Paste a link and tap Import to fill in the name, ingredients and steps.'}
+                ? 'الصق رابطاً واضغط استيراد لجلب الصورة والمكونات والخطوات. يعمل مع مواقع الوصفات وفيديوهات يوتيوب.'
+                : 'Paste a link and tap Import to pull the photo, ingredients and steps. Works with recipe sites and YouTube videos.'}
+            </p>
+          )}
+          {importStatus.kind === 'loading' && (
+            <p className="text-xs font-medium mt-1.5 text-primary flex items-center gap-1.5">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              {importStatus.message}
             </p>
           )}
           {(importStatus.kind === 'done' || importStatus.kind === 'error') && (
@@ -259,6 +354,51 @@ function RecipeForm({
             )}>
               {importStatus.message}
             </p>
+          )}
+        </div>
+
+        <div className="col-span-2">
+          <label className="text-xs font-black uppercase tracking-wider text-muted-foreground block mb-1">
+            {isRtl ? 'صورة الطبق' : 'Dish photo'}
+          </label>
+          <div className="flex gap-3 items-start">
+            <div className="w-28 h-20 flex-shrink-0 rounded-xl overflow-hidden border bg-muted/40 flex items-center justify-center">
+              {photo.kind === 'none'
+                ? <span className="text-3xl">{form.emoji || '🍽️'}</span>
+                : <img src={photo.kind === 'new' ? photo.dataUrl : photo.url} alt="" className="w-full h-full object-cover" />}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-bold text-xs cursor-pointer hover:bg-muted/50 transition-all">
+                <ImagePlus className="w-3.5 h-3.5" />
+                {isRtl ? 'رفع صورة' : 'Upload photo'}
+                <input type="file" accept="image/*" className="hidden" onChange={e => handleUploadFile(e.target.files?.[0])} />
+              </label>
+              <button
+                type="button"
+                onClick={handleCreatePhoto}
+                disabled={photoStatus.kind === 'loading'}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary/40 text-primary font-bold text-xs disabled:opacity-40 hover:bg-primary/10 transition-all"
+              >
+                {photoStatus.kind === 'loading' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                {isRtl ? 'إنشاء صورة بالذكاء الاصطناعي' : 'Create with AI'}
+              </button>
+              {photo.kind !== 'none' && (
+                <button
+                  type="button"
+                  onClick={() => setPhoto({ kind: 'none' })}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs text-muted-foreground hover:bg-muted transition-all"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  {isRtl ? 'إزالة' : 'Remove'}
+                </button>
+              )}
+            </div>
+          </div>
+          {photoStatus.kind === 'loading' && (
+            <p className="text-xs font-medium mt-1.5 text-primary">{photoStatus.message}</p>
+          )}
+          {photoStatus.kind === 'error' && (
+            <p className="text-xs font-medium mt-1.5 text-amber-700">{photoStatus.message}</p>
           )}
         </div>
 
@@ -325,7 +465,7 @@ function RecipeForm({
           <div className="flex items-center gap-3">
             <button onClick={() => setPasteOpen(o => !o)} className="text-xs text-primary font-bold flex items-center gap-1 hover:underline">
               <ClipboardPaste className="w-3 h-3" />
-              {isRtl ? 'لصق قائمة' : 'Paste a list'}
+              {isRtl ? 'لصق وصفة' : 'Paste a recipe'}
             </button>
             <button onClick={addIngredient} className="text-xs text-primary font-bold flex items-center gap-1 hover:underline">
               <Plus className="w-3 h-3" />
@@ -337,15 +477,15 @@ function RecipeForm({
           <div className="mb-3 space-y-2 rounded-xl border bg-card p-3">
             <p className="text-[11px] text-muted-foreground">
               {isRtl
-                ? 'انسخ المكونات من صفحة الوصفة أو وصف الفيديو والصقها هنا، مكون في كل سطر.'
-                : 'Copy the ingredients from the recipe page or video description and paste them here, one per line.'}
+                ? 'الصق أي وصفة (من رسالة أو ملاحظة أو صفحة) وسيقرأ الذكاء الاصطناعي الاسم والمكونات والخطوات.'
+                : 'Paste any recipe (from a message, a note or a page) and AI will pull out the name, ingredients and steps.'}
             </p>
             <textarea
               value={pasteText}
               onChange={e => setPasteText(e.target.value)}
               rows={5}
               dir="auto"
-              placeholder={'2 cups rice\n1 lb chicken thighs\n3 cloves garlic'}
+              placeholder={isRtl ? 'مثال: عدس بالليمون…' : "e.g. Mama's lentil soup: wash 1½ cups red lentils, fry an onion…"}
               className={cn(inputCls, 'resize-y')}
             />
             <div className="flex gap-2 justify-end">
@@ -357,10 +497,11 @@ function RecipeForm({
               </button>
               <button
                 onClick={addPasted}
-                disabled={!pasteText.trim()}
-                className="px-3 py-1.5 rounded-xl bg-primary text-white font-bold text-xs disabled:opacity-40 hover:bg-primary/90 transition-all"
+                disabled={!pasteText.trim() || importStatus.kind === 'loading'}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-white font-bold text-xs disabled:opacity-40 hover:bg-primary/90 transition-all"
               >
-                {isRtl ? 'أضف المكونات' : 'Add ingredients'}
+                <Sparkles className="w-3.5 h-3.5" />
+                {isRtl ? 'اقرأ الوصفة' : 'Read recipe'}
               </button>
             </div>
           </div>
@@ -426,19 +567,22 @@ function RecipeForm({
         </div>
       </div>
 
+      {saveError && <p className="text-xs font-medium text-destructive">{saveError}</p>}
       <div className="flex gap-2 pt-2">
         <button
           onClick={onCancel}
-          className="flex-1 py-2.5 rounded-2xl border font-bold text-sm hover:bg-muted/50 transition-all"
+          disabled={saving}
+          className="flex-1 py-2.5 rounded-2xl border font-bold text-sm disabled:opacity-40 hover:bg-muted/50 transition-all"
         >
           {isRtl ? 'إلغاء' : 'Cancel'}
         </button>
         <button
-          onClick={() => { if (!form.name.trim()) return; onSave(form); }}
-          disabled={!form.name.trim()}
-          className="flex-1 py-2.5 rounded-2xl bg-primary text-white font-bold text-sm disabled:opacity-40 transition-all hover:bg-primary/90"
+          onClick={handleSaveClick}
+          disabled={!form.name.trim() || saving || importStatus.kind === 'loading'}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-primary text-white font-bold text-sm disabled:opacity-40 transition-all hover:bg-primary/90"
         >
-          {isRtl ? 'حفظ' : 'Save Recipe'}
+          {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+          {saving ? (isRtl ? 'جارٍ الحفظ…' : 'Saving…') : (isRtl ? 'حفظ' : 'Save Recipe')}
         </button>
       </div>
     </div>
@@ -451,6 +595,7 @@ function RecipeCard({
   prepTime,
   mealType,
   sourceUrl,
+  imageUrl,
   onOpen,
   onAddToMealPlan,
   onFavourite,
@@ -465,6 +610,7 @@ function RecipeCard({
   prepTime?: number;
   mealType?: MealType;
   sourceUrl?: string;
+  imageUrl?: string;
   onOpen: () => void;
   onAddToMealPlan: () => void;
   onFavourite?: () => void;
@@ -481,11 +627,16 @@ function RecipeCard({
     <div className="rounded-[2rem] border bg-card hover:shadow-md transition-all flex flex-col overflow-hidden">
       <button
         onClick={onOpen}
-        className="flex flex-col items-center pt-5 pb-3 px-4 hover:bg-muted/30 transition-colors"
+        className={cn(
+          'flex flex-col items-center pb-3 hover:bg-muted/30 transition-colors',
+          imageUrl ? '' : 'pt-5 px-4'
+        )}
         title={isRtl ? 'عرض الوصفة' : 'View recipe'}
       >
-        <span style={{ fontSize: '3rem', lineHeight: 1 }}>{emoji ?? '🍽️'}</span>
-        <h3 className="text-base font-black text-center mt-2 leading-tight">{name}</h3>
+        {imageUrl
+          ? <img src={imageUrl} alt="" loading="lazy" className="w-full aspect-[4/3] object-cover" />
+          : <span style={{ fontSize: '3rem', lineHeight: 1 }}>{emoji ?? '🍽️'}</span>}
+        <h3 className={cn('text-base font-black text-center mt-2 leading-tight', imageUrl && 'px-4')}>{name}</h3>
         <div className="flex items-center gap-2 mt-2 flex-wrap justify-center">
           {mealType && (
             <span className={cn('text-[10px] font-bold rounded-full px-2 py-0.5 capitalize', badge)}>
@@ -555,6 +706,7 @@ export function RecipeLibrary({
   weekStartDate,
   shoppingItems,
   onAddShoppingItem,
+  familyId,
   lang,
 }: RecipeLibraryProps) {
   const isRtl = lang === 'ar';
@@ -614,17 +766,28 @@ export function RecipeLibrary({
     steps: data.steps.map(s => s.trim()).filter(Boolean),
   });
 
-  const handleSave = (data: RecipeFormState) => {
+  const handleSave = async (data: RecipeFormState, photo: PhotoState) => {
     if (!editor) return;
     // Only real web links are kept, so the recipe view never links to anything else.
     const url = normalizeUrl(data.sourceUrl) ?? '';
+    const previousImage = editor.kind === 'edit' ? recipes.find(r => r.id === editor.id)?.imageUrl : undefined;
+
+    // Upload first: if it fails, this throws and the form stays open with an error.
+    let imageUrl = '';
+    if (photo.kind === 'existing') imageUrl = photo.url;
+    if (photo.kind === 'new') {
+      if (!familyId) throw new Error('Not signed in');
+      imageUrl = await uploadRecipePhoto(familyId, photo.dataUrl);
+    }
+
     if (editor.kind === 'edit') {
-      onUpdateRecipe(editor.id, { ...cleanForm(data), sourceUrl: url });
+      onUpdateRecipe(editor.id, { ...cleanForm(data), sourceUrl: url, imageUrl });
     } else {
       const newId = onAddRecipe({
         ...cleanForm(data),
-        // Firestore rejects undefined fields, so only include the link when there is one.
+        // Firestore rejects undefined fields, so only include optional ones when set.
         ...(url ? { sourceUrl: url } : {}),
+        ...(imageUrl ? { imageUrl } : {}),
         ...(editor.kind === 'customize'
           ? { source: 'curated' as const, sourceId: editor.curatedId }
           : { source: 'custom' as const }),
@@ -634,8 +797,11 @@ export function RecipeLibrary({
       setTab('mine');
       if (newId && openId) setOpenId(newId);
     }
+    if (previousImage && previousImage !== imageUrl) deleteRecipePhoto(previousImage);
     setEditor(null);
   };
+
+  const editorPhotoUrl = editor?.kind === 'edit' ? recipes.find(r => r.id === editor.id)?.imageUrl : undefined;
 
   // Built-in recipes are edited as a family copy; reuse the copy if there already is one.
   const handleCustomize = (curated: CuratedRecipe) => {
@@ -795,12 +961,16 @@ export function RecipeLibrary({
                   prepTime={r.prepTime}
                   mealType={r.mealType}
                   sourceUrl={r.sourceUrl}
+                  imageUrl={r.imageUrl}
                   onOpen={() => setOpenId(r.id)}
                   onAddToMealPlan={() => onAddToMealPlan(r)}
                   onEdit={() => setEditor({ kind: 'edit', id: r.id })}
                   onDelete={() => {
                     const msg = isRtl ? `حذف "${r.name}"؟` : `Delete "${r.name}"?`;
-                    if (window.confirm(msg)) onDeleteRecipe(r.id);
+                    if (window.confirm(msg)) {
+                      onDeleteRecipe(r.id);
+                      deleteRecipePhoto(r.imageUrl);
+                    }
                   }}
                   isCustom
                   lang={lang}
@@ -852,6 +1022,7 @@ export function RecipeLibrary({
               <RecipeForm
                 key={JSON.stringify(editor)}
                 initial={editorInitial}
+                initialPhotoUrl={editorPhotoUrl}
                 autoImport={editor.kind !== 'new' && !!editor.importUrl}
                 onSave={handleSave}
                 onCancel={() => setEditor(null)}

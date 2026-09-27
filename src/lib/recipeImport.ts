@@ -14,6 +14,8 @@ export interface ImportedRecipe {
   steps: string[];
   /** Set when the link is a YouTube video. */
   youtubeId?: string;
+  /** Photo of the dish from the source page, if it has one. */
+  imageUrl?: string;
 }
 
 /** Tidies a typed or pasted link ("www.site.com/x" → "https://www.site.com/x"); null if it isn't a web link. */
@@ -47,40 +49,6 @@ export function getYouTubeId(url: string): string | null {
 }
 
 const INGREDIENT_HEADING = /^\W*ingredients?\b/i;
-const SECTION_END = /^\W*(instructions?|directions?|method|steps?|preparation|how to make|notes?|equipment|music|follow|subscribe|timestamps?|chapters?)\b/i;
-
-/**
- * Reads a YouTube watch page for the ingredient list most cooking channels put in the description.
- * Only the player's "videoDetails" is trusted: YouTube sometimes serves a consent or bot-check page
- * instead, and other "title" fields on the page are unrelated. `knownTitle` (from oEmbed) wins when given.
- */
-export function parseYouTubePage(html: string, youtubeId: string, knownTitle = ''): ImportedRecipe {
-  const detailsAt = html.indexOf('"videoDetails":');
-  const details = detailsAt === -1 ? '' : html.slice(detailsAt, detailsAt + 50_000);
-  const title = knownTitle || decodeEntities(matchJsonString(details, 'title') ?? '');
-  const description = matchJsonString(details, 'shortDescription') ?? '';
-
-  const ingredients: ImportedIngredient[] = [];
-  const lines = description.split('\n').map(l => l.trim());
-  const start = lines.findIndex(l => INGREDIENT_HEADING.test(l));
-  if (start !== -1) {
-    for (const line of lines.slice(start + 1)) {
-      if (SECTION_END.test(line) || /^https?:\/\//.test(line)) break;
-      if (!line || INGREDIENT_HEADING.test(line) || /:$/.test(line)) continue; // sub-headings like "For the sauce:"
-      ingredients.push(parseIngredientLine(line.replace(/^[-•*▪◦·–]\s*/, '')));
-    }
-  }
-
-  return { name: title.trim(), ingredients, steps: [], youtubeId };
-}
-
-// Pulls a string field out of YouTube's embedded player JSON.
-function matchJsonString(html: string, key: string): string | null {
-  const m = html.match(new RegExp(`"${key}":"((?:[^"\\\\]|\\\\.)*)"`));
-  if (!m) return null;
-  try { return JSON.parse(`"${m[1]}"`); } catch { return null; }
-}
-
 // ── Recipe websites (schema.org JSON-LD) ─────────────────────────────────────
 
 /** Most recipe sites embed a schema.org Recipe in JSON-LD; returns null when there isn't one. */
@@ -126,7 +94,46 @@ function fromSchemaRecipe(r: Json): ImportedRecipe {
     prepTime: minutes,
     ingredients,
     steps: flattenInstructions(r.recipeInstructions),
+    imageUrl: firstImageUrl(r.image),
   };
+}
+
+// schema.org "image" can be a URL, an ImageObject, or a list of either (usually largest last or first).
+function firstImageUrl(node: unknown): string | undefined {
+  for (const item of asArray(node)) {
+    if (typeof item === 'string' && /^https?:\/\//.test(item)) return item;
+    if (item && typeof item === 'object') {
+      const url = (item as Json).url ?? (item as Json).contentUrl;
+      if (typeof url === 'string' && /^https?:\/\//.test(url)) return url;
+    }
+  }
+  return undefined;
+}
+
+/** The page's share image (og:image / twitter:image), usually a photo of the dish on recipe pages. */
+export function findPageImage(html: string, pageUrl: string): string | undefined {
+  const m = html.match(/<meta[^>]+(?:property|name)=["'](?:og:image(?::secure_url)?|twitter:image)["'][^>]*>/i);
+  const content = m?.[0].match(/content=["']([^"']+)["']/i)?.[1];
+  if (!content) return undefined;
+  try {
+    return new URL(decodeEntities(content), pageUrl).toString();
+  } catch {
+    return undefined;
+  }
+}
+
+/** Readable text of a page for the AI: scripts, styles and markup removed, capped in length. */
+export function htmlToText(html: string, maxChars = 40_000): string {
+  const body = html
+    .replace(/<(script|style|noscript|svg|nav|footer|header|form)[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<\/(p|div|li|h\d|tr|br)>|<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ');
+  return decodeEntities(body)
+    .split('\n')
+    .map(l => l.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n')
+    .slice(0, maxChars);
 }
 
 function flattenInstructions(node: unknown): string[] {

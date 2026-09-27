@@ -1,9 +1,35 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    match /{allPaths=**} {
+
+    // Same membership rule as firestore.rules: the family owner (uid == familyId)
+    // or a user whose familyMemberships doc points at this family.
+    function isFamilyMember(familyId) {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous'
+        && (
+          request.auth.uid == familyId ||
+          firestore.get(/databases/(default)/documents/familyMemberships/$(request.auth.uid)).data.familyId == familyId
+        );
+    }
+
+    // App images uploaded at the top level (logo, avatars): readable, not writable from the app.
+    match /{file} {
       allow read: if true;
-      allow write: if request.auth != null;
+    }
+
+    // Each family's own files, e.g. recipe photos.
+    match /families/{familyId}/{allPaths=**} {
+      allow read: if isFamilyMember(familyId);
+      allow delete: if isFamilyMember(familyId);
+      allow create, update: if isFamilyMember(familyId)
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Everything else is closed.
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }
