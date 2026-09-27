@@ -14,6 +14,7 @@ import Image from 'next/image';
 import { format } from 'date-fns';
 import { ParentSelfLog } from '@/lib/types';
 
+import { askAI } from '@/lib/aiClient';
 // ── Feeling config ─────────────────────────────────────────────────────────────
 
 const FEELINGS = {
@@ -106,8 +107,6 @@ function JournalForm({
   onSave: (data: Omit<ParentSelfLog, 'id'>) => void;
   onCancel: () => void;
 }) {
-  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-
   const [overallFeeling, setOverallFeeling] = useState<'good' | 'neutral' | 'needs_work'>(initial?.overallFeeling ?? 'neutral');
   const [goodThings, setGoodThings] = useState<string[]>(initial?.goodThings ?? []);
   const [improveThings, setImproveThings] = useState<string[]>(initial?.improveThings ?? []);
@@ -139,7 +138,7 @@ function JournalForm({
   };
 
   const handleAIAnalyze = async () => {
-    if (!reflection.trim() || isAnalyzing || !apiKey) return;
+    if (!reflection.trim() || isAnalyzing) return;
     setIsAnalyzing(true);
     try {
       const prompt = `You are a supportive parenting coach. 
@@ -154,23 +153,7 @@ function JournalForm({
       - Return ONLY a valid JSON object with no markdown.
       - Format: {"good": ["item1", "item2"], "improve": ["item1"]}`;
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 1024 }
-          })
-        }
-      );
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error?.message || 'API request failed');
-      }
-      const result = await response.json();
-      const raw = result.candidates[0].content.parts[0].text;
+      const raw = await askAI(prompt, { temperature: 0.7, maxOutputTokens: 1024 });
       const text = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
       const data = JSON.parse(text);
       if (data.good) setGoodThings(data.good.slice(0, 5));

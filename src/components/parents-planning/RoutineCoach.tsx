@@ -7,6 +7,7 @@ import { getPersonName, calculateStreak } from '@/lib/utils';
 import { Sparkles, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { format, subDays, getDay } from 'date-fns';
 
+import { askAI } from '@/lib/aiClient';
 const DAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 interface Suggestion {
@@ -30,7 +31,6 @@ const PRIORITY_BADGE: Record<string, string> = {
 export function RoutineCoach() {
   const { executionLogs, persons, settings } = useStore();
   const kids = persons.filter(p => p.role === 'child');
-  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -74,26 +74,12 @@ Respond ONLY with a valid JSON array (no markdown fences) in this exact shape:
   };
 
   const getCoaching = async () => {
-    if (!apiKey) { setError('Gemini API key not configured.'); return; }
     setLoading(true);
     setError('');
     setSuggestions([]);
 
     try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: buildPrompt() }] }],
-            generationConfig: { temperature: 0.7 },
-          }),
-        }
-      );
-
-      const data = await res.json();
-      const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const raw = await askAI(buildPrompt(), { temperature: 0.7 });
       const cleaned = raw.replace(/```json|```/g, '').trim();
       const parsed: Suggestion[] = JSON.parse(cleaned);
       setSuggestions(parsed);

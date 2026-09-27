@@ -4,6 +4,10 @@
 runConfig:
   maxInstances: 1
 env:
-  - variable: NEXT_PUBLIC_GEMINI_API_KEY
+  # Server-only: read by /api routes. Never give it a NEXT_PUBLIC_ name, which Next.js copies
+  # into the browser bundle. (The Secret Manager secret keeps its original name.)
+  - variable: GEMINI_API_KEY
     secret: NEXT_PUBLIC_GEMINI_API_KEY
+    availability:
+      - RUNTIME
 

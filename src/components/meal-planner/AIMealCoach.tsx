@@ -5,6 +5,7 @@ import { Bot, Send, RefreshCw, Check, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MealType } from '@/lib/types';
 
+import { askAI } from '@/lib/aiClient';
 interface AIMealCoachProps {
   weekStartDate: string;
   onApplySuggestions: (suggestions: { day: number; mealType: MealType; dishName: string }[]) => void;
@@ -35,40 +36,16 @@ const MEAL_LABELS: Partial<Record<MealType, { en: string; ar: string }>> = {
 };
 
 async function callGemini(promptText: string): Promise<Suggestion[]> {
-  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-  if (!apiKey) throw new Error('No Gemini API key');
-
   const systemPrompt = `You are a helpful family meal planning assistant.
 Respond ONLY with valid JSON in this exact format, no markdown, no explanation:
 {"suggestions": [{"day": 0, "mealType": "breakfast", "dishName": "Pancakes"}, ...]}
 day is 0-6 (Sunday=0). mealType is one of: breakfast, lunch, dinner.
 Provide at most 21 suggestions (7 days × 3 meal types). Keep dish names short and family-friendly.`;
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: systemPrompt + '\n\nUser request: ' + promptText },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 2048,
-        },
-      }),
-    }
-  );
-
-  if (!response.ok) throw new Error(`Gemini API error: ${response.status}`);
-
-  const data = await response.json();
-  const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  const text = await askAI(systemPrompt + '\n\nUser request: ' + promptText, {
+    temperature: 0.7,
+    maxOutputTokens: 2048,
+  });
 
   const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
   const parsed = JSON.parse(cleaned);
