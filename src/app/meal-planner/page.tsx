@@ -63,8 +63,8 @@ export default function MealPlannerPage() {
 
   const openModal = (day: number, mealType: MealType) => {
     if (pendingRecipe) {
-      const existing = getExistingSlot(day, mealType);
-      setMealSlot(weekStartDate, day, mealType, [...(existing?.dishes ?? []), dishFromRecipe(pendingRecipe)]);
+      // One meal per block: the picked recipe replaces whatever was there.
+      setMealSlot(weekStartDate, day, mealType, [dishFromRecipe(pendingRecipe)]);
       setPendingRecipe(null);
       return;
     }
@@ -86,16 +86,6 @@ export default function MealPlannerPage() {
     setModalOpen(false);
   };
 
-  const handleDeleteDish = (slotId: string, dishIndex: number) => {
-    const slot = mealSlots.find(s => s.id === slotId);
-    if (!slot) return;
-    const newDishes = slot.dishes.filter((_, i) => i !== dishIndex);
-    if (newDishes.length === 0) {
-      deleteMealSlot(slotId);
-    } else {
-      setMealSlot(weekStartDate, slot.dayIndex, slot.mealType, newDishes);
-    }
-  };
 
   // The coach suggests generic breakfast/lunch/dinner; place them in the shared meals.
   const AI_ROW: Partial<Record<MealType, PlanMealType>> = {
@@ -108,10 +98,7 @@ export default function MealPlannerPage() {
     suggestions.forEach(({ day, mealType, dishName }) => {
       const row = AI_ROW[mealType];
       if (!row) return;
-      const existing = getExistingSlot(day, row);
-      const newDish: MealDish = { freeText: dishName };
-      const updatedDishes = existing ? [...existing.dishes, newDish] : [newDish];
-      setMealSlot(weekStartDate, day, row, updatedDishes);
+      setMealSlot(weekStartDate, day, row, [{ freeText: dishName }]);
     });
   };
 
@@ -220,7 +207,7 @@ export default function MealPlannerPage() {
               recipes={recipes}
               onAddMeal={openModal}
               onEditMeal={slot => openModal(slot.dayIndex, slot.mealType)}
-              onDeleteDish={handleDeleteDish}
+              onClearMeal={deleteMealSlot}
               lang={lang}
             />
             <AIMealCoach

@@ -5,8 +5,8 @@ import { addDays, format, isToday, parseISO } from 'date-fns';
 import { Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MealSlot, MealType, Recipe } from '@/lib/types';
-import { dishName } from './dishes';
-import { MEAL_GROUPS, PLAN_ROWS, isRowActive } from './mealRows';
+import { dishEmoji, dishImage, dishName } from './dishes';
+import { MEAL_GROUPS, PLAN_ROWS, PlanRow, isRowActive } from './mealRows';
 
 interface WeeklyGridProps {
   weekStartDate: string;
@@ -14,12 +14,74 @@ interface WeeklyGridProps {
   recipes: Recipe[];
   onAddMeal: (day: number, mealType: MealType) => void;
   onEditMeal: (slot: MealSlot) => void;
-  onDeleteDish: (slotId: string, dishIndex: number) => void;
+  onClearMeal: (slotId: string) => void;
   lang: 'en' | 'ar';
 }
 
 const EN_DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const AR_DAY_LABELS = ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
+
+/** A planned block: one meal filling the whole cell, with its photo when the recipe has one. */
+function FilledCell({
+  slot,
+  row,
+  recipes,
+  isRtl,
+  onEdit,
+  onClear,
+}: {
+  slot: MealSlot;
+  row: PlanRow;
+  recipes: Recipe[];
+  isRtl: boolean;
+  onEdit: () => void;
+  onClear: () => void;
+}) {
+  // One meal per block. Older slots may hold several dishes: show the first and a count.
+  const dish = slot.dishes[0];
+  const extra = slot.dishes.length - 1;
+  const photo = dishImage(dish, recipes);
+  const name = dishName(dish, recipes);
+
+  return (
+    <div className="relative group h-full min-h-[88px]">
+      <button
+        onClick={onEdit}
+        title={isRtl ? 'تغيير الوجبة' : 'Change meal'}
+        className={cn(
+          'w-full h-full min-h-[88px] rounded-xl overflow-hidden flex flex-col text-start transition-all hover:brightness-95',
+          photo ? 'bg-muted' : row.chip
+        )}
+      >
+        {photo ? (
+          <>
+            <img src={photo} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover rounded-xl" />
+            <span className="relative mt-auto w-full rounded-b-xl bg-gradient-to-t from-black/75 to-transparent px-2 pt-5 pb-1.5 text-[11px] font-bold leading-tight text-white line-clamp-2">
+              {name}
+            </span>
+          </>
+        ) : (
+          <span className="flex-1 flex flex-col items-center justify-center gap-1 px-1.5 py-2 text-center">
+            <span className="text-2xl leading-none">{dishEmoji(dish, recipes) ?? '🍽️'}</span>
+            <span className="text-[11px] font-bold leading-tight line-clamp-3">{name}</span>
+          </span>
+        )}
+      </button>
+      {extra > 0 && (
+        <span className="absolute top-1 start-1 rounded-full bg-black/60 text-white text-[10px] font-bold px-1.5 pointer-events-none">
+          +{extra}
+        </span>
+      )}
+      <button
+        onClick={onClear}
+        title={isRtl ? 'إزالة' : 'Remove'}
+        className="absolute top-1 end-1 w-5 h-5 rounded-full bg-black/55 text-white flex items-center justify-center transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </div>
+  );
+}
 
 export function WeeklyGrid({
   weekStartDate,
@@ -27,7 +89,7 @@ export function WeeklyGrid({
   recipes,
   onAddMeal,
   onEditMeal,
-  onDeleteDish,
+  onClearMeal,
   lang,
 }: WeeklyGridProps) {
   const isRtl = lang === 'ar';
@@ -101,45 +163,24 @@ export function WeeklyGrid({
                       <div
                         key={`${row.type}-${dayIndex}`}
                         className={cn(
-                          'border-b border-e last:border-e-0 p-2 min-h-[72px] flex flex-col gap-1',
+                          'border-b border-e last:border-e-0 p-1.5 min-h-[100px] flex flex-col',
                           today ? 'bg-primary/5' : active ? 'bg-background' : 'bg-muted/30'
                         )}
                       >
                         {hasDishes ? (
-                          <>
-                            {slot!.dishes.map((dish, dishIndex) => (
-                              <div
-                                key={dishIndex}
-                                className={cn(
-                                  'flex items-center gap-1 rounded-full px-2 py-0.5 cursor-pointer text-[11px] font-bold transition-all',
-                                  row.chip
-                                )}
-                                onClick={() => onEditMeal(slot!)}
-                              >
-                                <span className="truncate flex-1 leading-tight">{dishName(dish, recipes)}</span>
-                                <button
-                                  onClick={e => {
-                                    e.stopPropagation();
-                                    onDeleteDish(slot!.id, dishIndex);
-                                  }}
-                                  className="flex-shrink-0 hover:opacity-70 transition-opacity"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </div>
-                            ))}
-                            <button
-                              onClick={() => onAddMeal(dayIndex, row.type)}
-                              className={cn('mt-auto self-start rounded-full p-0.5 transition-all', row.btn)}
-                            >
-                              <Plus className="w-3 h-3" />
-                            </button>
-                          </>
+                          <FilledCell
+                            slot={slot!}
+                            row={row}
+                            recipes={recipes}
+                            isRtl={isRtl}
+                            onEdit={() => onEditMeal(slot!)}
+                            onClear={() => onClearMeal(slot!.id)}
+                          />
                         ) : active ? (
                           <button
                             onClick={() => onAddMeal(dayIndex, row.type)}
                             className={cn(
-                              'w-full h-full min-h-[56px] flex items-center justify-center rounded-xl border-2 border-dashed transition-all group',
+                              'w-full h-full min-h-[88px] flex items-center justify-center rounded-xl border-2 border-dashed transition-all group',
                               row.btn
                             )}
                           >
@@ -149,7 +190,7 @@ export function WeeklyGrid({
                           // Not needed today (e.g. no school), but still tappable for the odd exception
                           <button
                             onClick={() => onAddMeal(dayIndex, row.type)}
-                            className="w-full h-full min-h-[56px] flex items-center justify-center rounded-xl text-[11px] font-bold text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                            className="w-full h-full min-h-[88px] flex items-center justify-center rounded-xl text-[11px] font-bold text-muted-foreground/50 hover:text-muted-foreground transition-colors"
                           >
                             {isRtl ? 'لا مدرسة' : 'No school'}
                           </button>

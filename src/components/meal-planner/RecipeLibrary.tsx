@@ -5,6 +5,7 @@ import { Heart, Plus, Pencil, Trash2, Clock, ChefHat, X, Loader2, Link as LinkIc
 import { cn } from '@/lib/utils';
 import { CURATED_RECIPES, CuratedRecipe } from './curatedRecipes';
 import { RecipeDetail } from './RecipeDetail';
+import { effectiveCurated } from './dishes';
 import { Recipe, MealType, MealCategory, ShoppingItem } from '@/lib/types';
 import { getYouTubeId, normalizeUrl, parseIngredientList, ImportedRecipe } from '@/lib/recipeImport';
 import { authedPost } from '@/lib/aiClient';
@@ -596,6 +597,7 @@ function RecipeCard({
   mealType,
   sourceUrl,
   imageUrl,
+  label,
   onOpen,
   onAddToMealPlan,
   onFavourite,
@@ -611,6 +613,8 @@ function RecipeCard({
   mealType?: MealType;
   sourceUrl?: string;
   imageUrl?: string;
+  /** Small note under the name, e.g. that this is the family's edited version. */
+  label?: string;
   onOpen: () => void;
   onAddToMealPlan: () => void;
   onFavourite?: () => void;
@@ -637,6 +641,9 @@ function RecipeCard({
           ? <img src={imageUrl} alt="" loading="lazy" className="w-full aspect-[4/3] object-cover" />
           : <span style={{ fontSize: '3rem', lineHeight: 1 }}>{emoji ?? '🍽️'}</span>}
         <h3 className={cn('text-base font-black text-center mt-2 leading-tight', imageUrl && 'px-4')}>{name}</h3>
+        {label && (
+          <span className="mt-1 text-[10px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5">{label}</span>
+        )}
         <div className="flex items-center gap-2 mt-2 flex-wrap justify-center">
           {mealType && (
             <span className={cn('text-[10px] font-bold rounded-full px-2 py-0.5 capitalize', badge)}>
@@ -726,11 +733,16 @@ export function RecipeLibrary({
     recipes.filter(r => r.source === 'curated').map(r => r.sourceId ?? '')
   );
 
-  const filteredCurated = CURATED_RECIPES.filter(r => {
-    if (filter !== 'all' && r.mealType !== filter) return false;
-    if (search && !r.name.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
+  // Built-in recipes as the family sees them: an edited version replaces the original.
+  const filteredCurated = CURATED_RECIPES
+    .map(curated => ({ curated, shown: effectiveCurated(curated, recipes) }))
+    .filter(({ curated, shown }) => {
+      if (filter !== 'all' && curated.mealType !== filter) return false;
+      if (search && !shown.name.toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    });
+
+  const editedLabel = isRtl ? 'نسختك المعدّلة' : 'Your version';
 
   const filteredFamily = recipes.filter(r => {
     if (filter !== 'all' && r.mealType !== filter) return false;
@@ -802,6 +814,17 @@ export function RecipeLibrary({
   };
 
   const editorPhotoUrl = editor?.kind === 'edit' ? recipes.find(r => r.id === editor.id)?.imageUrl : undefined;
+
+  // Removes the family's version of a built-in recipe, so the original shows everywhere again.
+  const handleResetToOriginal = (own: Recipe) => {
+    const msg = isRtl
+      ? 'استعادة الوصفة الأصلية؟ ستُحذف تعديلاتك وصورتك.'
+      : 'Go back to the original recipe? Your changes and photo will be removed.';
+    if (!window.confirm(msg)) return;
+    onDeleteRecipe(own.id);
+    deleteRecipePhoto(own.imageUrl);
+    setOpenId(own.sourceId ?? null);
+  };
 
   // Built-in recipes are edited as a family copy; reuse the copy if there already is one.
   const handleCustomize = (curated: CuratedRecipe) => {
@@ -918,20 +941,26 @@ export function RecipeLibrary({
 
       {tab === 'explore' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {filteredCurated.map(r => (
-            <RecipeCard
-              key={r.id}
-              name={r.name}
-              emoji={r.emoji}
-              prepTime={r.prepTime}
-              mealType={r.mealType === 'snack' ? 'lunch' : r.mealType}
-              onOpen={() => setOpenId(r.id)}
-              onAddToMealPlan={() => onAddToMealPlan(r)}
-              onFavourite={() => handleFavourite(r)}
-              isFavourited={favouritedSourceIds.has(r.id)}
-              lang={lang}
-            />
-          ))}
+          {filteredCurated.map(({ curated: r, shown }) => {
+            const own = shown.id !== r.id ? (shown as Recipe) : undefined;
+            return (
+              <RecipeCard
+                key={r.id}
+                name={shown.name}
+                emoji={shown.emoji}
+                prepTime={shown.prepTime}
+                mealType={r.mealType === 'snack' ? 'lunch' : r.mealType}
+                sourceUrl={own?.sourceUrl}
+                imageUrl={own?.imageUrl}
+                label={own ? editedLabel : undefined}
+                onOpen={() => setOpenId(shown.id)}
+                onAddToMealPlan={() => onAddToMealPlan(r)}
+                onFavourite={() => handleFavourite(r)}
+                isFavourited={favouritedSourceIds.has(r.id)}
+                lang={lang}
+              />
+            );
+          })}
           {filteredCurated.length === 0 && (
             <div className="col-span-3 text-center py-12 text-muted-foreground">
               <ChefHat className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -962,6 +991,7 @@ export function RecipeLibrary({
                   mealType={r.mealType}
                   sourceUrl={r.sourceUrl}
                   imageUrl={r.imageUrl}
+                  label={r.source === 'curated' ? editedLabel : undefined}
                   onOpen={() => setOpenId(r.id)}
                   onAddToMealPlan={() => onAddToMealPlan(r)}
                   onEdit={() => setEditor({ kind: 'edit', id: r.id })}
@@ -1042,6 +1072,9 @@ export function RecipeLibrary({
           onAddToMealPlan={() => { setOpenId(null); onAddToMealPlan(openRecipe); }}
           onEdit={openIsFamily ? () => setEditor({ kind: 'edit', id: openRecipe.id }) : undefined}
           onCustomize={!openIsFamily ? () => handleCustomize(openRecipe as CuratedRecipe) : undefined}
+          onResetToOriginal={openIsFamily && (openRecipe as Recipe).source === 'curated'
+            ? () => handleResetToOriginal(openRecipe as Recipe)
+            : undefined}
           onSaveLink={url => handleSaveLink(openRecipe, url)}
           onImportLink={url => handleImportLink(openRecipe, url)}
           onClose={() => setOpenId(null)}

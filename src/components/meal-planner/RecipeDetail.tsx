@@ -19,6 +19,8 @@ interface RecipeDetailProps {
   onEdit?: () => void;
   /** Only for built-in recipes: edit a family copy. */
   onCustomize?: () => void;
+  /** Only for the family's edited version of a built-in recipe: go back to the original. */
+  onResetToOriginal?: () => void;
   /** Stores the link on the recipe and nothing else. */
   onSaveLink: (url: string) => void;
   /** Opens the edit form with the link filled in and pulls the recipe from it. */
@@ -35,6 +37,7 @@ export function RecipeDetail({
   onAddToMealPlan,
   onEdit,
   onCustomize,
+  onResetToOriginal,
   onSaveLink,
   onImportLink,
   onClose,
@@ -119,6 +122,16 @@ export function RecipeDetail({
           <span className="text-5xl leading-none">{recipe.emoji ?? '🍽️'}</span>
           <div className="flex-1 min-w-0">
             <h2 className="text-xl font-black leading-tight">{recipe.name}</h2>
+            {onResetToOriginal && (
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <span className="text-[10px] font-bold text-primary bg-primary/10 rounded-full px-2 py-0.5">
+                  {isRtl ? 'نسختك المعدّلة من وصفة مدمجة' : 'Your edited version of a built-in recipe'}
+                </span>
+                <button onClick={onResetToOriginal} className="text-[11px] font-bold text-muted-foreground hover:text-destructive hover:underline">
+                  {isRtl ? 'استعادة الأصل' : 'Reset to original'}
+                </button>
+              </div>
+            )}
             <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground font-medium flex-wrap">
               {recipe.prepTime ? (
                 <span className="flex items-center gap-1">

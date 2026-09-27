@@ -16,7 +16,8 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { Home, ChefHat } from 'lucide-react';
-import { CURATED_RECIPES } from '@/components/meal-planner/curatedRecipes';
+import { dishEmoji, dishName } from '@/components/meal-planner/dishes';
+import type { MealDish } from '@/lib/types';
 import { MEAL_GROUPS, PLAN_ROWS, isRowActive } from '@/components/meal-planner/mealRows';
 
 export const TVDashboard: React.FC = () => {
@@ -36,16 +37,10 @@ export const TVDashboard: React.FC = () => {
   // Today's rows, skipping the lunchbox when there's no school
   const todayRows = PLAN_ROWS.filter(row => isRowActive(row, today.getDay()));
 
-  const resolveDishName = (dish: { recipeId?: string; freeText?: string }): string => {
-    if (dish.recipeId?.startsWith('curated_')) {
-      const c = CURATED_RECIPES.find(r => r.id === dish.recipeId);
-      if (c) return `${c.emoji} ${c.name}`;
-    }
-    if (dish.recipeId) {
-      const r = recipes.find(r => r.id === dish.recipeId);
-      if (r) return r.name;
-    }
-    return dish.freeText || '';
+  // Shared lookup, so the family's edited versions of built-in recipes show here too.
+  const resolveDishName = (dish: MealDish): string => {
+    const emoji = dishEmoji(dish, recipes);
+    return `${emoji ? `${emoji} ` : ''}${dishName(dish, recipes)}`;
   };
 
   const todaySlots = mealSlots.filter(s => s.date === todayStr);
