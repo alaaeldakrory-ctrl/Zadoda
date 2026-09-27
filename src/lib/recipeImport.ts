@@ -16,6 +16,20 @@ export interface ImportedRecipe {
   youtubeId?: string;
 }
 
+/** Tidies a typed or pasted link ("www.site.com/x" → "https://www.site.com/x"); null if it isn't a web link. */
+export function normalizeUrl(raw: string): string | null {
+  const text = raw.trim();
+  if (!text) return null;
+  try {
+    const url = new URL(/^[a-z][a-z\d+.-]*:/i.test(text) ? text : `https://${text}`);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    if (!url.hostname.includes('.')) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 // ── YouTube ──────────────────────────────────────────────────────────────────
 
 export function getYouTubeId(url: string): string | null {

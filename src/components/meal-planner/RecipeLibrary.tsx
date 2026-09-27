@@ -1,12 +1,12 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Heart, Plus, Pencil, Trash2, Clock, ChefHat, X, Download, Loader2, Link as LinkIcon, PlayCircle, ClipboardPaste } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CURATED_RECIPES, CuratedRecipe } from './curatedRecipes';
 import { RecipeDetail } from './RecipeDetail';
 import { Recipe, MealType, MealCategory, ShoppingItem } from '@/lib/types';
-import { getYouTubeId, parseIngredientList, ImportedRecipe } from '@/lib/recipeImport';
+import { getYouTubeId, normalizeUrl, parseIngredientList, ImportedRecipe } from '@/lib/recipeImport';
 
 interface RecipeLibraryProps {
   recipes: Recipe[];
@@ -83,16 +83,19 @@ function formFromRecipe(r: Recipe | CuratedRecipe): Partial<RecipeFormState> {
 /** What the edit window is doing: a new recipe, editing one of ours, or copying a built-in one. */
 type EditorState =
   | { kind: 'new' }
-  | { kind: 'edit'; id: string }
-  | { kind: 'customize'; curatedId: string };
+  | { kind: 'edit'; id: string; importUrl?: string }
+  | { kind: 'customize'; curatedId: string; importUrl?: string };
 
 function RecipeForm({
   initial,
+  autoImport,
   onSave,
   onCancel,
   lang,
 }: {
   initial?: Partial<RecipeFormState>;
+  /** Start importing from initial.sourceUrl as soon as the form opens. */
+  autoImport?: boolean;
   onSave: (data: RecipeFormState) => void;
   onCancel: () => void;
   lang: 'en' | 'ar';
@@ -170,6 +173,12 @@ function RecipeForm({
 
   const addIngredient = () =>
     setForm(prev => ({ ...prev, ingredients: [...prev.ingredients, { name: '', quantity: '', unit: '' }] }));
+
+  useEffect(() => {
+    if (autoImport && form.sourceUrl.trim()) handleImport();
+    // Only on open: later imports are started with the button.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
@@ -607,10 +616,11 @@ export function RecipeLibrary({
 
   const handleSave = (data: RecipeFormState) => {
     if (!editor) return;
+    // Only real web links are kept, so the recipe view never links to anything else.
+    const url = normalizeUrl(data.sourceUrl) ?? '';
     if (editor.kind === 'edit') {
-      onUpdateRecipe(editor.id, { ...cleanForm(data), sourceUrl: data.sourceUrl.trim() });
+      onUpdateRecipe(editor.id, { ...cleanForm(data), sourceUrl: url });
     } else {
-      const url = data.sourceUrl.trim();
       const newId = onAddRecipe({
         ...cleanForm(data),
         // Firestore rejects undefined fields, so only include the link when there is one.
@@ -643,8 +653,53 @@ export function RecipeLibrary({
     const source = editor.kind === 'edit'
       ? recipes.find(r => r.id === editor.id)
       : CURATED_RECIPES.find(r => r.id === editor.curatedId);
-    return source ? formFromRecipe(source) : undefined;
+    if (!source) return undefined;
+    const values = formFromRecipe(source);
+    return editor.importUrl ? { ...values, sourceUrl: editor.importUrl } : values;
   })();
+
+  // "Save" on a link: store it and nothing else. Built-in recipes get a family copy holding the link.
+  const handleSaveLink = (recipe: Recipe | CuratedRecipe, url: string) => {
+    if (!recipe.id.startsWith('curated_')) {
+      onUpdateRecipe(recipe.id, { sourceUrl: url });
+      return;
+    }
+    const copy = recipes.find(r => r.source === 'curated' && r.sourceId === recipe.id);
+    if (copy) {
+      onUpdateRecipe(copy.id, { sourceUrl: url });
+      setOpenId(copy.id);
+      return;
+    }
+    const curated = recipe as CuratedRecipe;
+    const newId = onAddRecipe({
+      name: curated.name,
+      mealType: curated.mealType === 'snack' ? 'lunch' : curated.mealType,
+      prepTime: curated.prepTime,
+      emoji: curated.emoji,
+      ingredients: curated.ingredients,
+      steps: curated.steps,
+      sourceUrl: url,
+      source: 'curated',
+      sourceId: curated.id,
+      addedAt: Date.now(),
+    });
+    if (newId) setOpenId(newId);
+  };
+
+  // "Import" on a link: open the edit form with the link in place and pull the recipe from it.
+  const handleImportLink = (recipe: Recipe | CuratedRecipe, url: string) => {
+    if (!recipe.id.startsWith('curated_')) {
+      setEditor({ kind: 'edit', id: recipe.id, importUrl: url });
+      return;
+    }
+    const copy = recipes.find(r => r.source === 'curated' && r.sourceId === recipe.id);
+    if (copy) {
+      setOpenId(copy.id);
+      setEditor({ kind: 'edit', id: copy.id, importUrl: url });
+    } else {
+      setEditor({ kind: 'customize', curatedId: recipe.id, importUrl: url });
+    }
+  };
 
   const filterPills: MealFilter[] = ['all', ...MEAL_TYPES];
 
@@ -797,6 +852,7 @@ export function RecipeLibrary({
               <RecipeForm
                 key={JSON.stringify(editor)}
                 initial={editorInitial}
+                autoImport={editor.kind !== 'new' && !!editor.importUrl}
                 onSave={handleSave}
                 onCancel={() => setEditor(null)}
                 lang={lang}
@@ -815,6 +871,8 @@ export function RecipeLibrary({
           onAddToMealPlan={() => { setOpenId(null); onAddToMealPlan(openRecipe); }}
           onEdit={openIsFamily ? () => setEditor({ kind: 'edit', id: openRecipe.id }) : undefined}
           onCustomize={!openIsFamily ? () => handleCustomize(openRecipe as CuratedRecipe) : undefined}
+          onSaveLink={url => handleSaveLink(openRecipe, url)}
+          onImportLink={url => handleImportLink(openRecipe, url)}
           onClose={() => setOpenId(null)}
           lang={lang}
         />

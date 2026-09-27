@@ -1,10 +1,10 @@
 "use client"
 
 import React, { useState } from 'react';
-import { X, Clock, ExternalLink, ShoppingCart, CalendarPlus, Pencil, Check, Link as LinkIcon } from 'lucide-react';
+import { X, Clock, ExternalLink, ShoppingCart, CalendarPlus, Pencil, Check, Download, Link as LinkIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Recipe, ShoppingItem } from '@/lib/types';
-import { getYouTubeId } from '@/lib/recipeImport';
+import { getYouTubeId, normalizeUrl } from '@/lib/recipeImport';
 import { CuratedRecipe } from './curatedRecipes';
 import { inferCategory, shoppingKey } from './shoppingList';
 
@@ -19,6 +19,10 @@ interface RecipeDetailProps {
   onEdit?: () => void;
   /** Only for built-in recipes: edit a family copy. */
   onCustomize?: () => void;
+  /** Stores the link on the recipe and nothing else. */
+  onSaveLink: (url: string) => void;
+  /** Opens the edit form with the link filled in and pulls the recipe from it. */
+  onImportLink: (url: string) => void;
   onClose: () => void;
   lang: 'en' | 'ar';
 }
@@ -31,14 +35,35 @@ export function RecipeDetail({
   onAddToMealPlan,
   onEdit,
   onCustomize,
+  onSaveLink,
+  onImportLink,
   onClose,
   lang,
 }: RecipeDetailProps) {
   const isRtl = lang === 'ar';
   const editAction = onEdit ?? onCustomize;
+  const isBuiltIn = !onEdit;
+
+  const [linkEditing, setLinkEditing] = useState(false);
+  const [linkDraft, setLinkDraft] = useState('');
+  const [linkError, setLinkError] = useState(false);
+
+  const openLinkEditor = () => {
+    setLinkDraft(('sourceUrl' in recipe && recipe.sourceUrl) || '');
+    setLinkError(false);
+    setLinkEditing(true);
+  };
+
+  const withValidLink = (action: (url: string) => void) => {
+    const url = normalizeUrl(linkDraft);
+    if (!url) { setLinkError(true); return; }
+    setLinkEditing(false);
+    action(url);
+  };
   const ingredients = (recipe.ingredients ?? []).filter(i => i.name?.trim());
   const steps = (recipe.steps ?? []).filter(s => s.trim());
-  const sourceUrl = 'sourceUrl' in recipe ? recipe.sourceUrl : undefined;
+  // Re-checked on display so a stored non-web link can never become a clickable href.
+  const sourceUrl = ('sourceUrl' in recipe && recipe.sourceUrl && normalizeUrl(recipe.sourceUrl)) || undefined;
   const youtubeId = sourceUrl ? getYouTubeId(sourceUrl) : null;
 
   const onList = new Set(
@@ -112,13 +137,67 @@ export function RecipeDetail({
                   {isRtl ? 'فتح الوصفة الأصلية' : 'Open original recipe'}
                 </a>
               )}
-              {!sourceUrl && editAction && (
-                <button onClick={editAction} className="flex items-center gap-1 text-primary font-bold hover:underline">
+              {!linkEditing && (
+                <button onClick={openLinkEditor} className="flex items-center gap-1 text-primary font-bold hover:underline">
                   <LinkIcon className="w-3.5 h-3.5" />
-                  {isRtl ? 'أضف رابطاً' : 'Add a link'}
+                  {sourceUrl
+                    ? (isRtl ? 'تغيير الرابط' : 'Change link')
+                    : (isRtl ? 'أضف رابطاً' : 'Add a link')}
                 </button>
               )}
             </div>
+
+            {linkEditing && (
+              <div className="mt-3 space-y-2">
+                <input
+                  type="url"
+                  dir="ltr"
+                  autoFocus
+                  value={linkDraft}
+                  onChange={e => { setLinkDraft(e.target.value); setLinkError(false); }}
+                  onKeyDown={e => { if (e.key === 'Enter') withValidLink(onSaveLink); }}
+                  placeholder="https://…"
+                  className="w-full border rounded-xl px-3 py-2 text-sm text-left bg-muted/30 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                />
+                {linkError && (
+                  <p className="text-xs font-medium text-destructive">
+                    {isRtl ? 'هذا لا يبدو رابط صفحة ويب.' : "That doesn't look like a web link."}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => withValidLink(onSaveLink)}
+                    disabled={!linkDraft.trim()}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-white font-bold text-xs disabled:opacity-40 hover:bg-primary/90 transition-all"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    {isRtl ? 'حفظ' : 'Save'}
+                  </button>
+                  <button
+                    onClick={() => withValidLink(onImportLink)}
+                    disabled={!linkDraft.trim()}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-primary/40 text-primary font-bold text-xs disabled:opacity-40 hover:bg-primary/10 transition-all"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    {isRtl ? 'استيراد' : 'Import'}
+                  </button>
+                  <button
+                    onClick={() => setLinkEditing(false)}
+                    className="px-3 py-2 rounded-xl font-bold text-xs text-muted-foreground hover:bg-muted transition-all"
+                  >
+                    {isRtl ? 'إلغاء' : 'Cancel'}
+                  </button>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  {isRtl
+                    ? '«حفظ» يحفظ الرابط فقط. «استيراد» يحاول أيضاً جلب المكونات والخطوات من الصفحة لتراجعها قبل الحفظ.'
+                    : '"Save" just keeps the link. "Import" also tries to pull the ingredients and steps from the page for you to review before saving.'}
+                  {isBuiltIn && (isRtl
+                    ? ' سيتم حفظ نسخة في «وصفاتي».'
+                    : ' A copy will be saved to My Recipes.')}
+                </p>
+              </div>
+            )}
           </div>
           <button
             onClick={onClose}
