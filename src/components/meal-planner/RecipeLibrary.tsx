@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
-import { Heart, Plus, Pencil, Trash2, Clock, ChefHat, X, Loader2, Link as LinkIcon, PlayCircle, ClipboardPaste, Sparkles, ImagePlus } from 'lucide-react';
+import { Heart, Plus, Pencil, Trash2, Clock, ChefHat, X, Loader2, Link as LinkIcon, PlayCircle, ClipboardPaste, Sparkles, ImagePlus, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CURATED_RECIPES, CuratedRecipe } from './curatedRecipes';
 import { RecipeDetail } from './RecipeDetail';
@@ -80,6 +80,7 @@ export type PhotoState =
 interface ImportResponse {
   recipe: ImportedRecipe & { emoji?: string };
   photo?: string;
+  sourceUrl?: string;
   method: 'page-data' | 'ai-page' | 'ai-video' | 'ai-url' | 'ai-text';
   error?: string;
 }
@@ -101,13 +102,14 @@ function formFromRecipe(r: Recipe | CuratedRecipe): Partial<RecipeFormState> {
 /** What the edit window is doing: a new recipe, editing one of ours, or copying a built-in one. */
 type EditorState =
   | { kind: 'new' }
-  | { kind: 'edit'; id: string; importUrl?: string }
-  | { kind: 'customize'; curatedId: string; importUrl?: string };
+  | { kind: 'edit'; id: string; importUrl?: string; findOnline?: boolean }
+  | { kind: 'customize'; curatedId: string; importUrl?: string; findOnline?: boolean };
 
 function RecipeForm({
   initial,
   initialPhotoUrl,
   autoImport,
+  autoFindOnline,
   onSave,
   onCancel,
   lang,
@@ -116,6 +118,8 @@ function RecipeForm({
   initialPhotoUrl?: string;
   /** Start importing from initial.sourceUrl as soon as the form opens. */
   autoImport?: boolean;
+  /** Start searching the web for initial.name as soon as the form opens. */
+  autoFindOnline?: boolean;
   /** Resolves once saved (photo uploaded); rejects to keep the form open with an error. */
   onSave: (data: RecipeFormState, photo: PhotoState) => Promise<void>;
   onCancel: () => void;
@@ -140,11 +144,12 @@ function RecipeForm({
   const [saveError, setSaveError] = useState('');
 
   // Puts an imported recipe into the form; only overwrites what the source provided.
-  const applyImport = (data: ImportResponse) => {
+  const applyImport = (data: ImportResponse, keepName = false) => {
     const r = data.recipe;
     setForm(prev => ({
       ...prev,
-      name: r.name || prev.name,
+      name: (keepName && prev.name.trim()) || r.name || prev.name,
+      sourceUrl: data.sourceUrl ?? prev.sourceUrl,
       emoji: r.emoji || prev.emoji,
       prepTime: r.prepTime ?? prev.prepTime,
       ingredients: r.ingredients.length ? r.ingredients : prev.ingredients,
@@ -158,22 +163,25 @@ function RecipeForm({
       ? `${nIng} من المكونات${nSteps ? ` و${nSteps} من الخطوات` : ''}${data.photo ? ' وصورة الطبق' : ''}`
       : `${nIng} ingredient${nIng === 1 ? '' : 's'}${nSteps ? `, ${nSteps} step${nSteps === 1 ? '' : 's'}` : ''}${data.photo ? ' and the dish photo' : ''}`;
     const byAI = data.method !== 'page-data';
+    let site = '';
+    try { if (keepName && data.sourceUrl) site = new URL(data.sourceUrl).hostname.replace(/^www\./, ''); } catch { /* no site name */ }
+    const from = site ? (isRtl ? ` من ${site}` : ` from ${site}`) : '';
     setImportStatus({
       kind: 'done',
       warn: byAI,
       message: isRtl
-        ? `تم استيراد ${counts}.${byAI ? ' قرأها الذكاء الاصطناعي، فراجع الكميات قبل الحفظ.' : ' راجعها قبل الحفظ.'}`
-        : `Imported ${counts}.${byAI ? ' Read by AI, so check the amounts before saving.' : ' Check them before saving.'}`,
+        ? `تم استيراد ${counts}${from}.${byAI ? ' قرأها الذكاء الاصطناعي، فراجع الكميات قبل الحفظ.' : ' راجعها قبل الحفظ.'}`
+        : `Imported ${counts}${from}.${byAI ? ' Read by AI, so check the amounts before saving.' : ' Check them before saving.'}`,
     });
   };
 
-  const runImport = async (body: { url: string } | { text: string }, loadingMessage: string) => {
+  const runImport = async (body: { url: string } | { text: string } | { search: string }, loadingMessage: string) => {
     setImportStatus({ kind: 'loading', message: loadingMessage });
     try {
       const res = await authedPost('/api/ai/recipe', body);
       const data: ImportResponse = await res.json();
       if (!res.ok) throw new Error(data.error);
-      applyImport(data);
+      applyImport(data, 'search' in body);
       return true;
     } catch (e) {
       setImportStatus({
@@ -195,6 +203,16 @@ function RecipeForm({
     runImport({ url }, isVideo
       ? (isRtl ? 'الذكاء الاصطناعي يشاهد الفيديو… قد يستغرق ذلك دقيقة.' : 'AI is watching the video… this can take up to a minute.')
       : (isRtl ? 'جارٍ قراءة الوصفة…' : 'Reading the recipe…'));
+  };
+
+  // Searches the web for the dish and fills the form from the best recipe page found.
+  const handleFindOnline = () => {
+    const dish = form.name.trim();
+    if (!dish) {
+      setImportStatus({ kind: 'error', message: isRtl ? 'اكتب اسم الوصفة أولاً.' : 'Type the recipe name first.' });
+      return;
+    }
+    runImport({ search: dish }, isRtl ? `جارٍ البحث عن وصفة "${dish}" على الإنترنت…` : `Searching the web for a "${dish}" recipe…`);
   };
 
   // A photo for recipes whose source has none (or to replace it).
@@ -258,7 +276,8 @@ function RecipeForm({
     setForm(prev => ({ ...prev, ingredients: [...prev.ingredients, { name: '', quantity: '', unit: '' }] }));
 
   useEffect(() => {
-    if (autoImport && form.sourceUrl.trim()) handleImport();
+    if (autoFindOnline && form.name.trim()) handleFindOnline();
+    else if (autoImport && form.sourceUrl.trim()) handleImport();
     // Only on open: later imports are started with the button.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -407,12 +426,24 @@ function RecipeForm({
           <label className="text-xs font-black uppercase tracking-wider text-muted-foreground block mb-1">
             {isRtl ? 'اسم الوصفة *' : 'Recipe Name *'}
           </label>
-          <input
-            value={form.name}
-            onChange={e => setField('name', e.target.value)}
-            placeholder={isRtl ? 'مثل: دجاج مشوي' : 'e.g. Grilled Chicken'}
-            className={inputCls}
-          />
+          <div className="flex gap-2">
+            <input
+              value={form.name}
+              onChange={e => setField('name', e.target.value)}
+              placeholder={isRtl ? 'مثل: دجاج مشوي' : 'e.g. Grilled Chicken'}
+              className={cn(inputCls, 'flex-1')}
+            />
+            <button
+              type="button"
+              onClick={handleFindOnline}
+              disabled={!form.name.trim() || importStatus.kind === 'loading'}
+              title={isRtl ? 'ابحث عن وصفة لهذا الطبق على الإنترنت' : 'Search the web for a recipe for this dish'}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-primary/40 text-primary font-bold text-sm disabled:opacity-40 hover:bg-primary/10 transition-all whitespace-nowrap"
+            >
+              <Globe className="w-4 h-4" />
+              {isRtl ? 'ابحث على الإنترنت' : 'Find online'}
+            </button>
+          </div>
         </div>
 
         <div>
@@ -875,6 +906,22 @@ export function RecipeLibrary({
     if (newId) setOpenId(newId);
   };
 
+  // "Find online": open the edit form (the family's version for built-ins) and search for the dish.
+  // Nothing changes until the user saves.
+  const handleFindOnline = (recipe: Recipe | CuratedRecipe) => {
+    if (!recipe.id.startsWith('curated_')) {
+      setEditor({ kind: 'edit', id: recipe.id, findOnline: true });
+      return;
+    }
+    const copy = recipes.find(r => r.source === 'curated' && r.sourceId === recipe.id);
+    if (copy) {
+      setOpenId(copy.id);
+      setEditor({ kind: 'edit', id: copy.id, findOnline: true });
+    } else {
+      setEditor({ kind: 'customize', curatedId: recipe.id, findOnline: true });
+    }
+  };
+
   // "Import" on a link: open the edit form with the link in place and pull the recipe from it.
   const handleImportLink = (recipe: Recipe | CuratedRecipe, url: string) => {
     if (!recipe.id.startsWith('curated_')) {
@@ -1054,6 +1101,7 @@ export function RecipeLibrary({
                 initial={editorInitial}
                 initialPhotoUrl={editorPhotoUrl}
                 autoImport={editor.kind !== 'new' && !!editor.importUrl}
+                autoFindOnline={editor.kind !== 'new' && !!editor.findOnline}
                 onSave={handleSave}
                 onCancel={() => setEditor(null)}
                 lang={lang}
@@ -1076,6 +1124,7 @@ export function RecipeLibrary({
             ? () => handleResetToOriginal(openRecipe as Recipe)
             : undefined}
           onSaveLink={url => handleSaveLink(openRecipe, url)}
+          onFindOnline={() => handleFindOnline(openRecipe)}
           onImportLink={url => handleImportLink(openRecipe, url)}
           onClose={() => setOpenId(null)}
           lang={lang}

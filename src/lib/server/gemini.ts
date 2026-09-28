@@ -6,6 +6,8 @@ const API = 'https://generativelanguage.googleapis.com/v1beta/models';
 // Newest first. When a model is overloaded or retired for this key, the next one is tried.
 const TEXT_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.7-flash'];
 const IMAGE_MODELS = ['gemini-3.1-flash-image', 'gemini-2.5-flash-image'];
+// Google Search grounding is free on the 2.5 models; the 3.x ones need billing for it.
+const SEARCH_MODELS = ['gemini-2.5-flash-lite'];
 
 type Part =
   | { text: string }
@@ -223,6 +225,53 @@ Reply with only the JSON object, fields: isRecipe, name, emoji, prepTimeMinutes,
   } catch {
     return null;
   }
+}
+
+// ── Finding recipes online ───────────────────────────────────────────────────
+
+// Not recipe pages. (Google's grounding redirect links live on a google.com subdomain, so only
+// the search site itself is skipped.)
+const SKIP_SITES = /(^|\.)(youtube\.com|youtu\.be|pinterest\.[a-z.]+|instagram\.com|tiktok\.com|facebook\.com|reddit\.com)$|^(www\.)?google\.[a-z.]+$/i;
+
+const URL_IN_TEXT = /https?:\/\/[^\s)"'\]]+/g;
+
+/**
+ * Web pages likely to hold a good recipe for the dish, best first (Gemini with Google Search).
+ * Google's own search results (grounding sources) are used first: they are real pages, reached
+ * through a redirect link. Addresses Gemini writes out itself are often slightly wrong, so they
+ * are only a fallback.
+ */
+export async function findRecipePages(dish: string): Promise<string[]> {
+  const prompt =
+    `Search Google for a "${dish}" recipe and list the recipe pages you found. ` +
+    'Prefer well-known recipe websites with ingredient amounts and step-by-step instructions, ' +
+    'and halal recipes (no pork, no alcohol). Skip YouTube, Pinterest, Instagram, TikTok, Facebook and Reddit.';
+  const data = await generate(SEARCH_MODELS, {
+    contents: [{ parts: [{ text: prompt }] }],
+    tools: [{ google_search: {} }],
+    generationConfig: { temperature: 0, maxOutputTokens: 1500 },
+  });
+
+  const urls: string[] = [];
+  for (const chunk of data?.candidates?.[0]?.groundingMetadata?.groundingChunks ?? []) {
+    const uri = chunk?.web?.uri;
+    const site = String(chunk?.web?.title ?? '');
+    // The redirect link hides the site, but the chunk title names it.
+    if (typeof uri === 'string' && !SKIP_SITES.test(site)) urls.push(uri);
+  }
+  if (urls.length === 0) urls.push(...(responseText(data).match(URL_IN_TEXT) ?? []));
+
+  const seen = new Set<string>();
+  return urls.filter(u => {
+    try {
+      const url = new URL(u);
+      if (!/^https?:$/.test(url.protocol) || SKIP_SITES.test(url.hostname) || seen.has(url.href)) return false;
+      seen.add(url.href);
+      return true;
+    } catch {
+      return false;
+    }
+  }).slice(0, 8);
 }
 
 // ── Dish photos ──────────────────────────────────────────────────────────────

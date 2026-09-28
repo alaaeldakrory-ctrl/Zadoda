@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react';
-import { X, Clock, ExternalLink, ShoppingCart, CalendarPlus, Pencil, Check, Download, Link as LinkIcon } from 'lucide-react';
+import { X, Clock, ExternalLink, ShoppingCart, CalendarPlus, Pencil, Check, Download, Globe, Link as LinkIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Recipe, ShoppingItem } from '@/lib/types';
 import { getYouTubeId, normalizeUrl } from '@/lib/recipeImport';
@@ -25,6 +25,8 @@ interface RecipeDetailProps {
   onSaveLink: (url: string) => void;
   /** Opens the edit form with the link filled in and pulls the recipe from it. */
   onImportLink: (url: string) => void;
+  /** Opens the edit form and searches the web for this dish; nothing is saved until the user does. */
+  onFindOnline: () => void;
   onClose: () => void;
   lang: 'en' | 'ar';
 }
@@ -40,6 +42,7 @@ export function RecipeDetail({
   onResetToOriginal,
   onSaveLink,
   onImportLink,
+  onFindOnline,
   onClose,
   lang,
 }: RecipeDetailProps) {
@@ -359,7 +362,7 @@ export function RecipeDetail({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 flex gap-3 border-t">
+        <div className="px-6 py-4 flex flex-wrap gap-3 border-t">
           {editAction && (
             <button
               onClick={editAction}
@@ -369,6 +372,14 @@ export function RecipeDetail({
               {onEdit ? (isRtl ? 'تعديل' : 'Edit') : (isRtl ? 'تخصيص' : 'Customize')}
             </button>
           )}
+          <button
+            onClick={onFindOnline}
+            title={isRtl ? 'ابحث عن وصفة لهذا الطبق على الإنترنت' : 'Search the web for a recipe for this dish'}
+            className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border border-primary/40 text-primary font-bold text-sm hover:bg-primary/10 transition-all"
+          >
+            <Globe className="w-4 h-4" />
+            {isRtl ? 'ابحث على الإنترنت' : 'Find online'}
+          </button>
           <button
             onClick={onAddToMealPlan}
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary/10 text-primary font-bold text-sm hover:bg-primary/20 transition-all"

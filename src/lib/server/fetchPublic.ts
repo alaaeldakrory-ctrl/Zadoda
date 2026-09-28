@@ -31,11 +31,12 @@ async function assertPublicUrl(raw: string): Promise<URL> {
 }
 
 export class FetchError extends Error {
-  constructor(message: string, readonly status?: number) { super(message); }
+  /** url: the address that failed, after any redirects. */
+  constructor(message: string, readonly status?: number, readonly url?: string) { super(message); }
 }
 
-/** Fetches a public URL (following checked redirects) and returns its body, up to maxBytes. */
-export async function fetchPublic(raw: string, accept: string, maxBytes: number): Promise<{ bytes: Buffer; contentType: string }> {
+/** Fetches a public URL (following checked redirects) and returns its body (up to maxBytes) and final address. */
+export async function fetchPublic(raw: string, accept: string, maxBytes: number): Promise<{ bytes: Buffer; contentType: string; url: string }> {
   let url = await assertPublicUrl(raw);
   for (let i = 0; i <= MAX_REDIRECTS; i++) {
     const res = await fetch(url, {
@@ -53,8 +54,8 @@ export async function fetchPublic(raw: string, accept: string, maxBytes: number)
       url = await assertPublicUrl(new URL(location, url).toString());
       continue;
     }
-    if (!res.ok) throw new FetchError(`The site returned an error (${res.status})`, res.status);
-    return { bytes: await readLimited(res, maxBytes), contentType: res.headers.get('content-type') ?? '' };
+    if (!res.ok) throw new FetchError(`The site returned an error (${res.status})`, res.status, url.toString());
+    return { bytes: await readLimited(res, maxBytes), contentType: res.headers.get('content-type') ?? '', url: url.toString() };
   }
   throw new FetchError('Too many redirects');
 }
@@ -74,9 +75,10 @@ async function readLimited(res: Response, maxBytes: number): Promise<Buffer> {
   return Buffer.concat(chunks);
 }
 
-export async function fetchPageHtml(url: string): Promise<string> {
-  const { bytes } = await fetchPublic(url, 'text/html,application/xhtml+xml', 3 * 1024 * 1024);
-  return new TextDecoder().decode(bytes);
+/** A web page's HTML and its final address after redirects. */
+export async function fetchPageHtml(url: string): Promise<{ html: string; url: string }> {
+  const res = await fetchPublic(url, 'text/html,application/xhtml+xml', 3 * 1024 * 1024);
+  return { html: new TextDecoder().decode(res.bytes), url: res.url };
 }
 
 /** Downloads an image and returns it as a data: URL, or null if it isn't a usable image. */

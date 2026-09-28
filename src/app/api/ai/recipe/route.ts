@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { allowRequest, getRequestUid } from '@/lib/server/auth';
 import { normalizeUrl } from '@/lib/recipeImport';
-import { importFromText, importFromUrl, RecipeImportResponse } from '@/lib/server/recipeImportService';
+import { importFromSearch, importFromText, importFromUrl, RecipeImportResponse } from '@/lib/server/recipeImportService';
 
 export const runtime = 'nodejs';
 // YouTube videos and blocked sites can take Gemini a little while.
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Too many imports, try again in a few minutes' }, { status: 429 });
   }
 
-  let body: { url?: unknown; text?: unknown };
+  let body: { url?: unknown; text?: unknown; search?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -25,7 +25,11 @@ export async function POST(req: Request) {
 
   try {
     let result: RecipeImportResponse | null = null;
-    if (typeof body.text === 'string' && body.text.trim()) {
+    if (typeof body.search === 'string' && body.search.trim()) {
+      const dish = body.search.trim().slice(0, 120);
+      result = await importFromSearch(dish);
+      if (!result) return NextResponse.json({ error: `Couldn't find a good recipe for "${dish}" online` }, { status: 422 });
+    } else if (typeof body.text === 'string' && body.text.trim()) {
       if (body.text.length > MAX_TEXT) return NextResponse.json({ error: 'That text is too long' }, { status: 400 });
       result = await importFromText(body.text);
     } else if (typeof body.url === 'string') {
@@ -39,6 +43,10 @@ export async function POST(req: Request) {
     if (!result) return NextResponse.json({ error: 'No recipe found there' }, { status: 422 });
     return NextResponse.json<RecipeImportResponse>(result);
   } catch (err) {
+    // The free Gemini tier allows only a few searches a minute.
+    if (err instanceof Error && / 429 /.test(err.message)) {
+      return NextResponse.json({ error: 'Too many searches just now. Wait a minute and try again.' }, { status: 429 });
+    }
     console.error('recipe import failed', err);
     return NextResponse.json({ error: 'Could not read that recipe right now, try again' }, { status: 502 });
   }
